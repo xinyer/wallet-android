@@ -39,11 +39,9 @@ import static com.mrd.bitlib.TransactionUtils.MINIMUM_OUTPUT_VALUE;
 
 public class StandardTransactionBuilder {
    // 1000sat per 1000Bytes, from https://github.com/bitcoin/bitcoin/blob/849a7e645323062878604589df97a1cd75517eb1/src/main.cpp#L78
-   // TODO: This constant is used as a fixed fee but should be used as a fee rate. This would be relevant only if fees fall below 1-5sat/B.
-   static final long MIN_RELAY_FEE = 1000;
-   // hash size 32 + output index size 4 + script length 1 + max. script size for compressed keys 107 + sequence number 4
-   // also see https://github.com/bitcoin/bitcoin/blob/master/src/primitives/transaction.h#L190
-   private static final int MAX_INPUT_SIZE = 32 + 4 + 1 + 107 + 4;
+   private static final long MIN_RELAY_FEE = 1000;
+   // hash size 32 + output index size 4 + script length 1 + max. script size for compressed keys 108 + sequence number 4
+   private static final int MAX_INPUT_SIZE = 32 + 4 + 1 + 108 + 4;
    // output value 8B + script length 1B + script 25B (always)
    private static final int OUTPUT_SIZE = 8 + 1 + 25;
 
@@ -331,9 +329,14 @@ public class StandardTransactionBuilder {
       // We have our funding, calculate change
       long change = found - toSend;
 
-      // Get a copy of all outputs
-      LinkedList<TransactionOutput> outputs = new LinkedList<>(_outputs);
-      if(change >= MINIMUM_OUTPUT_VALUE) {
+       // Get a copy of all outputs
+       outputs = new LinkedList<>(_outputs);
+
+       if (change >= TransactionUtils.MINIMUM_OUTPUT_VALUE) {
+         // We have more funds than needed, add an output to our change address
+
+         // But only if the change is larger than the minimum output accepted
+         // by the network
          TransactionOutput changeOutput = createOutput(changeAddress, change, _network);
          // Select a random position for our change so it is harder to analyze our addresses in the block chain.
          // It is OK to use the weak java Random class for this purpose.
