@@ -347,7 +347,7 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
       boolean indexHasChanged = lastExternalIndexBefore != _context.getLastExternalIndexWithActivity()
           || lastInternalIndexBefore != _context.getLastInternalIndexWithActivity();;
       if (indexHasChanged) {
-         fireAddressesChangedEvent(lookAhead); //Need to add timestamps.
+         fireAddressesChangedEvent(); //Need to add timestamps.
       }
       return indexHasChanged;
    }
