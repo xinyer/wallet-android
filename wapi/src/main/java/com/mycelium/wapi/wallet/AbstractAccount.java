@@ -336,10 +336,12 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
    }
 
    @Override
+   @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("WMI_WRONG_MAP_ITERATOR")
    public void notifyNewTransactionDiscovered(TransactionEx transactionEx, Map<OutPoint, TransactionOutput> connectedOutputs, Set<OutPoint> utxoSet, boolean fetchMissingOutputs) {
       for(OutPoint outPoint: connectedOutputs.keySet()) {
          TransactionOutput ctxo = connectedOutputs.get(outPoint);
-         TransactionOutputEx txoEx = new TransactionOutputEx(outPoint, 0, ctxo.value, ctxo.script.getScriptBytes(), ctxo.script.isCoinBase());
+         TransactionOutputEx txoEx = new TransactionOutputEx(outPoint, 0, ctxo.value,
+             ctxo.script.getScriptBytes(), ctxo.script.isCoinBase());
          _backing.putParentTransactionOutput(txoEx);
       }
       try {

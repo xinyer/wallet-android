@@ -101,6 +101,7 @@ public class WalletManager {
       _accountEventManager = new AccountEventManager();
       _observers = new LinkedList<>();
       _transactionFetcher = transactionFetcher;
+      //Use SPV or not.
       _useTransactionFetcher = useTransactionFetcher;
       loadAccounts();
    }
@@ -450,6 +451,40 @@ public class WalletManager {
       return Preconditions.checkNotNull(normalAccount);
    }
 
+  /**
+   * Get a wallet account
+   *
+   * @param index the index of the account to get
+   * @return a wallet account
+   */
+  public Bip44Account getBip44Account(int index) {
+    Bip44Account result = null;
+    for (Bip44Account bip44Account:
+         _bip44Accounts) {
+      if(bip44Account.getAccountIndex() == index) {
+        result = bip44Account;
+        break;
+      }
+    }
+    return Preconditions.checkNotNull(result);
+  }
+
+  /**
+   * Checks if the account is already created.
+   *
+   * @param index the index of the account to get
+   * @return a wallet account
+   */
+  public boolean doesBip44AccountExists(int index) {
+    for (Bip44Account bip44Account:
+        _bip44Accounts) {
+      if(bip44Account.getAccountIndex() == index) {
+        return true;
+      }
+    }
+    return false;
+  }
+
    /**
     * Make the wallet manager synchronize all its active accounts.
     * <p>
@@ -743,9 +778,11 @@ public class WalletManager {
 
       private boolean synchronize() {
          if(_useTransactionFetcher) {
+            //If using SPV module, enters this condition.
             List<Address> addresses = new ArrayList<>();
-            for(WalletAccount a : getAllAccounts()) {
-               addresses.addAll(a.getAddresses());
+           // Get adresses from all accounts
+            for(WalletAccount walletAccount : getAllAccounts()) {
+               addresses.addAll(walletAccount.getAddresses());
             }
             Set<AddressWithCreationTime> addressStrings = new HashSet<>(addresses.size());
             Map<Address, Long> creationTimes = _backing.getAllAddressCreationTimes();
@@ -985,10 +1022,12 @@ public class WalletManager {
          _backing.beginTransaction();
          try {
             // Create the base keys for the account
-            Bip44AccountKeyManager keyManager = Bip44AccountKeyManager.createNew(root, _network, accountIndex, _secureKeyValueStore, cipher);
+            Bip44AccountKeyManager keyManager = Bip44AccountKeyManager.createNew(root, _network,
+                accountIndex, _secureKeyValueStore, cipher);
 
             // Generate the context for the account
-            Bip44AccountContext context = new Bip44AccountContext(keyManager.getAccountId(), accountIndex, false);
+            Bip44AccountContext context = new Bip44AccountContext(keyManager.getAccountId(),
+                accountIndex, false);
             _backing.createBip44AccountContext(context);
 
             // Get the backing for the new account

@@ -163,7 +163,10 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
       return _context.getAccountIndex();
    }
 
-   private void ensureAddressIndexes() {
+  /**
+   * Ensure that all addresses in the look ahead window have been created
+   */
+  private void ensureAddressIndexes() {
       ensureAddressIndexes(true, true);
       ensureAddressIndexes(false, true);
       // The current receiving address is the next external address just above
@@ -328,21 +331,23 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
    @Override
    protected boolean doDiscoveryForAddresses(List<Address> lookAhead) throws WapiException {
       // Do look ahead query
-      List<Sha256Hash> ids = _wapi.queryTransactionInventory(
-            new QueryTransactionInventoryRequest(Wapi.VERSION, lookAhead, Wapi.MAX_TRANSACTION_INVENTORY_LIMIT)).getResult().txIds;
-      if (ids.isEmpty()) {
+      List<Sha256Hash> transactionIds = _wapi.queryTransactionInventory(
+            new QueryTransactionInventoryRequest(Wapi.VERSION, lookAhead, Wapi.MAX_TRANSACTION_INVENTORY_LIMIT))
+          .getResult().txIds;
+      if (transactionIds.isEmpty()) {
          // nothing found
          return false;
       }
       int lastExternalIndexBefore = _context.getLastExternalIndexWithActivity();
       int lastInternalIndexBefore = _context.getLastInternalIndexWithActivity();
 
-      Collection<TransactionExApi> transactions = getTransactionsBatched(ids).getResult().transactions;
+      Collection<TransactionExApi> transactions = getTransactionsBatched(transactionIds).getResult().transactions;
       handleNewExternalTransactions(transactions);
       // Return true if the last external or internal index has changed
-      boolean indexHasChanged = lastExternalIndexBefore != _context.getLastExternalIndexWithActivity() || lastInternalIndexBefore != _context.getLastInternalIndexWithActivity();;
+      boolean indexHasChanged = lastExternalIndexBefore != _context.getLastExternalIndexWithActivity()
+          || lastInternalIndexBefore != _context.getLastInternalIndexWithActivity();;
       if (indexHasChanged) {
-         fireAddressesChangedEvent();
+         fireAddressesChangedEvent(lookAhead); //Need to add timestamps.
       }
       return indexHasChanged;
    }
@@ -468,6 +473,10 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
       _context.persistIfNecessary(_backing);
    }
 
+   /**
+    * Update the index for the last external and internal address with activity.
+    * @param t transaction
+    */
    private void updateLastIndexWithActivity(Transaction t) {
       // Investigate whether the transaction sends us any coins
       for (int i = 0; i < t.outputs.length; i++) {
@@ -483,6 +492,10 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
       ensureAddressIndexes();
    }
 
+  /**
+   * Update the new last external address with activity
+   * @param externalIndex new index
+   */
    protected void updateLastExternalIndex(Integer externalIndex) {
       // Sends coins to an external address, update internal max index if
       // necessary
@@ -490,6 +503,10 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
             externalIndex));
    }
 
+  /**
+   * Update the new last internal address with activity.
+   * @param receivingAddress
+   */
    protected void updateLastInternalIndex(Address receivingAddress) {
       Integer internalIndex = _internalAddresses.get(receivingAddress);
       if (internalIndex != null) {

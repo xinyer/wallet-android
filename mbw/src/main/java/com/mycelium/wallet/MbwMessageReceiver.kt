@@ -17,7 +17,10 @@ import com.mycelium.wallet.event.SpvSyncChanged
 import com.mycelium.wallet.persistence.MetadataStorage
 import com.mycelium.wapi.model.TransactionEx
 import com.mycelium.wapi.wallet.AbstractAccount
+import com.mycelium.wapi.wallet.AesKeyCipher
 import com.mycelium.wapi.wallet.WalletAccount
+import com.mycelium.wapi.wallet.WalletManager
+import com.mycelium.wapi.wallet.bip44.Bip44Account
 import com.squareup.otto.Bus
 import org.bitcoinj.core.TransactionConfidence.ConfidenceType.*
 import org.bitcoinj.core.TransactionOutPoint
@@ -33,13 +36,17 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
         when (intent.action) {
             "com.mycelium.wallet.receivedTransactions" -> {
                 val transactionsBytes = intent.getSerializableExtra("TRANSACTIONS") as Array<ByteArray>
-                val outputs = bitcoinJ2Bitlib(intent.getSerializableExtra("CONNECTED_OUTPUTS") as Map<String, ByteArray>)//Funding outputs
+                val fundingOutputs = bitcoinJ2Bitlib(intent.getSerializableExtra("CONNECTED_OUTPUTS")
+                        as Map<String, ByteArray>) //Funding outputs
+
+                // Unspent Transaction Output (UTXO)
                 val utxoSet = (intent.getSerializableExtra("UTXOS") as Map<String, ByteArray>).keys.map {
                     val parts = it.split(":")
                     val hash = Sha256Hash.fromString(parts[0])
                     val index = parts[1].toInt()
                     OutPoint(hash, index)
                 }.toSet()
+
                 if (transactionsBytes.isEmpty()) {
                     Log.d(TAG, "onMessage: received an empty transaction notification")
                     return
@@ -57,36 +64,42 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 val affectedAccounts = ArrayList<WalletAccount>()
                 try {
                     for (confTransactionBytes in transactionsBytes) {
-                        val bb = ByteBuffer.wrap(confTransactionBytes)
-                        val blockHeight = bb.int
-                        val txBytes = ByteArray(bb.capacity() - 4)
-                        bb.get(txBytes, 0, txBytes.size)
+                        val transactionBytesBuffer = ByteBuffer.wrap(confTransactionBytes)
+                        val blockHeight = transactionBytesBuffer.int
+                        val transactionBytes = ByteArray(transactionBytesBuffer.capacity() - 4)
+                        //Filling up transactionBytes.
+                        transactionBytesBuffer.get(transactionBytes, 0, transactionBytes.size)
 
-                        val tx = Transaction.fromBytes(txBytes)
-                        Log.d(TAG, "onReceive: tx received: " + tx)
+                        val transaction = Transaction.fromBytes(transactionBytes)
+                        Log.d(TAG, "onReceive: transaction received: " + transaction)
                         val connectedOutputs = HashMap<OutPoint, TransactionOutput>()
-                        for (input in tx.inputs) {
-                            val connectedOutput = outputs[input.outPoint] ?: // skip this
+
+                        for (input in transaction.inputs) {
+                            val connectedOutput = fundingOutputs[input.outPoint] ?: // skip this
                                     continue
                             connectedOutputs.put(input.outPoint, connectedOutput)
                             val address = connectedOutput.script.getAddress(network)
                             val optionalAccount = walletManager.getAccountByAddress(address)
                             if (optionalAccount.isPresent) {
                                 val account = walletManager.getAccount(optionalAccount.get())
-                                if (account.getTransaction(tx.hash) == null) {
+                                if (account.getTransaction(transaction.hash) == null) {
                                     // The transaction is new and relevant for the account.
                                     // We found spending from the account.
                                     satoshisReceived -= connectedOutput.value
+                                    //Should we update lookahead of adresses / Accounts that needs to be look at
+                                    //by SPV module ?
                                 }
                                 affectedAccounts.add(account)
                             }
                         }
-                        for (output in tx.outputs) {
+
+                        for (output in transaction.outputs) {
+                            //Transaction received and Change from transaction.
                             val address = output.script.getAddress(network)
                             val optionalAccount = walletManager.getAccountByAddress(address)
                             if (optionalAccount.isPresent) {
                                 val account = walletManager.getAccount(optionalAccount.get())
-                                if (account.getTransaction(tx.hash) == null) {
+                                if (account.getTransaction(transaction.hash) == null) {
                                     // The transaction is new and relevant for the account.
                                     // We found spending from the account.
                                     satoshisReceived += output.value
@@ -94,17 +107,32 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                                 affectedAccounts.add(account)
                             }
                         }
-                        for (a in affectedAccounts) {
+                        for (account in affectedAccounts) {
                             when (blockHeight) {
                                 DEAD.value -> Log.e(TAG, "transaction is dead")
                                 IN_CONFLICT.value -> Log.e(TAG, "transaction is in conflict")
-                                UNKNOWN.value, PENDING.value -> a.notifyNewTransactionDiscovered(TransactionEx.fromUnconfirmedTransaction(txBytes), connectedOutputs, utxoSet, false)
+                                UNKNOWN.value, PENDING.value -> {
+                                    account.notifyNewTransactionDiscovered(
+                                            TransactionEx.fromUnconfirmedTransaction(transactionBytes),
+                                            connectedOutputs, utxoSet, false)
+                                    if(account is Bip44Account) {
+                                        createNextAccount(account, walletManager);
+                                    }
+                                }
                                 else -> {
-                                    val txBJ = org.bitcoinj.core.Transaction(networkBJ, txBytes)
+                                    val txBJ = org.bitcoinj.core.Transaction(networkBJ, transactionBytes)
                                     val txid = Sha256Hash.fromString(txBJ.hash.toString())
                                     val time = (txBJ.updateTime.time / 1000L).toInt()
-                                    val tEx = TransactionEx(txid, blockHeight, time, txBytes)
-                                    a.notifyNewTransactionDiscovered(tEx, connectedOutputs, utxoSet, false)
+                                    val tEx = TransactionEx(txid, blockHeight, time, transactionBytes)
+                                    account.notifyNewTransactionDiscovered(tEx, connectedOutputs, utxoSet, false)
+                                    // Need to launch synchronisation after we notified of a new transaction
+                                    // discovered and updated the lookahead of address to observe when using SPV
+                                    // module.
+
+                                    // But before that we might need to create the next account if it does not exist.
+                                    if(account is Bip44Account) {
+                                        createNextAccount(account, walletManager);
+                                    }
                                 }
                             }
                         }
@@ -136,6 +164,17 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
             }
             null -> Log.w(TAG, "onMessage failed. No action defined.")
             else -> Log.e(TAG, "onMessage failed. Unknown action ${intent.action}")
+        }
+    }
+
+    private fun createNextAccount(account: Bip44Account, walletManager: WalletManager) {
+        if(account.hasHadActivity()
+                && !walletManager.doesBip44AccountExists(account.accountIndex + 1)) {
+            MbwManager.getInstance(context).getMetadataStorage()
+                    .storeAccountLabel(account.id, "Account " + account.accountIndex)
+            walletManager.createArchivedGapFiller(AesKeyCipher.defaultKeyCipher(),
+                    account.accountIndex + 1)
+            walletManager.startSynchronization()
         }
     }
 
