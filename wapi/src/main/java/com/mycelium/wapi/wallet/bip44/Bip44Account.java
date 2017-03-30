@@ -60,7 +60,6 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
       _keyManager = keyManager;
       _context = context;
       initAddressCache();
-
       if (isArchived()) {
          return;
       }
@@ -203,7 +202,22 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
          if (addressMap.inverse().containsKey(index)) {
             return;
          }
-         addressMap.put(Preconditions.checkNotNull(_keyManager.getAddress(isChangeChain, index)), index);
+         Address address = Preconditions.checkNotNull(_keyManager.getAddress(isChangeChain, index));
+         addressMap.put(address, index);
+        // Save address with timestamp in DB. Nelson
+        long timestamp = System.currentTimeMillis();
+        int lastIndexWithActivity;
+        if(isChangeChain) {
+          lastIndexWithActivity = _context.getLastInternalIndexWithActivity();
+        } else {
+          lastIndexWithActivity = _context.getLastExternalIndexWithActivity();
+        }
+        if(lastIndexWithActivity != -1) {
+          Address addressLastActivity = addressMap.inverse().get(_context.getLastInternalIndexWithActivity());
+          timestamp = ((WalletManagerBacking) _backing).getCreationTimeByAddress(addressLastActivity)
+          - (2 * 24 * 60 * 60 * 1000); //Minus two days in millisecond.
+        }
+        ((WalletManagerBacking) _backing).storeAddressCreationTime(address, timestamp);
          index--;
       }
    }
