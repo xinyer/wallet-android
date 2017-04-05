@@ -43,17 +43,17 @@ public interface AccountBacking {
 
    boolean deleteAllUnspentOutput();
 
-   void putUnspentOutput(TransactionOutputEx output);
+   boolean putUnspentOutput(TransactionOutputEx output);
 
-   void putParentTransactionOutput(TransactionOutputEx output);
+   boolean putParentTransactionOutput(TransactionOutputEx output);
 
    TransactionOutputEx getParentTransactionOutput(OutPoint outPoint);
 
-   void putTransaction(TransactionEx transaction);
+   boolean putTransaction(TransactionEx transaction);
 
    TransactionEx getTransaction(Sha256Hash hash);
 
-   void deleteTransaction(Sha256Hash hash);
+   boolean deleteTransaction(Sha256Hash hash);
 
    List<TransactionEx> getTransactionHistory(int offset, int limit);
 
@@ -65,17 +65,17 @@ public interface AccountBacking {
 
    boolean hasTransaction(Sha256Hash txid);
 
-   void putOutgoingTransaction(Sha256Hash txid, byte[] rawTransaction);
+   boolean putOutgoingTransaction(Sha256Hash txid, byte[] rawTransaction);
 
    Map<Sha256Hash, byte[]> getOutgoingTransactions();
 
    boolean isOutgoingTransaction(Sha256Hash txid);
 
-   void removeOutgoingTransaction(Sha256Hash txid);
+   boolean deleteOutgoingTransaction(Sha256Hash txid);
 
-   void deleteTxRefersParentTransaction(Sha256Hash txId);
+   boolean deleteTxRefersParentTransaction(Sha256Hash txId);
 
    Collection<Sha256Hash> getTransactionsReferencingOutPoint(OutPoint outPoint);
 
-   void putTxRefersParentTransaction(Sha256Hash txId, List<OutPoint> refersOutputs);
+   boolean putTxRefersParentTransaction(Sha256Hash txId, List<OutPoint> refersOutputs);
 }

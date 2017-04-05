@@ -26,7 +26,6 @@ import com.mrd.bitlib.crypto.*;
 import com.mrd.bitlib.model.*;
 import com.mrd.bitlib.model.Transaction.TransactionParsingException;
 import com.mrd.bitlib.util.BitUtils;
-import com.mrd.bitlib.util.ByteReader;
 import com.mrd.bitlib.util.HashUtils;
 import com.mrd.bitlib.util.Sha256Hash;
 import com.mycelium.WapiLogger;
@@ -49,7 +48,6 @@ import com.mycelium.wapi.wallet.currency.CurrencyBasedBalance;
 import com.mycelium.wapi.wallet.currency.CurrencyValue;
 import com.mycelium.wapi.wallet.currency.ExactBitcoinValue;
 import com.mycelium.wapi.wallet.currency.ExactCurrencyValue;
-import org.bitcoinj.core.TransactionOutPoint;
 
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -337,7 +335,9 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
 
    @Override
    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("WMI_WRONG_MAP_ITERATOR")
-   public void notifyNewTransactionDiscovered(TransactionEx transactionEx, Map<OutPoint, TransactionOutput> connectedOutputs, Set<OutPoint> utxoSet, boolean fetchMissingOutputs) {
+   public void notifyNewTransactionDiscovered(TransactionEx transactionEx,
+                                              Map<OutPoint, TransactionOutput> connectedOutputs,
+                                              Set<OutPoint> utxoSet, boolean fetchMissingOutputs) {
       for(OutPoint outPoint: connectedOutputs.keySet()) {
          TransactionOutput ctxo = connectedOutputs.get(outPoint);
          TransactionOutputEx txoEx = new TransactionOutputEx(outPoint, 0, ctxo.value,
@@ -351,7 +351,8 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
             TransactionOutput output = outputs[i];
             OutPoint outPoint = new OutPoint(transactionEx.txid, i);
             if(utxoSet.contains(outPoint)) {
-               _backing.putUnspentOutput(new TransactionOutputEx(outPoint, 0, output.value, output.script.getScriptBytes(), output.script.isCoinBase()));
+               _backing.putUnspentOutput(new TransactionOutputEx(outPoint, 0, output.value,
+                   output.script.getScriptBytes(), output.script.isCoinBase()));
             }
          }
          handleNewExternalTransactionsInt(Lists.newArrayList(new TransactionExApi(transactionEx)), fetchMissingOutputs);
@@ -600,7 +601,7 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
          BroadcastResult result = broadcastTransaction(TransactionEx.toTransaction(tex));
          if (result == BroadcastResult.SUCCESS) {
             broadcastedIds.add(tex.txid);
-            _backing.removeOutgoingTransaction(tex.txid);
+            _backing.deleteOutgoingTransaction(tex.txid);
          } /* else {
             // DW: commented this section out, because we changed how we treat outgoing tx
             // keep it, even if it got rejected and let the user delete it themself
@@ -801,7 +802,7 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
          }
 
          // Remove a queued transaction from our outgoing buffer
-         _backing.removeOutgoingTransaction(transaction);
+         _backing.deleteOutgoingTransaction(transaction);
 
          // remove it from the backing
          _backing.deleteTransaction(transaction);
@@ -1293,7 +1294,7 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
          } else {
             // we got it back from the server and it got confirmations - remove it from out outgoing queue
             if (t.height > -1 || _backing.isOutgoingTransaction(t.txid)) {
-               _backing.removeOutgoingTransaction(t.txid);
+               _backing.deleteOutgoingTransaction(t.txid);
             }
          }
 

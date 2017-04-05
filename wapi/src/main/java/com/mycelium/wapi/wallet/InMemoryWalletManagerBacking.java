@@ -65,9 +65,10 @@ public class InMemoryWalletManagerBacking implements WalletManagerBacking {
    }
 
    @Override
-   public void createBip44AccountContext(Bip44AccountContext context) {
+   public boolean createBip44AccountContext(Bip44AccountContext context) {
       _bip44Contexts.put(context.getId(), new Bip44AccountContext(context));
       _backings.put(context.getId(), new InMemoryAccountBacking());
+      return true;
    }
 
    @Override
@@ -81,15 +82,17 @@ public class InMemoryWalletManagerBacking implements WalletManagerBacking {
    }
 
    @Override
-   public void createSingleAddressAccountContext(SingleAddressAccountContext context) {
+   public boolean createSingleAddressAccountContext(SingleAddressAccountContext context) {
       _singleAddressAccountContexts.put(context.getId(), new SingleAddressAccountContext(context));
       _backings.put(context.getId(), new InMemoryAccountBacking());
+      return true;
    }
 
    @Override
-   public void deleteSingleAddressAccountContext(UUID accountId) {
+   public boolean deleteSingleAddressAccountContext(UUID accountId) {
       _backings.remove(accountId);
       _singleAddressAccountContexts.remove(accountId);
+      return true;
    }
 
    @Override
@@ -104,14 +107,16 @@ public class InMemoryWalletManagerBacking implements WalletManagerBacking {
    }
 
    @Override
-   public void storeAddressCreationTime(Address address, long unixTimeSeconds) {
+   public boolean storeAddressCreationTime(Address address, long unixTimeSeconds) {
       addressCreationTimestamps.put(address, unixTimeSeconds);
+      return true;
    }
 
    @Override
-   public void deleteBip44AccountContext(UUID accountId) {
+   public boolean deleteBip44AccountContext(UUID accountId) {
       _backings.remove(accountId);
       _bip44Contexts.remove(accountId);
+      return true;
    }
 
    @Override
@@ -185,15 +190,17 @@ public class InMemoryWalletManagerBacking implements WalletManagerBacking {
       private final HashMap<Sha256Hash, OutPoint> _txRefersParentTxOpus = new HashMap<>();
 
       @Override
-      public void updateAccountContext(Bip44AccountContext context) {
+      public boolean updateAccountContext(Bip44AccountContext context) {
          // Since this is in-memory we don't try to optimize and just update all values
          _bip44Contexts.put(context.getId(), new Bip44AccountContext(context));
+         return true;
       }
 
       @Override
-      public void updateAccountContext(SingleAddressAccountContext context) {
+      public boolean updateAccountContext(SingleAddressAccountContext context) {
          // Since this is in-memory we don't try to optimize and just update all values
          _singleAddressAccountContexts.put(context.getId(), new SingleAddressAccountContext(context));
+         return true;
       }
 
       @Override
@@ -242,13 +249,15 @@ public class InMemoryWalletManagerBacking implements WalletManagerBacking {
       }
 
       @Override
-      public void putUnspentOutput(TransactionOutputEx output) {
+      public boolean putUnspentOutput(TransactionOutputEx output) {
          _unspentOuputs.put(output.outPoint, output);
+         return true;
       }
 
       @Override
-      public void putParentTransactionOutput(TransactionOutputEx output) {
+      public boolean putParentTransactionOutput(TransactionOutputEx output) {
          _parentOutputs.put(output.outPoint, output);
+         return true;
       }
 
       @Override
@@ -257,8 +266,9 @@ public class InMemoryWalletManagerBacking implements WalletManagerBacking {
       }
 
       @Override
-      public void putTransaction(TransactionEx transaction) {
+      public boolean putTransaction(TransactionEx transaction) {
          _transactions.put(transaction.txid, transaction);
+         return true;
       }
 
       @Override
@@ -267,8 +277,9 @@ public class InMemoryWalletManagerBacking implements WalletManagerBacking {
       }
 
       @Override
-      public void deleteTransaction(Sha256Hash hash) {
+      public boolean deleteTransaction(Sha256Hash hash) {
          _transactions.remove(hash);
+         return true;
       }
 
       @Override
@@ -327,8 +338,9 @@ public class InMemoryWalletManagerBacking implements WalletManagerBacking {
       }
 
       @Override
-      public void putOutgoingTransaction(Sha256Hash txid, byte[] rawTransaction) {
+      public boolean putOutgoingTransaction(Sha256Hash txid, byte[] rawTransaction) {
          _outgoingTransactions.put(txid, rawTransaction);
+         return true;
       }
 
       @Override
@@ -342,20 +354,23 @@ public class InMemoryWalletManagerBacking implements WalletManagerBacking {
       }
 
       @Override
-      public void removeOutgoingTransaction(Sha256Hash txid) {
+      public boolean deleteOutgoingTransaction(Sha256Hash txid) {
          _outgoingTransactions.remove(txid);
+         return true;
       }
 
       @Override
-      public void putTxRefersParentTransaction(Sha256Hash txId, List<OutPoint> refersOutputs) {
+      public boolean putTxRefersParentTransaction(Sha256Hash txId, List<OutPoint> refersOutputs) {
          for (OutPoint outpoint : refersOutputs) {
             _txRefersParentTxOpus.put(txId, outpoint);
          }
+         return true;
       }
 
       @Override
-      public void deleteTxRefersParentTransaction(Sha256Hash txId) {
+      public boolean deleteTxRefersParentTransaction(Sha256Hash txId) {
          _txRefersParentTxOpus.remove(txId);
+         return true;
       }
 
       @Override

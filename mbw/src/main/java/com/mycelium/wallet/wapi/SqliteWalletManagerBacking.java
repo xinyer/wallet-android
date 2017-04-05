@@ -62,7 +62,7 @@ import java.util.*;
 import static com.mycelium.wallet.persistence.SQLiteQueryWithBlobs.uuidToBytes;
 
 public class SqliteWalletManagerBacking implements WalletManagerBacking {
-   private static final String LOG_TAG = "SqliteAccountBacking";
+   private static final String LOG_TAG = SqliteWalletManagerBacking.class.getCanonicalName();
    private static final String TABLE_KV = "kv";
    private static final int DEFAULT_SUB_ID = 0;
    private SQLiteDatabase _database;
@@ -197,10 +197,9 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
    }
 
    @Override
-   public void createBip44AccountContext(Bip44AccountContext context) {
-      _database.beginTransaction();
+   public boolean createBip44AccountContext(Bip44AccountContext context) {
+      beginTransaction();
       try {
-
          // Create backing tables
          SqliteAccountBacking backing = _backings.get(context.getId());
          if (backing == null) {
@@ -220,28 +219,39 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          _insertOrReplaceBip44Account.bindLong(8, context.getLastDiscovery());
          _insertOrReplaceBip44Account.bindLong(9, context.getAccountType());
          _insertOrReplaceBip44Account.bindLong(10, context.getAccountSubId());
-         _insertOrReplaceBip44Account.executeInsert();
-
-         _database.setTransactionSuccessful();
+         boolean result = _insertOrReplaceBip44Account.executeInsert() != -1;
+         setTransactionSuccessful();
+         return result;
+      } catch(SQLException e) {
+         //TODO Log and handle this error better. Nelson
+         return false;
       } finally {
-         _database.endTransaction();
+         endTransaction();
       }
    }
 
 
-   private void updateBip44AccountContext(Bip44AccountContext context) {
+   private boolean updateBip44AccountContext(Bip44AccountContext context) {
       //UPDATE bip44 SET archived=?,blockheight=?,lastExternalIndexWithActivity=?,lastInternalIndexWithActivity=?,firstMonitoredInternalIndex=?,lastDiscovery=?,accountType=?,accountSubId=? WHERE id=?
-
-      _updateBip44Account.bindLong(1, context.isArchived() ? 1 : 0);
-      _updateBip44Account.bindLong(2, context.getBlockHeight());
-      _updateBip44Account.bindLong(3, context.getLastExternalIndexWithActivity());
-      _updateBip44Account.bindLong(4, context.getLastInternalIndexWithActivity());
-      _updateBip44Account.bindLong(5, context.getFirstMonitoredInternalIndex());
-      _updateBip44Account.bindLong(6, context.getLastDiscovery());
-      _updateBip44Account.bindLong(7, context.getAccountType());
-      _updateBip44Account.bindLong(8, context.getAccountSubId());
-      _updateBip44Account.bindBlob(9, uuidToBytes(context.getId()));
-      _updateBip44Account.execute();
+      beginTransaction();
+      try {
+         _updateBip44Account.bindLong(1, context.isArchived() ? 1 : 0);
+         _updateBip44Account.bindLong(2, context.getBlockHeight());
+         _updateBip44Account.bindLong(3, context.getLastExternalIndexWithActivity());
+         _updateBip44Account.bindLong(4, context.getLastInternalIndexWithActivity());
+         _updateBip44Account.bindLong(5, context.getFirstMonitoredInternalIndex());
+         _updateBip44Account.bindLong(6, context.getLastDiscovery());
+         _updateBip44Account.bindLong(7, context.getAccountType());
+         _updateBip44Account.bindLong(8, context.getAccountSubId());
+         _updateBip44Account.bindBlob(9, uuidToBytes(context.getId()));
+         boolean result = _updateBip44Account.executeUpdateDelete() == 1;
+         setTransactionSuccessful();
+         return result;
+      } catch(SQLException sqlException) {
+         return false;
+      } finally {
+         endTransaction();
+      }
    }
 
    @Override
@@ -270,10 +280,9 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
    }
 
    @Override
-   public void createSingleAddressAccountContext(SingleAddressAccountContext context) {
-      _database.beginTransaction();
+   public boolean createSingleAddressAccountContext(SingleAddressAccountContext context) {
+      beginTransaction();
       try {
-
          // Create backing tables
          SqliteAccountBacking backing = _backings.get(context.getId());
          if (backing == null) {
@@ -288,35 +297,53 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          _insertOrReplaceSingleAddressAccount.bindString(3, context.getAddress().toString());
          _insertOrReplaceSingleAddressAccount.bindLong(4, context.isArchived() ? 1 : 0);
          _insertOrReplaceSingleAddressAccount.bindLong(5, context.getBlockHeight());
-         _insertOrReplaceSingleAddressAccount.executeInsert();
-         _database.setTransactionSuccessful();
+         boolean result = _insertOrReplaceSingleAddressAccount.executeInsert() != -1;
+         setTransactionSuccessful();
+         return result;
+      } catch(SQLException e) {
+         //TODO Log and handle this error better. Nelson
+         return false;
       } finally {
-         _database.endTransaction();
+         endTransaction();
       }
    }
 
-   private void updateSingleAddressAccountContext(SingleAddressAccountContext context) {
+   private boolean updateSingleAddressAccountContext(SingleAddressAccountContext context) {
       // "UPDATE single SET archived=?,blockheight=? WHERE id=?"
-      _updateSingleAddressAccount.bindLong(1, context.isArchived() ? 1 : 0);
-      _updateSingleAddressAccount.bindLong(2, context.getBlockHeight());
-      _updateSingleAddressAccount.bindBlob(3, uuidToBytes(context.getId()));
-      _updateSingleAddressAccount.execute();
+      beginTransaction();
+      try {
+         _updateSingleAddressAccount.bindLong(1, context.isArchived() ? 1 : 0);
+         _updateSingleAddressAccount.bindLong(2, context.getBlockHeight());
+         _updateSingleAddressAccount.bindBlob(3, uuidToBytes(context.getId()));
+         boolean result = _updateSingleAddressAccount.executeUpdateDelete() == 1;
+         setTransactionSuccessful();
+         return result;
+      } catch(SQLException e) {
+         //TODO Log and handle this error better. Nelson
+         return false;
+      } finally {
+         endTransaction();
+      }
    }
 
    @Override
-   public void deleteSingleAddressAccountContext(UUID accountId) {
+   public boolean deleteSingleAddressAccountContext(UUID accountId) {
       // "DELETE FROM single WHERE id = ?"
       beginTransaction();
       try {
-         SqliteAccountBacking backing = _backings.get(accountId);
-         if (backing == null) {
-            return;
+         SqliteAccountBacking sqliteAccountBacking = _backings.get(accountId);
+         if (sqliteAccountBacking == null) {
+            return false;
          }
          _deleteSingleAddressAccount.bindBlob(1, uuidToBytes(accountId));
-         _deleteSingleAddressAccount.execute();
-         backing.dropTables();
+         boolean result = _deleteSingleAddressAccount.executeUpdateDelete() == 1;
+         sqliteAccountBacking.dropTables();
          _backings.remove(accountId);
          setTransactionSuccessful();
+         return result;
+      } catch(SQLException e) {
+         //TODO Log and handle this error better. Nelson
+         return false;
       } finally {
          endTransaction();
       }
@@ -340,26 +367,40 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
    }
 
    @Override
-   public void storeAddressCreationTime(Address address, long unixTimeSeconds) {
-      _insertOrReplaceAddressTimestamp.bindString(1, address.toString());
-      _insertOrReplaceAddressTimestamp.bindLong(2, unixTimeSeconds);
-      _insertOrReplaceAddressTimestamp.execute();
+   public boolean storeAddressCreationTime(Address address, long unixTimeSeconds) {
+      beginTransaction();
+      try {
+         _insertOrReplaceAddressTimestamp.bindString(1, address.toString());
+         _insertOrReplaceAddressTimestamp.bindLong(2, unixTimeSeconds);
+         boolean result = _insertOrReplaceAddressTimestamp.executeInsert() != -1;
+         setTransactionSuccessful();
+         return result;
+      } catch(SQLException e) {
+         //TODO Log and handle this error better. Nelson
+         return false;
+      } finally {
+         endTransaction();
+      }
    }
 
    @Override
-   public void deleteBip44AccountContext(UUID accountId) {
+   public boolean deleteBip44AccountContext(UUID accountId) {
       // "DELETE FROM bip44 WHERE id = ?"
       beginTransaction();
       try {
          SqliteAccountBacking backing = _backings.get(accountId);
          if (backing == null) {
-            return;
+            return false;
          }
          _deleteBip44Account.bindBlob(1, uuidToBytes(accountId));
-         _deleteBip44Account.execute();
+         boolean result = _deleteBip44Account.executeUpdateDelete() == 1;
          backing.dropTables();
          _backings.remove(accountId);
          setTransactionSuccessful();
+         return result;
+      } catch(SQLException e) {
+         //TODO Log and handle this error better. Nelson
+         return false;
       } finally {
          endTransaction();
       }
@@ -564,13 +605,23 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
       }
 
       @Override
-      public synchronized void putUnspentOutput(TransactionOutputEx output) {
-         _insertOrReplaceUtxo.bindBlob(1, SQLiteQueryWithBlobs.outPointToBytes(output.outPoint));
-         _insertOrReplaceUtxo.bindLong(2, output.height);
-         _insertOrReplaceUtxo.bindLong(3, output.value);
-         _insertOrReplaceUtxo.bindLong(4, output.isCoinBase ? 1 : 0);
-         _insertOrReplaceUtxo.bindBlob(5, output.script);
-         _insertOrReplaceUtxo.executeInsert();
+      public synchronized boolean putUnspentOutput(TransactionOutputEx output) {
+         beginTransaction();
+         try {
+            _insertOrReplaceUtxo.bindBlob(1, SQLiteQueryWithBlobs.outPointToBytes(output.outPoint));
+            _insertOrReplaceUtxo.bindLong(2, output.height);
+            _insertOrReplaceUtxo.bindLong(3, output.value);
+            _insertOrReplaceUtxo.bindLong(4, output.isCoinBase ? 1 : 0);
+            _insertOrReplaceUtxo.bindBlob(5, output.script);
+            boolean result = _insertOrReplaceUtxo.executeInsert() != -1;
+            setTransactionSuccessful();
+            return result;
+         } catch(SQLException e) {
+            //TODO Log and handle this error better. Nelson
+            return false;
+         } finally {
+            endTransaction();
+         }
       }
 
       @Override
@@ -646,28 +697,62 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
       }
 
       @Override
-      public void putParentTransactionOutput(TransactionOutputEx output) {
-         _insertOrReplacePtxo.bindBlob(1, SQLiteQueryWithBlobs.outPointToBytes(output.outPoint));
-         _insertOrReplacePtxo.bindLong(2, output.height);
-         _insertOrReplacePtxo.bindLong(3, output.value);
-         _insertOrReplacePtxo.bindLong(4, output.isCoinBase ? 1 : 0);
-         _insertOrReplacePtxo.bindBlob(5, output.script);
-         _insertOrReplacePtxo.executeInsert();
+      public boolean putParentTransactionOutput(TransactionOutputEx output) {
+         beginTransaction();
+         try {
+            _insertOrReplacePtxo.bindBlob(1, SQLiteQueryWithBlobs.outPointToBytes(output.outPoint));
+            _insertOrReplacePtxo.bindLong(2, output.height);
+            _insertOrReplacePtxo.bindLong(3, output.value);
+            _insertOrReplacePtxo.bindLong(4, output.isCoinBase ? 1 : 0);
+            _insertOrReplacePtxo.bindBlob(5, output.script);
+            boolean result = _insertOrReplacePtxo.executeInsert() >= -1;
+            setTransactionSuccessful();
+            return result;
+         } catch(SQLException e) {
+            //TODO Log and handle this error better. Nelson
+            return false;
+         } finally {
+            endTransaction();
+         }
+
       }
 
       @Override
-      public void putTxRefersParentTransaction(Sha256Hash txId, List<OutPoint> refersOutputs) {
-         for (OutPoint output : refersOutputs) {
-            _insertTxRefersParentTx.bindBlob(1, txId.getBytes());
-            _insertTxRefersParentTx.bindBlob(2, SQLiteQueryWithBlobs.outPointToBytes(output));
-            _insertTxRefersParentTx.executeInsert();
+      public boolean putTxRefersParentTransaction(Sha256Hash txId, List<OutPoint> refersOutputs) {
+         beginTransaction();
+         try {
+            boolean result = true;
+            for (OutPoint output : refersOutputs) {
+               _insertTxRefersParentTx.bindBlob(1, txId.getBytes());
+               _insertTxRefersParentTx.bindBlob(2, SQLiteQueryWithBlobs.outPointToBytes(output));
+               if(_insertTxRefersParentTx.executeInsert() == -1) {
+                  result = false;
+               }
+            }
+            setTransactionSuccessful();
+            return result;
+         } catch(SQLException e) {
+            //TODO Log and handle this error better. Nelson
+            return false;
+         } finally {
+            endTransaction();
          }
       }
 
       @Override
-      public void deleteTxRefersParentTransaction(Sha256Hash txId) {
-         _deleteTxRefersParentTx.bindBlob(1, txId.getBytes());
-         _deleteTxRefersParentTx.execute();
+      public boolean deleteTxRefersParentTransaction(Sha256Hash txId) {
+         beginTransaction();
+         try {
+            _deleteTxRefersParentTx.bindBlob(1, txId.getBytes());
+            boolean result = _deleteTxRefersParentTx.executeUpdateDelete() == 1;
+            setTransactionSuccessful();
+            return result;
+         } catch(SQLException e) {
+            //TODO Log and handle this error better. Nelson
+            return false;
+         } finally {
+            endTransaction();
+         }
       }
 
       @Override
@@ -710,26 +795,39 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
       }
 
       @Override
-      public void putTransaction(TransactionEx tx) {
-         _insertOrReplaceTx.bindBlob(1, tx.txid.getBytes());
-         _insertOrReplaceTx.bindLong(2, tx.height == -1 ? Integer.MAX_VALUE : tx.height);
-         _insertOrReplaceTx.bindLong(3, tx.time);
-         _insertOrReplaceTx.bindBlob(4, tx.binary);
-         _insertOrReplaceTx.executeInsert();
-
-         putReferencedOutputs(tx.binary);
+      public boolean putTransaction(TransactionEx tx) {
+         beginTransaction();
+         try {
+            _insertOrReplaceTx.bindBlob(1, tx.txid.getBytes());
+            _insertOrReplaceTx.bindLong(2, tx.height == -1 ? Integer.MAX_VALUE : tx.height);
+            _insertOrReplaceTx.bindLong(3, tx.time);
+            _insertOrReplaceTx.bindBlob(4, tx.binary);
+            boolean result = _insertOrReplaceTx.executeInsert() != -1;
+            if(result) {
+               if (result = putReferencedOutputs(tx.binary)) {
+                  setTransactionSuccessful();
+               }
+            }
+            return result;
+         } catch(SQLException e) {
+            //TODO Log and handle this error better. Nelson
+            return false;
+         } finally {
+            endTransaction();
+         }
       }
 
-      private void putReferencedOutputs(byte[] rawTx) {
+      private boolean putReferencedOutputs(byte[] rawTx) {
          try {
             final Transaction transaction = Transaction.fromBytes(rawTx);
             final List<OutPoint> refersOutpoint = new ArrayList<>();
             for (TransactionInput input : transaction.inputs) {
                refersOutpoint.add(input.outPoint);
             }
-            putTxRefersParentTransaction(transaction.getHash(), refersOutpoint);
+            return putTxRefersParentTransaction(transaction.getHash(), refersOutpoint);
          } catch (Transaction.TransactionParsingException e) {
             Log.w(LOG_TAG, "Unable to decode transaction: " + e.getMessage());
+            return false;
          }
       }
 
@@ -757,11 +855,21 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
       }
 
       @Override
-      public void deleteTransaction(Sha256Hash hash) {
-         _deleteTx.bindBlob(1, hash.getBytes());
-         _deleteTx.execute();
-         // also delete all output references for this tx
-         deleteTxRefersParentTransaction(hash);
+      public boolean deleteTransaction(Sha256Hash hash) {
+         beginTransaction();
+         try {
+            _deleteTx.bindBlob(1, hash.getBytes());
+            boolean result = _deleteTx.executeUpdateDelete() == 1;
+            // also delete all output references for this tx
+            deleteTxRefersParentTransaction(hash);
+            setTransactionSuccessful();
+            return result;
+         } catch(SQLException e) {
+            //TODO Log and handle this error better. Nelson
+            return false;
+         } finally {
+            endTransaction();
+         }
       }
 
       @Override
@@ -828,12 +936,22 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
       }
 
       @Override
-      public void putOutgoingTransaction(Sha256Hash txid, byte[] rawTransaction) {
-         _insertOrReplaceOutTx.bindBlob(1, txid.getBytes());
-         _insertOrReplaceOutTx.bindBlob(2, rawTransaction);
-         _insertOrReplaceOutTx.executeInsert();
+      public boolean putOutgoingTransaction(Sha256Hash txid, byte[] rawTransaction) {
+         beginTransaction();
+         try {
+            _insertOrReplaceOutTx.bindBlob(1, txid.getBytes());
+            _insertOrReplaceOutTx.bindBlob(2, rawTransaction);
+            boolean result = _insertOrReplaceOutTx.executeInsert() != -1;
 
-         putReferencedOutputs(rawTransaction);
+            putReferencedOutputs(rawTransaction);
+            setTransactionSuccessful();
+            return result;
+         } catch(SQLException e) {
+            //TODO Log and handle this error better. Nelson
+            return false;
+         } finally {
+            endTransaction();
+         }
       }
 
       @Override
@@ -854,9 +972,19 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
       }
 
       @Override
-      public void removeOutgoingTransaction(Sha256Hash txid) {
-         _deleteOutTx.bindBlob(1, txid.getBytes());
-         _deleteOutTx.execute();
+      public boolean deleteOutgoingTransaction(Sha256Hash txid) {
+         beginTransaction();
+         try {
+            _deleteOutTx.bindBlob(1, txid.getBytes());
+            boolean result =_deleteOutTx.executeUpdateDelete() == 1;
+            setTransactionSuccessful();
+            return result;
+         } catch(SQLException e) {
+            //TODO Log and handle this error better. Nelson
+            return false;
+         } finally {
+            endTransaction();
+         }
       }
 
       @Override
@@ -919,13 +1047,13 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
       }
 
       @Override
-      public void updateAccountContext(Bip44AccountContext context) {
-         updateBip44AccountContext(context);
+      public boolean updateAccountContext(Bip44AccountContext context) {
+         return updateBip44AccountContext(context);
       }
 
       @Override
-      public void updateAccountContext(SingleAddressAccountContext context) {
-         updateSingleAddressAccountContext(context);
+      public boolean updateAccountContext(SingleAddressAccountContext context) {
+         return updateSingleAddressAccountContext(context);
       }
    }
 
@@ -945,32 +1073,44 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
 
       @Override
       public void onCreate(SQLiteDatabase db) {
-         db.execSQL("CREATE TABLE single (id TEXT PRIMARY KEY, address BLOB, addressstring TEXT, archived INTEGER, blockheight INTEGER);");
-         db.execSQL("CREATE TABLE bip44 (id TEXT PRIMARY KEY, accountIndex INTEGER, archived INTEGER, blockheight INTEGER, lastExternalIndexWithActivity INTEGER, lastInternalIndexWithActivity INTEGER, firstMonitoredInternalIndex INTEGER, lastDiscovery, accountType INTEGER, accountSubId INTEGER);");
-         db.execSQL("CREATE TABLE kv (k BLOB NOT NULL, v BLOB, checksum BLOB, subId INTEGER NOT NULL, PRIMARY KEY (k, subId) );");
-         db.execSQL("CREATE TABLE addressTimestamp (address TEXT PRIMARY KEY, timestamp INTEGER);");
+         beginTransaction();
+         try {
+            db.execSQL("CREATE TABLE single (id TEXT PRIMARY KEY, address BLOB, addressstring TEXT, archived INTEGER, blockheight INTEGER);");
+            db.execSQL("CREATE TABLE bip44 (id TEXT PRIMARY KEY, accountIndex INTEGER, archived INTEGER, blockheight INTEGER, lastExternalIndexWithActivity INTEGER, lastInternalIndexWithActivity INTEGER, firstMonitoredInternalIndex INTEGER, lastDiscovery, accountType INTEGER, accountSubId INTEGER);");
+            db.execSQL("CREATE TABLE kv (k BLOB NOT NULL, v BLOB, checksum BLOB, subId INTEGER NOT NULL, PRIMARY KEY (k, subId) );");
+            db.execSQL("CREATE TABLE addressTimestamp (address TEXT PRIMARY KEY, timestamp INTEGER);");
+            setTransactionSuccessful();
+         } finally {
+            endTransaction();
+         }
       }
 
       @Override
       public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-         if (oldVersion < 2) {
-            db.execSQL("ALTER TABLE kv ADD COLUMN checksum BLOB");
-         }
-         if (oldVersion < 3) {
-            // add column to the secure kv table to indicate sub-stores
-            // use a temporary table to migrate the table, as sqlite does not allow to change primary keys constraints
-            db.execSQL("CREATE TABLE kv_new (k BLOB NOT NULL, v BLOB, checksum BLOB, subId INTEGER NOT NULL, PRIMARY KEY (k, subId) );");
-            db.execSQL("INSERT INTO kv_new SELECT k, v, checksum, 0 FROM kv");
-            db.execSQL("ALTER TABLE kv RENAME TO kv_old");
-            db.execSQL("ALTER TABLE kv_new RENAME TO kv");
-            db.execSQL("DROP TABLE kv_old");
+         beginTransaction();
+         try {
+            if (oldVersion < 2) {
+               db.execSQL("ALTER TABLE kv ADD COLUMN checksum BLOB");
+            }
+            if (oldVersion < 3) {
+               // add column to the secure kv table to indicate sub-stores
+               // use a temporary table to migrate the table, as sqlite does not allow to change primary keys constraints
+               db.execSQL("CREATE TABLE kv_new (k BLOB NOT NULL, v BLOB, checksum BLOB, subId INTEGER NOT NULL, PRIMARY KEY (k, subId) );");
+               db.execSQL("INSERT INTO kv_new SELECT k, v, checksum, 0 FROM kv");
+               db.execSQL("ALTER TABLE kv RENAME TO kv_old");
+               db.execSQL("ALTER TABLE kv_new RENAME TO kv");
+               db.execSQL("DROP TABLE kv_old");
 
-            // add column to store what account type it is
-            db.execSQL("ALTER TABLE bip44 ADD COLUMN accountType INTEGER DEFAULT 0");
-            db.execSQL("ALTER TABLE bip44 ADD COLUMN accountSubId INTEGER DEFAULT 0");
-         }
-         if( oldVersion < 4) {
-            db.execSQL("CREATE TABLE IF NOT EXISTS addressTimestamp (address TEXT PRIMARY KEY, timestamp INTEGER);");
+               // add column to store what account type it is
+               db.execSQL("ALTER TABLE bip44 ADD COLUMN accountType INTEGER DEFAULT 0");
+               db.execSQL("ALTER TABLE bip44 ADD COLUMN accountSubId INTEGER DEFAULT 0");
+            }
+            if (oldVersion < 4) {
+               db.execSQL("CREATE TABLE IF NOT EXISTS addressTimestamp (address TEXT PRIMARY KEY, timestamp INTEGER);");
+            }
+            setTransactionSuccessful();
+         } finally {
+            endTransaction();
          }
       }
    }

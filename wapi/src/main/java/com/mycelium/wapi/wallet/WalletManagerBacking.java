@@ -31,25 +31,25 @@ public interface WalletManagerBacking extends SecureKeyValueStoreBacking {
 
    void endTransaction();
 
-   void createBip44AccountContext(Bip44AccountContext context);
+   boolean createBip44AccountContext(Bip44AccountContext context);
 
    List<Bip44AccountContext> loadBip44AccountContexts();
 
    Bip44AccountBacking getBip44AccountBacking(UUID accountId);
 
-   void deleteBip44AccountContext(UUID accountId);
+   boolean deleteBip44AccountContext(UUID accountId);
 
-   void createSingleAddressAccountContext(SingleAddressAccountContext context);
+   boolean createSingleAddressAccountContext(SingleAddressAccountContext context);
 
    List<SingleAddressAccountContext> loadSingleAddressAccountContexts();
 
    SingleAddressAccountBacking getSingleAddressAccountBacking(UUID accountId);
 
-   void deleteSingleAddressAccountContext(UUID accountId);
+   boolean deleteSingleAddressAccountContext(UUID accountId);
 
    Map<Address,Long> getAllAddressCreationTimes();
 
    Long getCreationTimeByAddress(Address address);
 
-   void storeAddressCreationTime(Address address, long unixTimeSeconds);
+   boolean storeAddressCreationTime(Address address, long unixTimeSeconds);
 }
