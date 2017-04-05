@@ -36,6 +36,7 @@ package com.mycelium.wallet.wapi;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteStatement;
@@ -498,6 +499,7 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
       private final String txRefersParentTxTableName;
       private final SQLiteStatement _insertOrReplaceUtxo;
       private final SQLiteStatement _deleteUtxo;
+      private final SQLiteStatement _deleteAllUtxo;
       private final SQLiteStatement _insertOrReplacePtxo;
       private final SQLiteStatement _insertOrReplaceTx;
       private final SQLiteStatement _deleteTx;
@@ -518,6 +520,7 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          txRefersParentTxTableName = getTxRefersPtxoTableName(tableSuffix);
          _insertOrReplaceUtxo = db.compileStatement("INSERT OR REPLACE INTO " + utxoTableName + " VALUES (?,?,?,?,?)");
          _deleteUtxo = db.compileStatement("DELETE FROM " + utxoTableName + " WHERE outpoint = ?");
+         _deleteAllUtxo = db.compileStatement("DELETE FROM " + utxoTableName);
          _insertOrReplacePtxo = db.compileStatement("INSERT OR REPLACE INTO " + ptxoTableName + " VALUES (?,?,?,?,?)");
          _insertOrReplaceTx = db.compileStatement("INSERT OR REPLACE INTO " + txTableName + " VALUES (?,?,?,?)");
          _deleteTx = db.compileStatement("DELETE FROM " + txTableName + " WHERE id = ?");
@@ -612,9 +615,34 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
       }
 
       @Override
-      public void deleteUnspentOutput(OutPoint outPoint) {
-         _deleteUtxo.bindBlob(1, SQLiteQueryWithBlobs.outPointToBytes(outPoint));
-         _deleteUtxo.execute();
+      public boolean deleteUnspentOutput(OutPoint outPoint) {
+         beginTransaction();
+         try {
+            _deleteUtxo.bindBlob(1, SQLiteQueryWithBlobs.outPointToBytes(outPoint));
+            boolean result = _deleteUtxo.executeUpdateDelete() == 1;
+            setTransactionSuccessful();
+            return result;
+         } catch(SQLException e) {
+            //TODO Log and handle this error better. Nelson
+            return false;
+         } finally {
+            endTransaction();
+         }
+      }
+
+      @Override
+      public boolean deleteAllUnspentOutput() {
+         beginTransaction();
+         try {
+            boolean result = _deleteAllUtxo.executeUpdateDelete() >= 0;
+            setTransactionSuccessful();
+            return result;
+         } catch(SQLException e) {
+            //TODO Log and handle this error better. Nelson
+            return false;
+         } finally {
+            endTransaction();
+         }
       }
 
       @Override

@@ -21,7 +21,6 @@ import com.mrd.bitlib.model.Address;
 import com.mrd.bitlib.model.OutPoint;
 import com.mrd.bitlib.util.HexUtils;
 import com.mrd.bitlib.util.Sha256Hash;
-import com.mycelium.wapi.Constants;
 import com.mycelium.wapi.model.TransactionEx;
 import com.mycelium.wapi.model.TransactionOutputEx;
 import com.mycelium.wapi.wallet.bip44.Bip44AccountContext;
@@ -231,8 +230,15 @@ public class InMemoryWalletManagerBacking implements WalletManagerBacking {
       }
 
       @Override
-      public void deleteUnspentOutput(OutPoint outPoint) {
+      public boolean deleteUnspentOutput(OutPoint outPoint) {
          _unspentOuputs.remove(outPoint);
+         return true;
+      }
+
+      @Override
+      public boolean deleteAllUnspentOutput() {
+         _unspentOuputs.clear();
+         return true;
       }
 
       @Override

@@ -39,7 +39,9 @@ public interface AccountBacking {
 
    TransactionOutputEx getUnspentOutput(OutPoint outPoint);
 
-   void deleteUnspentOutput(OutPoint outPoint);
+   boolean deleteUnspentOutput(OutPoint outPoint);
+
+   boolean deleteAllUnspentOutput();
 
    void putUnspentOutput(TransactionOutputEx output);
 

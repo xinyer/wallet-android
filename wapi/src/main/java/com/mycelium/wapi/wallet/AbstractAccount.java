@@ -346,6 +346,7 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
       }
       try {
          TransactionOutput[] outputs = Transaction.fromBytes(transactionEx.binary).outputs;
+        _backing.deleteAllUnspentOutput();
          for(int i=0; i<outputs.length; i++) {
             TransactionOutput output = outputs[i];
             OutPoint outPoint = new OutPoint(transactionEx.txid, i);
