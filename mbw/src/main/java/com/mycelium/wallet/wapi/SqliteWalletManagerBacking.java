@@ -41,12 +41,17 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteStatement;
 import android.util.Log;
+
 import com.google.common.base.Preconditions;
-import com.mrd.bitlib.model.*;
+import com.mrd.bitlib.model.Address;
+import com.mrd.bitlib.model.OutPoint;
+import com.mrd.bitlib.model.Transaction;
+import com.mrd.bitlib.model.TransactionInput;
 import com.mrd.bitlib.util.BitUtils;
 import com.mrd.bitlib.util.HashUtils;
 import com.mrd.bitlib.util.HexUtils;
 import com.mrd.bitlib.util.Sha256Hash;
+import com.mycelium.wallet.BuildConfig;
 import com.mycelium.wallet.persistence.SQLiteQueryWithBlobs;
 import com.mycelium.wapi.api.exception.DbCorruptedException;
 import com.mycelium.wapi.model.TransactionEx;
@@ -57,7 +62,14 @@ import com.mycelium.wapi.wallet.WalletManagerBacking;
 import com.mycelium.wapi.wallet.bip44.Bip44AccountContext;
 import com.mycelium.wapi.wallet.single.SingleAddressAccountContext;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static com.mycelium.wallet.persistence.SQLiteQueryWithBlobs.uuidToBytes;
 
@@ -223,7 +235,9 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          setTransactionSuccessful();
          return result;
       } catch(SQLException e) {
-         //TODO Log and handle this error better. Nelson
+         if(BuildConfig.DEBUG) {
+            Log.e(LOG_TAG, e.getLocalizedMessage(), e);
+         }
          return false;
       } finally {
          endTransaction();
@@ -301,8 +315,9 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          setTransactionSuccessful();
          return result;
       } catch(SQLException e) {
-         //TODO Log and handle this error better. Nelson
-         return false;
+         if(BuildConfig.DEBUG) {
+            Log.e(LOG_TAG, e.getLocalizedMessage(), e);
+         }         return false;
       } finally {
          endTransaction();
       }
@@ -319,8 +334,9 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          setTransactionSuccessful();
          return result;
       } catch(SQLException e) {
-         //TODO Log and handle this error better. Nelson
-         return false;
+         if(BuildConfig.DEBUG) {
+            Log.e(LOG_TAG, e.getLocalizedMessage(), e);
+         }         return false;
       } finally {
          endTransaction();
       }
@@ -342,8 +358,9 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          setTransactionSuccessful();
          return result;
       } catch(SQLException e) {
-         //TODO Log and handle this error better. Nelson
-         return false;
+         if(BuildConfig.DEBUG) {
+            Log.e(LOG_TAG, e.getLocalizedMessage(), e);
+         }         return false;
       } finally {
          endTransaction();
       }
@@ -376,8 +393,9 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          setTransactionSuccessful();
          return result;
       } catch(SQLException e) {
-         //TODO Log and handle this error better. Nelson
-         return false;
+         if(BuildConfig.DEBUG) {
+            Log.e(LOG_TAG, e.getLocalizedMessage(), e);
+         }         return false;
       } finally {
          endTransaction();
       }
@@ -399,8 +417,9 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          setTransactionSuccessful();
          return result;
       } catch(SQLException e) {
-         //TODO Log and handle this error better. Nelson
-         return false;
+         if(BuildConfig.DEBUG) {
+            Log.e(LOG_TAG, e.getLocalizedMessage(), e);
+         }         return false;
       } finally {
          endTransaction();
       }
@@ -617,8 +636,9 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             setTransactionSuccessful();
             return result;
          } catch(SQLException e) {
-            //TODO Log and handle this error better. Nelson
-            return false;
+            if(BuildConfig.DEBUG) {
+               Log.e(LOG_TAG, e.getLocalizedMessage(), e);
+            }            return false;
          } finally {
             endTransaction();
          }
@@ -674,8 +694,9 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             setTransactionSuccessful();
             return result;
          } catch(SQLException e) {
-            //TODO Log and handle this error better. Nelson
-            return false;
+            if(BuildConfig.DEBUG) {
+               Log.e(LOG_TAG, e.getLocalizedMessage(), e);
+            }            return false;
          } finally {
             endTransaction();
          }
@@ -689,8 +710,9 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             setTransactionSuccessful();
             return result;
          } catch(SQLException e) {
-            //TODO Log and handle this error better. Nelson
-            return false;
+            if(BuildConfig.DEBUG) {
+               Log.e(LOG_TAG, e.getLocalizedMessage(), e);
+            }            return false;
          } finally {
             endTransaction();
          }
@@ -709,8 +731,9 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             setTransactionSuccessful();
             return result;
          } catch(SQLException e) {
-            //TODO Log and handle this error better. Nelson
-            return false;
+            if(BuildConfig.DEBUG) {
+               Log.e(LOG_TAG, e.getLocalizedMessage(), e);
+            }            return false;
          } finally {
             endTransaction();
          }
@@ -732,8 +755,9 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             setTransactionSuccessful();
             return result;
          } catch(SQLException e) {
-            //TODO Log and handle this error better. Nelson
-            return false;
+            if(BuildConfig.DEBUG) {
+               Log.e(LOG_TAG, e.getLocalizedMessage(), e);
+            }            return false;
          } finally {
             endTransaction();
          }
@@ -748,8 +772,9 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             setTransactionSuccessful();
             return result;
          } catch(SQLException e) {
-            //TODO Log and handle this error better. Nelson
-            return false;
+            if(BuildConfig.DEBUG) {
+               Log.e(LOG_TAG, e.getLocalizedMessage(), e);
+            }            return false;
          } finally {
             endTransaction();
          }
@@ -810,8 +835,9 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             }
             return result;
          } catch(SQLException e) {
-            //TODO Log and handle this error better. Nelson
-            return false;
+            if(BuildConfig.DEBUG) {
+               Log.e(LOG_TAG, e.getLocalizedMessage(), e);
+            }            return false;
          } finally {
             endTransaction();
          }
@@ -865,8 +891,9 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             setTransactionSuccessful();
             return result;
          } catch(SQLException e) {
-            //TODO Log and handle this error better. Nelson
-            return false;
+            if(BuildConfig.DEBUG) {
+               Log.e(LOG_TAG, e.getLocalizedMessage(), e);
+            }            return false;
          } finally {
             endTransaction();
          }
@@ -947,8 +974,9 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             setTransactionSuccessful();
             return result;
          } catch(SQLException e) {
-            //TODO Log and handle this error better. Nelson
-            return false;
+            if(BuildConfig.DEBUG) {
+               Log.e(LOG_TAG, e.getLocalizedMessage(), e);
+            }            return false;
          } finally {
             endTransaction();
          }
@@ -980,8 +1008,9 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             setTransactionSuccessful();
             return result;
          } catch(SQLException e) {
-            //TODO Log and handle this error better. Nelson
-            return false;
+            if(BuildConfig.DEBUG) {
+               Log.e(LOG_TAG, e.getLocalizedMessage(), e);
+            }            return false;
          } finally {
             endTransaction();
          }
