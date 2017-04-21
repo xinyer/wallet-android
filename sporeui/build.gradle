@@ -1,0 +1,97 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+android {
+    compileSdkVersion 24
+    buildToolsVersion androidSdkBuildVersion
+
+    defaultConfig {
+        applicationId "com.mycelium.sporeui"
+        minSdkVersion 19
+        targetSdkVersion 24
+        versionCode 1
+        versionName "1.0"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
+    packagingOptions {
+        //exclude 'META-INF/NOTICE' // will not include NOTICE file
+        exclude 'META-INF/LICENSE' // will not include LICENSE file
+    }
+    buildToolsVersion androidSdkBuildVersion
+}
+
+kapt {
+    generateStubs = true
+}
+
+repositories {
+    maven { url 'https://jitpack.io' }
+
+    // https://github.com/davideas/FlexibleAdapter#setup
+    jcenter()
+    maven {url = "http://dl.bintray.com/davideas/maven" }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile project(includePrefix +':libs:zxing-android')
+    testCompile "junit:junit:$junitVersion"
+    compile 'com.android.support:appcompat-v7:25.2.0'
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    compile 'com.pawegio.kandroid:kandroid:0.6.7@aar'
+
+    compile 'com.squareup.flow:flow:1.0.0-alpha'
+    compile 'com.squareup.mortar:mortar:0.20'
+    compile 'org.parceler:parceler-api:1.1.5'
+    kapt 'org.parceler:parceler:1.1.5'
+
+    //To use with Kotlin https://github.com/grandstaish/paperparcel
+    compile 'com.github.grandstaish.paperparcel:paperparcel:1.0.0'
+    compile 'com.github.grandstaish.paperparcel:paperparcel-kotlin:1.0.0'
+    kapt 'com.github.grandstaish.paperparcel:compiler:1.0.0'
+
+    kapt 'com.google.dagger:dagger-compiler:2.5'
+    compile 'com.google.dagger:dagger:2.5'
+    provided 'javax.annotation:jsr250-api:1.0'
+
+    compile 'io.reactivex:rxandroid:1.2.1'
+// Because RxAndroid releases are few and far between, it is recommended you also
+// explicitly depend on RxJava's latest version for bug fixes and new features.
+    compile 'io.reactivex:rxjava:1.1.6'
+
+
+    //Horizontal picker https://github.com/blazsolar/HorizontalPicker
+    compile 'com.wefika:horizontal-picker:1.1.1'
+    compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+
+    //Currency EditText https://github.com/BlacKCaT27/CurrencyEditText
+    compile 'com.github.BlacKCaT27:CurrencyEditText:v1.4.4'
+
+    //ButterKnife http://jakewharton.github.io/butterknife/
+    compile 'com.jakewharton:butterknife:8.4.0'
+    kapt 'com.jakewharton:butterknife-compiler:8.4.0'
+    compile 'com.android.support:recyclerview-v7:25.2.0'
+
+    // https://github.com/davideas/FlexibleAdapter#setup
+    compile 'eu.davidea:flexible-adapter:5.0.0-b8'
+}
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+repositories {
+    jcenter()
+}

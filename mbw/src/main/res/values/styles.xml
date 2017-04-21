@@ -58,8 +58,7 @@
     </style>
 
     <!-- Application theme. Theme.AppCompat.Base.CompactMenu.Dialog -->
-    <style name="MyceliumModern.Dialog" parent="Theme.AppCompat.CompactMenu.Dialog">
-
+    <style name="MyceliumModern.Dialog" parent="Theme.AppCompat.Dialog">
         <item name="android:actionButtonStyle" tools:ignore="NewApi">@style/ActionButtonStyle</item>
         <item name="actionButtonStyle">@style/ActionButtonStyle</item>
         <item name="android:buttonStyle">@style/MyceliumButton</item>
@@ -72,7 +71,7 @@
         <!--   <item name="android:windowActionBar">false</item>
            <item name="windowActionBar">false</item>-->
         <!--<item name="android:windowNoTitle">true</item>-->
-        <item name="android:popupBackground">@drawable/abc_menu_dropdown_panel_holo_dark</item>
+        <item name="android:popupBackground">@drawable/semi_black</item>
 
         <!-- All customizations that are NOT specific to a particular API-level can go here. -->
         <item name="android:actionButtonStyle" tools:ignore="NewApi">@style/ActionButtonStyle</item>

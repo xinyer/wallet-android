@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">spvmodule-dash</string>
+
+    <string name="notification_coins_received_msg">Received %s</string>
+    <string name="notification_peers_connected_msg">%d peers connected</string>
+    <string name="button_request_coins">Request coins</string>
+    <string name="button_send_coins">Send coins</string>
+    <string name="button_scan">Scan</string>
+</resources>

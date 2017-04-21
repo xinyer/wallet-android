@@ -81,7 +81,7 @@ public class HDSigningActivity extends Activity {
       Bip44Account account = (Bip44Account) _mbwManager.getWalletManager(false).getAccount(_accountid);
 
       //sort addresses by alphabet for easier selection
-      List<Address> addresses = Utils.sortAddresses(account.getAllAddresses());
+      List<Address> addresses = Utils.sortAddresses(account.getAllVisibleAddresses());
 
       for (Address address : addresses) {
          addressView.addView(getItemView(address));

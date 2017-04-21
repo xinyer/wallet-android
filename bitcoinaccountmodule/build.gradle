@@ -1,0 +1,47 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+repositories {
+    jcenter()
+}
+
+android {
+    compileSdkVersion androidCompileSdkVersion
+    buildToolsVersion androidSdkBuildVersion
+
+    defaultConfig {
+        applicationId "com.mycelium.bitcoinaccountmodule"
+        minSdkVersion 19
+        targetSdkVersion 25
+        versionCode 1
+        versionName "1.0"
+        multiDexEnabled true
+    }
+    buildTypes {
+        all {
+            minifyEnabled true
+            proguardFile 'proguard.cfg'
+        }
+        debug {
+            applicationIdSuffix '.test'
+            debuggable true
+        }
+    }
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
+    buildToolsVersion androidSdkBuildVersion
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+    compile 'com.android.support:appcompat-v7:25.2.0'
+    compile 'com.android.support:design:25.2.0'
+    testCompile "junit:junit:$junitVersion"
+    compile project(includePrefix +':bitcoinaccountmodulecontract')
+    compile project(includePrefix +':myceliummodularizationtools')
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+}

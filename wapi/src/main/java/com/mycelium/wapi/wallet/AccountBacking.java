@@ -47,8 +47,6 @@ public interface AccountBacking {
 
    TransactionOutputEx getParentTransactionOutput(OutPoint outPoint);
 
-   boolean hasParentTransactionOutput(OutPoint outPoint);
-
    void putTransaction(TransactionEx transaction);
 
    TransactionEx getTransaction(Sha256Hash hash);

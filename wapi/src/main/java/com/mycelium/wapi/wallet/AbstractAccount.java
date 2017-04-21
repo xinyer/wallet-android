@@ -49,6 +49,7 @@ import com.mycelium.wapi.wallet.currency.CurrencyBasedBalance;
 import com.mycelium.wapi.wallet.currency.CurrencyValue;
 import com.mycelium.wapi.wallet.currency.ExactBitcoinValue;
 import com.mycelium.wapi.wallet.currency.ExactCurrencyValue;
+import org.bitcoinj.core.TransactionOutPoint;
 
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -74,6 +75,8 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
 
    private EventHandler _eventHandler;
    private AccountBacking _backing;
+
+   private final Set<AddressesChangeListener> addressesChangeListeners = new HashSet<AddressesChangeListener>();
 
    protected AbstractAccount(AccountBacking backing, NetworkParameters network, Wapi wapi) {
       _network = network;
@@ -260,15 +263,8 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
 
       // Fetch updated or added transactions
       if (transactionsToAddOrUpdate.size() > 0) {
-         GetTransactionsResponse response;
          try {
-            response = getTransactionsBatched(transactionsToAddOrUpdate).getResult();
-         } catch (WapiException e) {
-            _logger.logError("Server connection failed with error code: " + e.errorCode, e);
-            postEvent(Event.SERVER_CONNECTION_ERROR);
-            return -1;
-         }
-         try {
+            GetTransactionsResponse response = getTransactionsBatched(transactionsToAddOrUpdate).getResult();
             handleNewExternalTransactions(response.transactions);
          } catch (WapiException e) {
             _logger.logError("Server connection failed with error code: " + e.errorCode, e);
@@ -282,7 +278,7 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
             // prevent getting out local cache into a undefined state, if the server screws up
             if (isMine(output)) {
                _backing.putUnspentOutput(output);
-            }else {
+            } else {
                _logger.logError("We got an UTXO that does not belong to us: " + output.toString());
             }
          }
@@ -339,27 +335,51 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
       return map;
    }
 
+   @Override
+   public void notifyNewTransactionDiscovered(TransactionEx transactionEx, Map<OutPoint, TransactionOutput> connectedOutputs, Set<OutPoint> utxoSet, boolean fetchMissingOutputs) {
+      for(OutPoint outPoint: connectedOutputs.keySet()) {
+         TransactionOutput ctxo = connectedOutputs.get(outPoint);
+         TransactionOutputEx txoEx = new TransactionOutputEx(outPoint, 0, ctxo.value, ctxo.script.getScriptBytes(), ctxo.script.isCoinBase());
+         _backing.putParentTransactionOutput(txoEx);
+      }
+      try {
+         TransactionOutput[] outputs = Transaction.fromBytes(transactionEx.binary).outputs;
+         for(int i=0; i<outputs.length; i++) {
+            TransactionOutput output = outputs[i];
+            OutPoint outPoint = new OutPoint(transactionEx.txid, i);
+            if(utxoSet.contains(outPoint)) {
+               _backing.putUnspentOutput(new TransactionOutputEx(outPoint, 0, output.value, output.script.getScriptBytes(), output.script.isCoinBase()));
+            }
+         }
+         handleNewExternalTransactionsInt(Lists.newArrayList(new TransactionExApi(transactionEx)), fetchMissingOutputs);
+      } catch (WapiException | TransactionParsingException e) {
+         throw new RuntimeException(e);
+      }
+      updateLocalBalance();
+      persistContextIfNecessary();
+   }
+
    protected void handleNewExternalTransactions(Collection<TransactionExApi> transactions) throws WapiException {
       if (transactions.size() <= MAX_TRANSACTIONS_TO_HANDLE_SIMULTANEOUSLY) {
-         handleNewExternalTransactionsInt(transactions);
+         handleNewExternalTransactionsInt(transactions, true);
       } else {
          // We have quite a list of transactions to handle, do it in batches
          ArrayList<TransactionExApi> all = new ArrayList<>(transactions);
          for (int i = 0; i < all.size(); i += MAX_TRANSACTIONS_TO_HANDLE_SIMULTANEOUSLY) {
             int endIndex = Math.min(all.size(), i + MAX_TRANSACTIONS_TO_HANDLE_SIMULTANEOUSLY);
             Collection<TransactionExApi> sub = all.subList(i, endIndex);
-            handleNewExternalTransactionsInt(sub);
+            handleNewExternalTransactionsInt(sub, true);
          }
       }
    }
 
-   private void handleNewExternalTransactionsInt(Collection<TransactionExApi> transactions) throws WapiException {
+   private void handleNewExternalTransactionsInt(Collection<TransactionExApi> transactions, boolean fetchMissingOutputs) throws WapiException {
       // Transform and put into two arrays with matching indexes
       ArrayList<TransactionEx> texArray = new ArrayList<>(transactions.size());
       ArrayList<Transaction> txArray = new ArrayList<>(transactions.size());
       for (TransactionEx tex : transactions) {
          try {
-            txArray.add(Transaction.fromByteReader(new ByteReader(tex.binary)));
+            txArray.add(Transaction.fromBytes(tex.binary));
             texArray.add(tex);
          } catch (TransactionParsingException e) {
             // We hit a transaction that we cannot parse. Log but otherwise ignore it
@@ -368,7 +388,9 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
       }
 
       // Grab and handle parent transactions
-      fetchStoreAndValidateParentOutputs(txArray);
+      if( fetchMissingOutputs) {
+         fetchStoreAndValidateParentOutputs(txArray);
+      }
 
       // Store transaction locally
       for (int i = 0; i < txArray.size(); i++) {
@@ -498,7 +520,7 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
       List<Transaction> unconfirmed = new ArrayList<>();
       for (TransactionEx tex : _backing.getUnconfirmedTransactions()) {
          try {
-            Transaction t = Transaction.fromByteReader(new ByteReader(tex.binary));
+            Transaction t = Transaction.fromBytes(tex.binary);
             unconfirmed.add(t);
          } catch (TransactionParsingException e) {
             // never happens, we have parsed it before
@@ -693,7 +715,7 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
    @Override
    public abstract int getBlockChainHeight();
 
-   protected abstract void setBlockChainHeight(int blockHeight);
+   public abstract void setBlockChainHeight(int blockHeight);
 
    @Override
    public Transaction signTransaction(UnsignedTransaction unsigned, KeyCipher cipher)
@@ -1093,7 +1115,7 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
    private TransactionSummary transform(TransactionEx tex, int blockChainHeight) {
       Transaction tx;
       try {
-         tx = Transaction.fromByteReader(new ByteReader(tex.binary));
+         tx = Transaction.fromBytes(tex.binary);
       } catch (TransactionParsingException e) {
          // Should not happen as we have parsed the transaction earlier
          _logger.logError("Unable to parse ");
@@ -1330,14 +1352,33 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
          }
          throw new RuntimeException("Unable to find private key for address " + address.toString());
       }
-
    }
 
+   public interface AddressesChangeListener {
+      void onAddressesChange();
+   }
+
+   public void addAddressesChangeListener(AddressesChangeListener listener) {
+      addressesChangeListeners.add(listener);
+   }
+
+   public void removeAddressesChangeListener(AddressesChangeListener listener) {
+      addressesChangeListeners.remove(listener);
+   }
+
+   /**
+    * notifies listeners of the new Collection of Addresses
+    */
+   public void fireAddressesChangedEvent() {
+      for(AddressesChangeListener listener:addressesChangeListeners) {
+         listener.onAddressesChange();
+      }
+   }
 
    @Override
    public TransactionSummary getTransactionSummary(Sha256Hash txid) {
       TransactionEx tx = _backing.getTransaction(txid);
-      return transform(tx, tx.height);
+      return transform(tx, tx.height); // TODO: tx.height? This should be the latest blockchain height, not the transaction's blockchain height
    }
 
    @Override
@@ -1400,12 +1441,12 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
 
       try {
          TransactionEx txExToProve = _backing.getTransaction(txid);
-         Transaction txToProve = Transaction.fromByteReader(new ByteReader(txExToProve.binary));
+         Transaction txToProve = Transaction.fromBytes(txExToProve.binary);
 
          List<UnspentTransactionOutput> funding = new ArrayList<>(txToProve.inputs.length);
          for (TransactionInput input : txToProve.inputs) {
             TransactionEx inTxEx = _backing.getTransaction(input.outPoint.hash);
-            Transaction inTx = Transaction.fromByteReader(new ByteReader(inTxEx.binary));
+            Transaction inTx = Transaction.fromBytes(inTxEx.binary);
             UnspentTransactionOutput unspentOutput = new UnspentTransactionOutput(input.outPoint, inTxEx.height,
                   inTx.outputs[input.outPoint.index].value,
                   inTx.outputs[input.outPoint.index].script);

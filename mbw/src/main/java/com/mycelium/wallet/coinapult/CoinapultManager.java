@@ -128,7 +128,7 @@ public class CoinapultManager implements AccountProvider {
    private CoinapultAccount createAccount(CoinapultAccount.Currency currency) {
       CoinapultAccount account = new CoinapultAccount(
             CoinapultManager.this, metadataStorage, accountKey,
-            exchangeRateManager, handler, eventBus, logger, currency
+            exchangeRateManager, handler, eventBus, currency
       );
       coinapultAccounts.put(account.getId(), account);
       return account;

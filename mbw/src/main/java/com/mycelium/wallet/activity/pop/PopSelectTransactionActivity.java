@@ -84,8 +84,12 @@ public class PopSelectTransactionActivity extends ActionBarActivity implements A
          return;
       }
       // Set up the action bar.
-      final ActionBar actionBar = getSupportActionBar();
-      actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
+      final ActionBar bar = getSupportActionBar();
+      bar.setDisplayShowHomeEnabled(true);
+      bar.setLogo(R.drawable.ic_launcher);
+      bar.setDisplayUseLogoEnabled(true);
+      bar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
+      bar.setDisplayShowTitleEnabled(false);
 
       viewPager = (ViewPager) findViewById(R.id.pager);
       HistoryPagerAdapter pagerAdapter = new HistoryPagerAdapter(getSupportFragmentManager());
@@ -97,20 +101,20 @@ public class PopSelectTransactionActivity extends ActionBarActivity implements A
       viewPager.setOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
          @Override
          public void onPageSelected(int position) {
-            actionBar.setSelectedNavigationItem(position);
+            bar.setSelectedNavigationItem(position);
             // Hide the keyboard.
             ((InputMethodManager) getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(viewPager.getWindowToken(), 0);
          }
       });
 
 
-      actionBar.addTab(
-            actionBar.newTab()
+      bar.addTab(
+            bar.newTab()
                   .setText(getString(R.string.pop_matching_transactions).toUpperCase())
                   .setTabListener(this));
 
-      actionBar.addTab(
-            actionBar.newTab()
+      bar.addTab(
+            bar.newTab()
                   .setText(getString(R.string.pop_non_matching_transactions).toUpperCase())
                   .setTabListener(this));
 

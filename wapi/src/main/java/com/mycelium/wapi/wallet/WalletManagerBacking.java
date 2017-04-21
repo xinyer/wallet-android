@@ -16,10 +16,12 @@
 
 package com.mycelium.wapi.wallet;
 
+import com.mrd.bitlib.model.Address;
 import com.mycelium.wapi.wallet.bip44.Bip44AccountContext;
 import com.mycelium.wapi.wallet.single.SingleAddressAccountContext;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public interface WalletManagerBacking extends SecureKeyValueStoreBacking {
@@ -45,6 +47,9 @@ public interface WalletManagerBacking extends SecureKeyValueStoreBacking {
 
    void deleteSingleAddressAccountContext(UUID accountId);
 
+   Map<Address,Long> getAllAddressCreationTimes();
 
+   Long getCreationTimeByAddress(Address address);
 
+   void storeAddressCreationTime(Address address, long unixTimeSeconds);
 }

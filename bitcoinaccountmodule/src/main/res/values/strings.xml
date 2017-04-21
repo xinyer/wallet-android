@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Bitcoin Account Module</string>
+    <string name="action_settings">Settings</string>
+
+    <string name="about_title">About</string>
+    <string name="watched_addresses_title">Watched Addresses</string>
+    <string name="transaction_list_title">Recorded Transactions</string>
+    <string name="missing_transaction_id">missing transaction id</string>
+    <string name="unconfirmed">unconfirmed</string>
+    <string name="missing_account">missing account</string>
+</resources>

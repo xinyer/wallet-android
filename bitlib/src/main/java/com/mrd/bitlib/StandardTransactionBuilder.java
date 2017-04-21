@@ -72,7 +72,7 @@ public class StandardTransactionBuilder {
 
       public OutputTooSmallException(long value) {
          super("An output was added with a value of " + value
-             + " satoshis, which is smaller than the minimum accepted by the Bitcoin network");
+               + " satoshis, which is smaller than the minimum accepted by the Bitcoin network");
       }
    }
 
@@ -118,7 +118,7 @@ public class StandardTransactionBuilder {
       }
 
       public UnsignedTransaction(List<TransactionOutput> outputs, List<UnspentTransactionOutput> funding,
-                                 IPublicKeyRing keyRing, NetworkParameters network) {
+                                  IPublicKeyRing keyRing, NetworkParameters network) {
          _network = network;
          _outputs = outputs.toArray(new TransactionOutput[outputs.size()]);
          _funding = funding.toArray(new UnspentTransactionOutput[funding.size()]);

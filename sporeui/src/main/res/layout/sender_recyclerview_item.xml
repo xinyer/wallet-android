@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:tools="http://schemas.android.com/tools"
+                android:layout_height="75dp"
+                android:layout_width="120dp"
+                android:background="@drawable/sender_recyclerview_item_background_selector"
+    >
+    <LinearLayout android:orientation="vertical"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+                  android:layout_centerInParent="true"
+              >
+
+        <TextView
+            tools:text="My BTC Account"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/categorytextView"
+            android:gravity="center_horizontal"
+            android:textColor="@color/horizontalpicker_text_color"
+            android:textSize="10sp"/>
+
+        <TextView
+            tools:text="MRD"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/itemTextView"
+            android:gravity="center_horizontal"
+            android:textColor="@color/horizontalpicker_text_color"
+            android:textSize="14sp"/>
+
+        <TextView
+            tools:text="0.5556 BTC"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/valueTextView"
+            android:gravity="center_horizontal"
+            android:textColor="@color/horizontalpicker_text_color"
+            android:textSize="10sp"/>
+    </LinearLayout>
+    <ImageView
+        android:id="@+id/rectangle"
+        android:layout_width="16dp"
+        android:layout_height="8dp"
+        android:src="@drawable/sender_recyclerview_item_rectangle_selector"
+        android:layout_alignParentBottom="true"
+        android:layout_centerInParent="true"
+        android:scaleType="center"
+        android:clickable="true"
+        android:focusable="true"
+        android:focusableInTouchMode="true"/>
+</RelativeLayout>

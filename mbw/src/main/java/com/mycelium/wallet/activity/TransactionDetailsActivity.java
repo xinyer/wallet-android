@@ -147,18 +147,22 @@ public class TransactionDetailsActivity extends Activity {
       final long txFeeTotal = getFee(_tx);
       String fee = _mbwManager.getBtcValueString(txFeeTotal);
 
-      if (_tx.rawSize > 0) {
-         final long txFeePerSat = txFeeTotal / _tx.rawSize;
-         fee += String.format("\n%d sat/byte", txFeePerSat);
+    if (_tx.rawSize > 0) {
+      final long txFeePerSat = txFeeTotal / _tx.rawSize;
+      if (txFeePerSat > 0) {
+        fee += String.format("\n%d sat/byte", txFeePerSat);
+        ((TextView) findViewById(R.id.tvFee)).setText(fee);
+      } else {
+        //TODO confirm text with rest of the team, set it up as a ressource and provide translations.
+        ((TextView) findViewById(R.id.tvFee)).setText("Fees are not available while using the SPV module.");
       }
-      ((TextView) findViewById(R.id.tvFee)).setText(fee);
+    }
+    ((TextView) findViewById(R.id.tvFee)).setText(fee);
 
-   }
+  }
 
    private long getFee(TransactionDetails tx) {
-      long inputs = sum(tx.inputs);
-      long outputs = sum(tx.outputs);
-      return inputs - outputs;
+      return sum(tx.inputs) - sum(tx.outputs);
    }
 
    private long sum(TransactionDetails.Item[] items) {

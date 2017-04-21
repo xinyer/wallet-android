@@ -198,7 +198,7 @@ public class SingleAddressAccount extends AbstractAccount implements ExportableA
    }
 
    @Override
-   protected void setBlockChainHeight(int blockHeight) {
+   public void setBlockChainHeight(int blockHeight) {
       checkNotArchived();
       _context.setBlockHeight(blockHeight);
    }
@@ -285,6 +285,13 @@ public class SingleAddressAccount extends AbstractAccount implements ExportableA
    @Override
    protected boolean isSynchronizing() {
       return _isSynchronizing;
+   }
+
+   @Override
+   public Collection<Address> getAddresses() {
+      Collection<Address> addresses = new HashSet<Address>(1);
+      addresses.add(getAddress());
+      return addresses;
    }
 
    public void forgetPrivateKey(KeyCipher cipher) throws InvalidKeyCipher {

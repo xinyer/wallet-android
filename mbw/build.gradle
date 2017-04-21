@@ -1,16 +1,18 @@
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
 
 repositories {
-    mavenCentral()
+    jcenter()
 }
 
 buildscript {
     repositories {
-        mavenCentral()
+        jcenter()
     }
 
     dependencies {
         classpath androidBuildArtifact
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
@@ -40,22 +42,34 @@ dependencies {
     //not upgrading. This will be removed from the core app
     compile 'com.google.android.gms:play-services-base:7.8.0'
     compile 'com.google.android.gms:play-services-gcm:7.8.0'
+    compile ('org.bitcoinj:bitcoinj-core:0.14.3') {
+        exclude module: 'jsr305'
+        exclude module: 'jcip-annotations'
+    }
     compile 'org.ocpsoft.prettytime:prettytime:3.2.5.Final'
     compile 'de.cketti.library.changelog:ckchangelog:1.2.2'
     compile 'com.squareup.retrofit:retrofit:1.9.0'
-    compile 'com.jakewharton:butterknife:8.1.0'
-    annotationProcessor 'com.jakewharton:butterknife-compiler:8.1.0'
+    compile 'com.jakewharton:butterknife:8.4.0'
+    kapt 'com.jakewharton:butterknife-compiler:8.4.0'
+    annotationProcessor 'com.jakewharton:butterknife-compiler:8.4.0'
     compile 'io.reactivex:rxandroid:1.1.0'
     compile 'com.squareup.okhttp:okhttp:2.7.5'
     compile 'com.android.support:multidex:1.0.1'
     compile('com.google.code.findbugs:annotations:3.0.1') {
         exclude module: 'jsr305'
     }
+    compile project(includePrefix +':myceliummodularizationtools')
+    compile project(includePrefix +':spvmodulecontract')
     compile 'commons-codec:commons-codec:1.5'
     // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
     compile 'com.google.protobuf:protobuf-java:3.1.0'
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 }
 
+
+kapt {
+    generateStubs = true
+}
 
 android {
     configurations {
@@ -68,6 +82,8 @@ android {
     }
     lintOptions {
         //gradle build complains about com.android.support:support-v4:22.2.0 not being compatible
+        //TODO: remove this!!!!!
+        abortOnError false
     }
 
     packagingOptions {
@@ -127,9 +143,9 @@ android {
 
     productFlavors {
         prodnet {
-            compileSdkVersion 21
-            targetSdkVersion 19
-            minSdkVersion 14
+            compileSdkVersion 23
+            targetSdkVersion 23
+            minSdkVersion 19
 
             applicationId 'com.mycelium.wallet'
             versionName = defaultConfig.versionName
@@ -137,7 +153,7 @@ android {
         }
         dev {
             // use Sdk21 for dev only - this allows to use native MultiDex without going through proguard (faster)
-            compileSdkVersion 21
+            compileSdkVersion 23
             buildToolsVersion androidSdkBuildVersion
             minSdkVersion 21
 
@@ -146,7 +162,7 @@ android {
             def branch = getGitBranch()
 
             if (branch != "" && branch != "master") {
-                appId = appId + "_" + branch
+                appId = appId + "_spore" // pinning the name to "spore" as multi-module communication depends on package names
                 versionName = defaultConfig.versionName + "-DEV_" + branch
             }
 
@@ -155,7 +171,7 @@ android {
         }
         devprod {
             // use Sdk21 for dev only - this allows to use native MultiDex without going through proguard (faster)
-            compileSdkVersion 21
+            compileSdkVersion 23
             buildToolsVersion androidSdkBuildVersion
             minSdkVersion 21
 
@@ -165,9 +181,9 @@ android {
             signingConfig signingConfigs.debug
         }
         btctestnet {
-            compileSdkVersion 19
-            targetSdkVersion 19
-            minSdkVersion 14
+            compileSdkVersion 23
+            targetSdkVersion 23
+            minSdkVersion 19
 
             applicationId 'com.mycelium.testnetwallet'
             versionName = defaultConfig.versionName + '-TESTNET'
@@ -176,10 +192,12 @@ android {
     }
 }
 
+// use the keystore file from the local repository, so that we share the same
+// signatures while developing
 if (commonDebugKeystore.exists()) {
     android.buildTypes.debug.signingConfig = android.signingConfigs.commonDebug
     android.productFlavors.dev.signingConfig = android.signingConfigs.commonDebug
-    logger.info("keytore_debug detected")
+    logger.info("Using common debug.keystore " + commonDebugKeystore)
 }
 
 if (project.hasProperty('prodKeyStore') &&

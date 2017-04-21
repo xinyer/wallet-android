@@ -16,11 +16,12 @@
 
 package com.mycelium.wapi.wallet;
 
-
 import com.google.common.base.Preconditions;
+import com.mrd.bitlib.model.Address;
 import com.mrd.bitlib.model.OutPoint;
 import com.mrd.bitlib.util.HexUtils;
 import com.mrd.bitlib.util.Sha256Hash;
+import com.mycelium.wapi.Constants;
 import com.mycelium.wapi.model.TransactionEx;
 import com.mycelium.wapi.model.TransactionOutputEx;
 import com.mycelium.wapi.wallet.bip44.Bip44AccountContext;
@@ -36,6 +37,7 @@ public class InMemoryWalletManagerBacking implements WalletManagerBacking {
    private final Map<UUID, InMemoryAccountBacking> _backings = new HashMap<>();
    private final Map<UUID, Bip44AccountContext> _bip44Contexts = new HashMap<>();
    private final Map<UUID, SingleAddressAccountContext> _singleAddressAccountContexts = new HashMap<>();
+   private final Map<Address, Long> addressCreationTimestamps = new HashMap<>();
    private int maxSubId = 0;
 
    @Override
@@ -89,6 +91,22 @@ public class InMemoryWalletManagerBacking implements WalletManagerBacking {
    public void deleteSingleAddressAccountContext(UUID accountId) {
       _backings.remove(accountId);
       _singleAddressAccountContexts.remove(accountId);
+   }
+
+   @Override
+   public Map<Address, Long> getAllAddressCreationTimes() {
+      // TODO: not sure if in-memory this even makes any sense at all.
+      return addressCreationTimestamps;
+   }
+
+   @Override
+   public Long getCreationTimeByAddress(Address address) {
+      return addressCreationTimestamps.get(address);
+   }
+
+   @Override
+   public void storeAddressCreationTime(Address address, long unixTimeSeconds) {
+      addressCreationTimestamps.put(address, unixTimeSeconds);
    }
 
    @Override
@@ -230,11 +248,6 @@ public class InMemoryWalletManagerBacking implements WalletManagerBacking {
       @Override
       public TransactionOutputEx getParentTransactionOutput(OutPoint outPoint) {
          return _parentOutputs.get(outPoint);
-      }
-
-      @Override
-      public boolean hasParentTransactionOutput(OutPoint outPoint) {
-         return _parentOutputs.containsKey(outPoint);
       }
 
       @Override

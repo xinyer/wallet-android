@@ -903,7 +903,7 @@
     <string name="warning_reason_rbf">RBF</string>
     <string name="warning_reason_unconfirmed_parent">Unconfirmed parent</string>
     <string name="warning_reason_doublespend">Doublespend detected</string>
-    <string name="opening_url_in_browser">Opening URL in Browser...</string>
+    <string name="opening_url_in_browser">Opening URL in Browser…</string>
     <string name="incoming_payment">"Incoming payment: "</string>
     <string name="warning_amount_does_not_match">Warning: amount does not match!</string>
     <string name="mycelium_terms_of_use">Mycelium Terms Of Use</string>
@@ -980,5 +980,5 @@
     <string name="label_list_activity_indicator">had activity</string>
     <string name="buy_with_cc_spend_only_warning_title">Receive only account</string>
     <string name="buy_with_cc_spend_only_warning">The current selected account is receive-only.\n\nAre you sure you want to use this account to buy your bitcoin?</string>
-
+    <string name="spv_sync_progress">SPV-synced to %s</string>
 </resources>

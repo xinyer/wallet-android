@@ -1,0 +1,48 @@
+apply plugin: 'com.android.application'
+
+repositories {
+    jcenter()
+}
+
+android {
+    compileSdkVersion 24
+    buildToolsVersion androidSdkBuildVersion
+
+    defaultConfig {
+        applicationId "com.mycelium.spvmodule_dash"
+        minSdkVersion 16
+        targetSdkVersion 24
+        versionCode 1
+        versionName "1.0"
+        multiDexEnabled false
+    }
+    buildTypes {
+        all {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard.cfg'
+        }
+        debug {
+            debuggable true
+        }
+    }
+    buildToolsVersion androidSdkBuildVersion
+}
+
+dependencies {
+    compile fileTree(include: ['*.jar'], dir: 'libs')
+    testCompile "junit:junit:$junitVersion"
+    compile 'com.android.support:appcompat-v7:25.2.0'
+    compile 'com.android.support:support-v4:25.2.0'
+    compile 'org.dashj:dashj-core:0.13.2.12.1'
+    compile 'com.android.support:multidex:1.0.1'
+    compile 'org.dashj:dashj-core:0.13.2.12.1'
+    compile 'com.google.protobuf:protobuf-java:2.5.0'
+    compile 'com.google.guava:guava:20.0'
+
+    compile 'org.slf4j:slf4j-api:1.7.21'
+    compile 'com.github.tony19:logback-android-core:1.1.1-6'
+    compile('com.github.tony19:logback-android-classic:1.1.1-6') {
+        // workaround issue #73
+        exclude group: 'com.google.android', module: 'android'
+    }
+}

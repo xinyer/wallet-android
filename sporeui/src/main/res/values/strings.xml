@@ -1,0 +1,42 @@
+<resources>
+    <string name="app_name">SporeUI</string>
+
+    <string name="SCAN">SCAN</string>
+    <string name="SEND">SEND</string>
+    <string name="RECEIVE">RECEIVE</string>
+
+    <string name="Add_account">Add account</string>
+    <string name="Accounts">Accounts</string>
+    <string name="Cashflow">Cashflow</string>
+    <string name="Budget">Budget</string>
+    <string name="Deposit">Deposit</string>
+    <string name="Transfer">Transfer</string>
+    <string name="Help">Help</string>
+
+    <string name="bitcoin_address">Bitcoin Address</string>
+    <string name="tap_qr_code">Tap QR Code to adjust contrast</string>
+
+    <string-array name="send_screen_sender_horizontalpicker_values">
+        <item>Add BTC account</item>
+        <item>My BTC accounts</item>
+        <item>Add Debit Card</item>
+        <item>Debit Card</item>
+    </string-array>
+
+    <string-array name="send_screen_receiver_horizontalpicker_values">
+        <item>My Addresses</item>
+        <item>My Contacts</item>
+        <item>BTC address</item>
+        <item>USD Wire transfer</item>
+    </string-array>
+
+    <string-array name="currency_array">
+        <item>BTC</item>
+        <item>ETH</item>
+        <item>EUR</item>
+        <item>GBP</item>
+        <item>USD</item>
+    </string-array>
+
+
+</resources>

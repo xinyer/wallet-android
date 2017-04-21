@@ -5,6 +5,11 @@
               android:orientation="vertical" >
 
     <TextView
+        android:id="@+id/tvSpvSyncProgress"
+        android:text="@string/spv_sync_progress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+    <TextView
             android:id="@+id/btBackupMissing"
             style="@style/MyceliumButton"
             android:layout_width="wrap_content"

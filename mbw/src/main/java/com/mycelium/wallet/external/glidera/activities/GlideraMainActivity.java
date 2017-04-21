@@ -26,20 +26,23 @@ public class GlideraMainActivity extends ActionBarActivity {
       viewPager.setId(R.id.pager);
       setContentView(viewPager);
 
-      ActionBar actionBar = getSupportActionBar();
-      actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
-      actionBar.setDisplayOptions(1, ActionBar.DISPLAY_SHOW_TITLE);
-      actionBar.setDisplayHomeAsUpEnabled(true);
+      ActionBar bar = getSupportActionBar();
+      bar.setDisplayShowHomeEnabled(true);
+      bar.setLogo(R.drawable.ic_launcher);
+      bar.setDisplayUseLogoEnabled(true);
+      bar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
+      bar.setDisplayShowTitleEnabled(false);
+      bar.setDisplayHomeAsUpEnabled(true);
 
       TabsAdapter tabsAdapter = new TabsAdapter(this, viewPager, MbwManager.getInstance(this));
 
-      buyBitcoinTab = actionBar.newTab();
+      buyBitcoinTab = bar.newTab();
       tabsAdapter.addTab(buyBitcoinTab.setText(getString(R.string.gd_buy_tab)), GlideraBuyFragment.class, null);
 
-      Tab sellBitcoinTab = actionBar.newTab();
+      Tab sellBitcoinTab = bar.newTab();
       tabsAdapter.addTab(sellBitcoinTab.setText(getString(R.string.gd_sell_tab)), GlideraSellFragment.class, null);
 
-      Tab transactionHistoryTab = actionBar.newTab();
+      Tab transactionHistoryTab = bar.newTab();
       tabsAdapter.addTab(transactionHistoryTab.setText(getString(R.string.gd_transaction_history_tab)),
               GlideraTransactionHistoryFragment.class, null);
 
@@ -57,7 +60,7 @@ public class GlideraMainActivity extends ActionBarActivity {
                tab = transactionHistoryTab; break;
          }
       }
-      actionBar.selectTab(tab);
+      bar.selectTab(tab);
    }
 
    @Override

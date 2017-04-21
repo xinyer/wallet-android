@@ -30,4 +30,10 @@ public class TransactionExApi extends TransactionEx {
       this.unconfirmedChainLength = unconfirmedChainLength;
       this.rbfRisk = rbfRisk;
    }
+
+   public TransactionExApi(TransactionEx transactionEx){
+      super(transactionEx.txid, transactionEx.height, transactionEx.time, transactionEx.binary);
+      this.unconfirmedChainLength = transactionEx.height == -1 ? -1 : 0;
+      this.rbfRisk = false;
+   }
 }

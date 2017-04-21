@@ -36,14 +36,21 @@ package com.mycelium.wallet;
 
 import java.util.Locale;
 
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.support.multidex.MultiDexApplication;
 import android.util.Log;
 
-public class WalletApplication extends MultiDexApplication {
+import com.mycelium.modularizationtools.ModuleMessageReceiver;
+
+import org.jetbrains.annotations.NotNull;
+
+public class WalletApplication extends MultiDexApplication implements ModuleMessageReceiver {
+   private ModuleMessageReceiver moduleMessageReceiver;
 
    @Override
    public void onCreate() {
+      moduleMessageReceiver = new MbwMessageReceiver(this);
       String lang = MbwManager.getInstance(this).getLanguage();
       applyLanguageChange(lang);
       super.onCreate();
@@ -82,5 +89,10 @@ public class WalletApplication extends MultiDexApplication {
          default:
             return new Locale(lang);
       }
+   }
+
+   @Override
+   public void onMessage(@NotNull String callingPackageName, @NotNull Intent intent) {
+      moduleMessageReceiver.onMessage(callingPackageName, intent);
    }
 }

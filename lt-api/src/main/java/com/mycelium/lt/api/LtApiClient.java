@@ -60,9 +60,9 @@ public class LtApiClient implements LtApi {
    public static final int TIMEOUT_MS = 60000 * 2;
 
    public interface Logger {
-      public void logError(String message, Exception e);
-      public void logError(String message);
-      public void logInfo(String message);
+      void logError(String message, Exception e);
+      void logError(String message);
+      void logInfo(String message);
    }
 
    protected static byte[] uuidToBytes(UUID uuid) {

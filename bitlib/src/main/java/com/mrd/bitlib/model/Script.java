@@ -38,7 +38,6 @@ public abstract class Script implements Serializable {
       public ScriptParsingException(String message) {
          super(message);
       }
-
    }
 
    public static final int OP_FALSE = 0;
@@ -143,7 +142,7 @@ public abstract class Script implements Serializable {
       return _isCoinbase;
    }
 
-   protected static final boolean isOP(byte[] chunk, int op) {
+   protected static boolean isOP(byte[] chunk, int op) {
       return chunk.length == 1 && (((int) chunk[0]) & 0xFF) == op;
    }
 
@@ -157,7 +156,7 @@ public abstract class Script implements Serializable {
       return -1;
    }
 
-   protected static final byte[][] chunksFromScriptBytes(byte[] script) throws ScriptParsingException {
+   protected static byte[][] chunksFromScriptBytes(byte[] script) throws ScriptParsingException {
       try {
          ByteReader reader = new ByteReader(script);
          int numChunks = countChunks(reader);
@@ -168,7 +167,6 @@ public abstract class Script implements Serializable {
          int index = 0;
          reader.reset();
          while (reader.available() > 0) {
-
             // Get opcode
             int opcode = reader.get();
             if (opcode >= (int) 0xF0) {
@@ -289,7 +287,7 @@ public abstract class Script implements Serializable {
       return _scriptBytes;
    }
 
-   protected static final byte[] scriptEncodeChunks(byte[][] chunks) {
+   protected static byte[] scriptEncodeChunks(byte[][] chunks) {
       byte[] buf = new byte[calculateByteSize(chunks)];
       int index = 0;
       for (byte[] chunk : chunks) {
@@ -323,7 +321,7 @@ public abstract class Script implements Serializable {
       return buf;
    }
 
-   private static final int calculateByteSize(byte[][] chunks) {
+   private static int calculateByteSize(byte[][] chunks) {
       int size = 0;
       for (byte[] chunk : chunks) {
          if (chunk.length == 1) {
@@ -340,5 +338,4 @@ public abstract class Script implements Serializable {
       }
       return size;
    }
-
 }

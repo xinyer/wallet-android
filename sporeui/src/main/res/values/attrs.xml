@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="backgroundColor" format="reference|color" />
+    <declare-styleable name="RoundButton">
+        <attr name="backgroundColor" />
+    </declare-styleable>
+    <declare-styleable name="RoundButtonWithText" >
+        <attr name="backgroundColor" />
+        <attr name="text" format="string|reference" />
+        <attr name="icon" />
+    </declare-styleable>
+    <declare-styleable name="QRCodeView">
+        <attr name="dimension" format="integer" />
+    </declare-styleable>
+    <declare-styleable name="CircleView" >
+        <attr name="color" />
+        <attr name="radius" format="float" />
+        <attr name="xOffset" format="float" />
+        <attr name="yOffset" format="float" />
+    </declare-styleable>
+    <declare-styleable name="GradientRoundButton" >
+        <attr name="topColor" format="reference|color" />
+        <attr name="bottomColor" format="reference|color" />
+        <attr name="icon" />
+    </declare-styleable>
+
+</resources>

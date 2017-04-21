@@ -35,6 +35,8 @@
 package com.mycelium.wallet.activity.modern;
 
 import android.app.AlertDialog;
+import android.app.NotificationManager;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
@@ -121,6 +123,9 @@ public class ModernMain extends ActionBarActivity {
       mViewPager.setId(R.id.pager);
       setContentView(mViewPager);
       ActionBar bar = getSupportActionBar();
+      bar.setDisplayShowHomeEnabled(true);
+      bar.setLogo(R.drawable.ic_launcher);
+      bar.setDisplayUseLogoEnabled(true);
       bar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
       bar.setDisplayShowTitleEnabled(false);
 
@@ -278,6 +283,9 @@ public class ModernMain extends ActionBarActivity {
          _lastSync = new Date().getTime();
       }
       supportInvalidateOptionsMenu();
+      // remove the transaction notification (if exists)
+      NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+      nm.cancel(MbwMessageReceiver.Companion.getTRANSACTION_NOTIFICATION_ID());
       super.onResume();
    }
 

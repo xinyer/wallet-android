@@ -101,9 +101,12 @@ public class CashilaPaymentsActivity extends ActionBarActivity implements Action
       mbw = MbwManager.getInstance(this);
 
       // Set up the action bar.
-      final ActionBar actionBar = getSupportActionBar();
-      actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
-      actionBar.setHomeButtonEnabled(true);
+      final ActionBar bar = getSupportActionBar();
+      bar.setDisplayShowHomeEnabled(true);
+      bar.setLogo(R.drawable.ic_launcher);
+      bar.setDisplayUseLogoEnabled(true);
+      bar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
+      bar.setDisplayShowTitleEnabled(false);
 
       // Create the adapter that will return a fragment for each of the three
       // primary sections of the activity.
@@ -119,7 +122,7 @@ public class CashilaPaymentsActivity extends ActionBarActivity implements Action
       viewPager.setOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
          @Override
          public void onPageSelected(int position) {
-            actionBar.setSelectedNavigationItem(position);
+            bar.setSelectedNavigationItem(position);
             // Hide the keyboard.
             ((InputMethodManager) getSystemService(INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(viewPager.getWindowToken(), 0);
          }
@@ -138,13 +141,13 @@ public class CashilaPaymentsActivity extends ActionBarActivity implements Action
          throw new RuntimeException(e);
       }
 
-      actionBar.addTab(
-            actionBar.newTab()
+      bar.addTab(
+            bar.newTab()
                   .setText(getString(R.string.cashila_tab_new).toUpperCase())
                   .setTabListener(this));
 
-      actionBar.addTab(
-            actionBar.newTab()
+      bar.addTab(
+            bar.newTab()
                   .setText(getString(R.string.cashila_tab_pending).toUpperCase())
                   .setTabListener(this));
 

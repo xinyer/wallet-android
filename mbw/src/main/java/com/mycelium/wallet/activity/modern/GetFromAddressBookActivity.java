@@ -57,7 +57,11 @@ public class GetFromAddressBookActivity extends ActionBarActivity {
       setContentView(mViewPager);
 
       ActionBar bar = getSupportActionBar();
+      bar.setDisplayShowHomeEnabled(true);
+      bar.setLogo(R.drawable.ic_launcher);
+      bar.setDisplayUseLogoEnabled(true);
       bar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
+      bar.setDisplayShowTitleEnabled(false);
 
       mTabsAdapter = new TabsAdapter(this, mViewPager, _mbwManager);
 

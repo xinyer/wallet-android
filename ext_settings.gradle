@@ -3,8 +3,10 @@ ext {
     guavaArtifact = 'com.google.guava:guava:18.0'
     androidBuildArtifact = 'com.android.tools.build:gradle:2.3.0'
     slf4jVersion = '1.7.2'
-    androidSdkBuildVersion = "25.0.0"
+    androidCompileSdkVersion = 25
+    androidSdkBuildVersion = "25.0.2"
     junitVersion = '4.12'
+    kotlin_version = '1.1.0'
     projectRootDir = project.rootDir.getPath()
     commonDebugKeystore = rootProject.file('debug.keystore')
 

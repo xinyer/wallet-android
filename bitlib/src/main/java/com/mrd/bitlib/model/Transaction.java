@@ -38,24 +38,10 @@ import java.io.Serializable;
  */
 public class Transaction implements Serializable {
    private static final long serialVersionUID = 1L;
-
    private static final long ONE_uBTC_IN_SATOSHIS = 100;
    private static final long ONE_mBTC_IN_SATOSHIS = 1000 * ONE_uBTC_IN_SATOSHIS;
 
-   public static class TransactionParsingException extends Exception {
-
-      private static final long serialVersionUID = 1L;
-
-      public TransactionParsingException(String message) {
-         super(message);
-      }
-
-      public TransactionParsingException(String message, Exception e) {
-         super(message, e);
-      }
-
-   }
-
+   public static final int MIN_TRANSACTION_SIZE = 100;
    public static final long MAX_MINER_FEE_PER_KB = 20L * ONE_mBTC_IN_SATOSHIS; // 2000sat/B
 
    public int version;
@@ -71,12 +57,12 @@ public class Transaction implements Serializable {
    private transient int _txSize = -1;
 
    public static Transaction fromUnsignedTransaction(StandardTransactionBuilder.UnsignedTransaction unsignedTransaction) {
-      TransactionInput input[] = new TransactionInput[unsignedTransaction.getFundingOutputs().length];
+      TransactionInput inputs[] = new TransactionInput[unsignedTransaction.getFundingOutputs().length];
       int idx=0;
       for(UnspentTransactionOutput u : unsignedTransaction.getFundingOutputs()){
-         input[idx++]=new TransactionInput(u.outPoint, new ScriptInput(u.script.getScriptBytes()));
+         inputs[idx++]=new TransactionInput(u.outPoint, new ScriptInput(u.script.getScriptBytes()));
       }
-      return new Transaction(1, input, unsignedTransaction.getOutputs(), 0);
+      return new Transaction(1, inputs, unsignedTransaction.getOutputs(), 0);
    }
 
    public static Transaction fromBytes(byte[] transaction) throws TransactionParsingException {
@@ -112,7 +98,7 @@ public class Transaction implements Serializable {
                outputs[i] = TransactionOutput.fromByteReader(reader);
             } catch (TransactionOutputParsingException e) {
                throw new TransactionParsingException("Unable to parse transaction output at index " + i + ": "
-                     + e.getMessage());
+                     + e.getMessage(), e);
             }
          }
          int lockTime = reader.getIntLE();
@@ -176,7 +162,6 @@ public class Transaction implements Serializable {
       this.lockTime = copyFrom.lockTime;
       this._txSize = copyFrom._txSize;
       this._hash = copyFrom._hash;
-
    }
 
    // we already know the hash of this transaction, dont recompute it
@@ -274,5 +259,17 @@ public class Transaction implements Serializable {
          }
       }
       return false;
+   }
+
+   public static class TransactionParsingException extends Exception {
+      private static final long serialVersionUID = 1L;
+
+      public TransactionParsingException(String message) {
+         super(message);
+      }
+
+      public TransactionParsingException(String message, Exception e) {
+         super(message, e);
+      }
    }
 }

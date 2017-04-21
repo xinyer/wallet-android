@@ -114,49 +114,53 @@ public class LtMainActivity extends ActionBarActivity {
 
       setContentView(_viewPager);
 
-      ActionBar actionBar = getSupportActionBar();
-      actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
+      ActionBar bar = getSupportActionBar();
+      bar.setDisplayShowHomeEnabled(true);
+      bar.setLogo(R.drawable.ic_launcher);
+      bar.setDisplayUseLogoEnabled(true);
+      bar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
+      bar.setDisplayShowTitleEnabled(false);
       // to provide up navigation from actionbar, in case the modern main
       // activity is not on the stack
-      actionBar.setDisplayHomeAsUpEnabled(true);
+      bar.setDisplayHomeAsUpEnabled(true);
 
       TabsAdapter tabsAdapter = new TabsAdapter(this, _viewPager);
 
       // Add Buy Bitcoin tab
-      _myBuyBitcoinTab = actionBar.newTab();
+      _myBuyBitcoinTab = bar.newTab();
       _myBuyBitcoinTab.setText(getResources().getString(R.string.lt_buy_bitcoin_tab));
       tabsAdapter.addTab(_myBuyBitcoinTab, AdSearchFragment.class, AdSearchFragment.createArgs(true));
 
       // Add Sell Bitcoin tab
-      _mySellBitcoinTab = actionBar.newTab();
+      _mySellBitcoinTab = bar.newTab();
       _mySellBitcoinTab.setText(getResources().getString(R.string.lt_sell_bitcoin_tab));
       tabsAdapter.addTab(_mySellBitcoinTab, AdSearchFragment.class, AdSearchFragment.createArgs(false));
 
       // Add Active Trades tab
-      _myActiveTradesTab = actionBar.newTab();
+      _myActiveTradesTab = bar.newTab();
       _myActiveTradesTab.setText(getResources().getString(R.string.lt_active_trades_tab));
       tabsAdapter.addTab(_myActiveTradesTab, ActiveTradesFragment.class, null);
 
       // Add Historic Trades tab
-      _myTradeHistoryTab = actionBar.newTab();
+      _myTradeHistoryTab = bar.newTab();
       _myTradeHistoryTab.setText(getResources().getString(R.string.lt_trade_history_tab));
       tabsAdapter.addTab(_myTradeHistoryTab, TradeHistoryFragment.class, null);
 
       // Add Ads tab
-      _myAdsTab = actionBar.newTab();
+      _myAdsTab = bar.newTab();
       _myAdsTab.setText(getResources().getString(R.string.lt_my_ads_tab));
       _myAdsTab.setTag(tabsAdapter.getCount());
       tabsAdapter.addTab(_myAdsTab, AdsFragment.class, null);
 
       // Add Trader Info tab
-      _myTraderInfoTab = actionBar.newTab();
+      _myTraderInfoTab = bar.newTab();
       _myTraderInfoTab.setText(getResources().getString(R.string.lt_my_trader_info_tab));
       _myTraderInfoTab.setTag(tabsAdapter.getCount());
       tabsAdapter.addTab(_myTraderInfoTab, MyInfoFragment.class, null);
 
       // Load the tab to select from intent
       TAB_TYPE tabToSelect = TAB_TYPE.values()[getIntent().getIntExtra(TAB_TO_SELECT, TAB_TYPE.DEFAULT.ordinal())];
-      actionBar.selectTab(enumToTab(tabToSelect));
+      bar.selectTab(enumToTab(tabToSelect));
 
       _updateSound = RingtoneManager
             .getRingtone(this, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));

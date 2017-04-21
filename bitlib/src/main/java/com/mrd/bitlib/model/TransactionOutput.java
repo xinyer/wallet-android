@@ -16,27 +16,16 @@
 
 package com.mrd.bitlib.model;
 
-import java.io.Serializable;
-
 import com.mrd.bitlib.util.ByteReader;
 import com.mrd.bitlib.util.ByteReader.InsufficientBytesException;
 import com.mrd.bitlib.util.ByteWriter;
 import com.mrd.bitlib.util.HexUtils;
 
+import java.io.Serializable;
+import java.security.PrivilegedActionException;
+
 public class TransactionOutput implements Serializable {
    private static final long serialVersionUID = 1L;
-
-   public static class TransactionOutputParsingException extends Exception {
-      private static final long serialVersionUID = 1L;
-
-      public TransactionOutputParsingException(byte[] script) {
-         super("Unable to parse transaction output: " + HexUtils.toHex(script));
-      }
-
-      public TransactionOutputParsingException(String message) {
-         super(message);
-      }
-   }
 
    public long value;
    public ScriptOutput script;
@@ -49,7 +38,7 @@ public class TransactionOutput implements Serializable {
          ScriptOutput script = ScriptOutput.fromScriptBytes(scriptBytes);
          return new TransactionOutput(value, script);
       } catch (InsufficientBytesException e) {
-         throw new TransactionOutputParsingException("Unable to parse transaction output: " + e.getMessage());
+         throw new TransactionOutputParsingException("Unable to parse transaction output: " + e.getMessage(), e);
       }
    }
 
@@ -73,9 +62,25 @@ public class TransactionOutput implements Serializable {
 
    @Override
    public String toString() {
-      StringBuilder sb = new StringBuilder();
-      sb.append("value: ").append(value).append(" script: ").append(script.dump());
-      return sb.toString();
+      return "value: " + value + " script: " + script.dump();
    }
 
+   public static class TransactionOutputParsingException extends Exception {
+      private static final long serialVersionUID = 1L;
+
+      public TransactionOutputParsingException(byte[] script) {
+         super("Unable to parse transaction output: " + HexUtils.toHex(script));
+      }
+
+      public TransactionOutputParsingException(String message) {
+         super(message);
+      }
+
+     /**
+      * {@inheritDoc}
+      */
+     public TransactionOutputParsingException(String message, Throwable cause) {
+       super(message, cause);
+     }
+   }
 }

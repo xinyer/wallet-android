@@ -9,7 +9,7 @@ compileTestJava {
 }
 
 repositories {
-    mavenCentral()
+    jcenter()
 }
 
 dependencies {

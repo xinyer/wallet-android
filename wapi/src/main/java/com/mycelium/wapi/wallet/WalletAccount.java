@@ -24,18 +24,20 @@ import com.mrd.bitlib.StandardTransactionBuilder.OutputTooSmallException;
 import com.mrd.bitlib.StandardTransactionBuilder.UnsignedTransaction;
 import com.mrd.bitlib.model.Address;
 import com.mrd.bitlib.model.NetworkParameters;
+import com.mrd.bitlib.model.OutPoint;
 import com.mrd.bitlib.model.OutputList;
 import com.mrd.bitlib.model.Transaction;
+import com.mrd.bitlib.model.TransactionOutput;
 import com.mrd.bitlib.util.Sha256Hash;
 import com.mycelium.wapi.model.*;
 import com.mycelium.wapi.wallet.KeyCipher.InvalidKeyCipher;
 import com.mycelium.wapi.wallet.currency.CurrencyBasedBalance;
 import com.mycelium.wapi.wallet.currency.CurrencyValue;
 import com.mycelium.wapi.wallet.currency.ExactCurrencyValue;
+import org.bitcoinj.core.TransactionOutPoint;
 
 import java.io.Serializable;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public interface WalletAccount {
    void checkAmount(Receiver receiver, long kbMinerFee, CurrencyValue enteredAmount) throws InsufficientFundsException, OutputTooSmallException, StandardTransactionBuilder.UnableToBuildTransactionException;
@@ -68,6 +70,8 @@ public interface WalletAccount {
     */
    boolean synchronize(SyncMode mode);
 
+   void notifyNewTransactionDiscovered(TransactionEx transactionEx, Map<OutPoint, TransactionOutput> connectedOutputs, Set<OutPoint> utxoSet, boolean fetchMissingOutputs);
+
    /**
     * Get the unique ID of this account
     */
@@ -98,6 +102,11 @@ public interface WalletAccount {
     * as they get used.
     */
    Optional<Address> getReceivingAddress();
+
+   /**
+    * @return all Addresses this WalletAccount is watching for transactions
+    */
+   Collection<Address> getAddresses();
 
    /**
     * Can this account be used for spending, or is it read-only?

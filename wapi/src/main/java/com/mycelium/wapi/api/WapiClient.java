@@ -49,7 +49,7 @@ public class WapiClient implements Wapi {
    private static int _minTimeout = 0;
 
    private ObjectMapper _objectMapper;
-   private com.mycelium.WapiLogger _logger;
+   private WapiLogger _logger;
 
    private ServerEndpoints _serverEndpoints;
    private String versionCode;
@@ -259,12 +259,10 @@ public class WapiClient implements Wapi {
       return sendRequest(Function.GET_MINER_FEE_ESTIMATION, null, typeref);
    }
 
-
    @Override
    public WapiLogger getLogger() {
       return _logger;
    }
-
 }
 
 

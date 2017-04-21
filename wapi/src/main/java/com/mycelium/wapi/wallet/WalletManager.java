@@ -48,13 +48,13 @@ import static com.mycelium.wapi.wallet.bip44.Bip44AccountContext.*;
  * Allows you to manage a wallet that contains multiple HD accounts and
  * 'classic' single address accounts.
  */
-//TODO we might optimize away full TX history for cold storage spending
+// TODO: we might optimize away full TX history for cold storage spending
 public class WalletManager {
    private static final byte[] MASTER_SEED_ID = HexUtils.toBytes("D64CA2B680D8C8909A367F28EB47F990");
    // maximum age where we say a fetched fee estimation is valid
    private static final long MAX_AGE_FEE_ESTIMATION = 2 * 60 * 60 * 1000;
-
    public AccountScanManager accountScanManager;
+
    private final Set<AccountProvider> _extraAccountProviders = new HashSet<>();
    private final Set<String> _extraAccountsCurrencies = new HashSet<>();
    private final HashMap<UUID, WalletAccount> _extraAccounts = new HashMap<>();
@@ -73,6 +73,8 @@ public class WalletManager {
    private IdentityAccountKeyManager _identityAccountKeyManager;
    private volatile UUID _activeAccountId;
    private FeeEstimation _lastFeeEstimations = FeeEstimation.DEFAULT;
+   private TransactionFetcher _transactionFetcher;
+   private final boolean _useTransactionFetcher;
 
    /**
     * Create a new wallet manager instance
@@ -81,8 +83,12 @@ public class WalletManager {
     * @param network the network used
     * @param wapi    the Wapi instance to use
     */
-   public WalletManager(SecureKeyValueStore secureKeyValueStore, WalletManagerBacking backing,
-                        NetworkParameters network, Wapi wapi, ExternalSignatureProviderProxy signatureProviders) {
+   public WalletManager(SecureKeyValueStore secureKeyValueStore,
+                        WalletManagerBacking backing,
+                        NetworkParameters network, Wapi wapi,
+                        ExternalSignatureProviderProxy signatureProviders,
+                        TransactionFetcher transactionFetcher,
+                        boolean useTransactionFetcher) {
       _secureKeyValueStore = secureKeyValueStore;
       _backing = backing;
       _network = network;
@@ -94,6 +100,8 @@ public class WalletManager {
       _state = State.READY;
       _accountEventManager = new AccountEventManager();
       _observers = new LinkedList<>();
+      _transactionFetcher = transactionFetcher;
+      _useTransactionFetcher = useTransactionFetcher;
       loadAccounts();
    }
 
@@ -698,9 +706,7 @@ public class WalletManager {
                }
 
                // Synchronize selected accounts with the blockchain
-               if (!synchronize()) {
-                  return;
-               }
+               synchronize();
             }
          } finally {
             _synchronizationThread = null;
@@ -736,17 +742,34 @@ public class WalletManager {
       }
 
       private boolean synchronize() {
-         if (syncMode.onlyActiveAccount) {
-            if (currentAccount != null && !currentAccount.isArchived()) {
-               return currentAccount.synchronize(syncMode);
+         if(_useTransactionFetcher) {
+            List<Address> addresses = new ArrayList<>();
+            for(WalletAccount a : getAllAccounts()) {
+               addresses.addAll(a.getAddresses());
             }
+            Set<AddressWithCreationTime> addressStrings = new HashSet<>(addresses.size());
+            Map<Address, Long> creationTimes = _backing.getAllAddressCreationTimes();
+            for (Address address : addresses) {
+               Long ts = creationTimes.get(address);
+               if (ts == null) {
+                  ts = 0L; // TODO: this has to depend on the estimated address creation time and get stored back
+               }
+               addressStrings.add(new AddressWithCreationTime(address.toString(), ts));
+            }
+            _transactionFetcher.getTransactions(addressStrings);
          } else {
-            for (WalletAccount account : getAllAccounts()) {
-               if (!account.isArchived()) {
-                  if (!account.synchronize(syncMode)) {
-                     // We failed to sync due to API error, we will have to try
-                     // again later
-                     return false;
+            if (syncMode.onlyActiveAccount) {
+               if (currentAccount != null && !currentAccount.isArchived()) {
+                  return currentAccount.synchronize(syncMode);
+               }
+            } else {
+               for (WalletAccount account : getAllAccounts()) {
+                  if (!account.isArchived()) {
+                     if (!account.synchronize(syncMode)) {
+                        // We failed to sync due to API error, we will have to try
+                        // again later
+                        return false;
+                     }
                   }
                }
             }
@@ -893,6 +916,9 @@ public class WalletManager {
       return filterAndConvert(MAIN_SEED_HD_ACCOUNT).size();
    }
 
+   /**
+    * this is part of a bugfix for where the wallet skipped accounts in conflict with BIP44
+    */
    // not nice the unchecked cast, but we can be sure that MAIN_SEED_HD_ACCOUNT only returns Bip44Accounts
    // TODO: why is a double-cast needed?? Skipping the List<?> cast fails, although suggested by AS
    @SuppressWarnings({"unchecked", "RedundantCast"})
@@ -915,10 +941,12 @@ public class WalletManager {
             gaps.add(lastIndex - 1);
          }
       }
-
       return gaps;
    }
 
+   /**
+    * this is part of a bugfix for where the wallet skipped accounts in conflict with BIP44
+    */
    public List<Address> getGapAddresses(KeyCipher cipher) throws InvalidKeyCipher {
       final List<Integer> gaps = getGapsBug();
       // Get the master seed
@@ -943,6 +971,9 @@ public class WalletManager {
       return addresses;
    }
 
+   /**
+    * this is part of a bugfix for where the wallet skipped accounts in conflict with BIP44
+    */
    public UUID createArchivedGapFiller(KeyCipher cipher, Integer accountIndex) throws InvalidKeyCipher {
       // Get the master seed
       Bip39.MasterSeed masterSeed = getMasterSeed(cipher);
@@ -1050,6 +1081,17 @@ public class WalletManager {
    }
 
    /**
+    * @return all Addresses that should be watched for transactions
+    */
+   public Collection<Address> getAddresses() {
+      Collection<Address> allAddresses = new HashSet<>();
+      for(WalletAccount a : getAllAccounts()) {
+         allAddresses.addAll(a.getAddresses());
+      }
+      return allAddresses;
+   }
+
+   /**
     * Implement this interface to get a callback when the wallet manager changes
     * state or when some event occurs
     */
@@ -1119,5 +1161,18 @@ public class WalletManager {
        * The receiving address of an account has been updated
        */
       RECEIVING_ADDRESS_CHANGED
+   }
+
+   public interface TransactionFetcher {
+      void getTransactions(Set<AddressWithCreationTime> addresses);
+   }
+
+   public class AddressWithCreationTime {
+      public String address;
+      public long creationTime;
+      AddressWithCreationTime(String address, long creationTime) {
+         this.address = address;
+         this.creationTime = creationTime;
+      }
    }
 }

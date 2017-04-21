@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#3F4F57</color>
+    <color name="colorAccent">#FF4081</color>
+
+    <!-- Wallet home screen -->
+    <color name="colorWalletScanButton">#3F4F57</color>
+    <color name="colorWalletSendButton">#FB746D</color>
+    <color name="colorWalletReceiveButton">#77C298</color>
+
+    <!-- Zeplin Styleguide -->
+        <color name="pulldown_background">#f7f7f7</color>
+        <color name="money_out">#fb746d</color>
+        <color name="money_out_selected">#fb827b</color>
+
+    <color name="receiver_recyclerview_background">#4d5e66</color>
+    <color name="receiver_recyclerview_background_selected">#5f6e75</color>
+
+    <color name="sender_recyclerview_background2">#61b687</color>
+    <color name="sender_recyclerview_background_selected2">#84c8a2</color>
+
+    <color name="neutral_action">#3f4f57</color>
+        <color name="money_in">#77c298</color>
+        <color name="selection_background">#dedede</color>
+        <color name="account">#5aa7e6</color>
+        <color name="black">#010101</color>
+        <color name="warm_grey">#7f7f7f</color>
+        <color name="greyish">#b5b5b5</color>
+        <color name="tiffany_blue">#55e6ea</color>
+        <color name="purple_blue">#6523d0</color>
+        <color name="weird_green">#51ec82</color>
+        <color name="dark_grass_green">#417505</color>
+        <color name="sapphire">#302995</color>
+        <color name="tealish">#26ccd9</color>
+        <color name="white_30">#4dffffff</color>
+        <color name="white_90">#e5ffffff</color>
+        <color name="white">#ffffff</color>
+
+    <!-- Module button gradients -->
+    <color name="wallet_gradient_top">#55e6ea</color>
+    <color name="wallet_gradient_bottom">#6523d0</color>
+    <color name="local_trader_gradient_top">#26ccd9</color>
+    <color name="local_trader_gradient_bottom">#302995</color>
+    <color name="myshop_gradient_top">#c86dd7</color>
+    <color name="myshop_gradient_bottom">#9013fe</color>
+    <color name="exchange_gradient_top">#ff6a9b</color>
+    <color name="exchange_gradient_bottom">#f7a225</color>
+    <color name="myowncurrency_gradient_top">#67f915</color>
+    <color name="myowncurrency_gradient_bottom">#296b95</color>
+    <color name="taxfree_gradient_top">#4b3cd0</color>
+    <color name="taxfree_gradient_bottom">#e33535</color>
+    <color name="invoices_gradient_top">#51ec82</color>
+    <color name="invoices_gradient_bottom">#417505</color>
+
+    </resources>

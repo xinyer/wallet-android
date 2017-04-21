@@ -55,14 +55,15 @@ public abstract class MbwEnvironment {
          throw new RuntimeException("No brand has been specified");
       }
       // todo proper IoC needed. it is not nice to refer to subclasses
-      if (network.equals("prodnet")) {
-         return new MbwProdEnvironment(brand);
-      } else if (network.equals("testnet")) {
-         return new MbwTestEnvironment(brand);
-      } else if (network.equals("regtest")) {
-         return new MbwRegTestEnvironment(brand);
-      } else {
-         throw new RuntimeException("No network has been specified");
+      switch (network) {
+         case "prodnet":
+            return new MbwProdEnvironment(brand);
+         case "testnet":
+            return new MbwTestEnvironment(brand);
+         case "regtest":
+            return new MbwRegTestEnvironment(brand);
+         default:
+            throw new RuntimeException("No network has been specified");
       }
    }
 

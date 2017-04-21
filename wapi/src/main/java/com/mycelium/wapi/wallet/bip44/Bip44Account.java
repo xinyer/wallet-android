@@ -265,11 +265,9 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
          mode = SyncMode.FULL_SYNC_CURRENT_ACCOUNT_FORCED;
       }
       try {
-         if (mode.mode == SyncMode.Mode.FULL_SYNC){
-            // Discover new addresses once in a while
-            if (!discovery()) {
-               return false;
-            }
+         // Discover new addresses once in a while
+         if (mode.mode == SyncMode.Mode.FULL_SYNC && !discovery()) {
+            return false;
          }
 
          // Update unspent outputs
@@ -343,6 +341,9 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
       handleNewExternalTransactions(transactions);
       // Return true if the last external or internal index has changed
       boolean indexHasChanged = lastExternalIndexBefore != _context.getLastExternalIndexWithActivity() || lastInternalIndexBefore != _context.getLastInternalIndexWithActivity();;
+      if (indexHasChanged) {
+         fireAddressesChangedEvent();
+      }
       return indexHasChanged;
    }
 
@@ -425,8 +426,10 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
       }
    }
 
-   //used for message signing picker
-   public List<Address> getAllAddresses() {
+   /**
+    * @return all addresses the user should normally care about. That's all used addresses plus the one he would use next.
+    */
+   public List<Address> getAllVisibleAddresses() {
       List<Address> addresses = new ArrayList<Address>();
 
       //get all used external plus the next unused
@@ -596,7 +599,7 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
    }
 
    @Override
-   protected void setBlockChainHeight(int blockHeight) {
+   public void setBlockChainHeight(int blockHeight) {
       checkNotArchived();
       _context.setBlockHeight(blockHeight);
    }
@@ -609,6 +612,14 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
    @Override
    protected boolean isSynchronizing() {
       return _isSynchronizing;
+   }
+
+   @Override
+   public Collection<Address> getAddresses() {
+      Collection<Address> addresses = new HashSet<>(_externalAddresses.size() + _internalAddresses.size());
+      addresses.addAll(_externalAddresses.keySet());
+      addresses.addAll(_internalAddresses.keySet());
+      return addresses;
    }
 
    @Override

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.mycelium.sporeui.view.SendView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:animateLayoutChanges="true"
+    android:orientation="vertical">
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+            <TextView
+                style="@style/Subtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="25dp"
+                android:text="≈ 0.0563 BTC"
+                android:textSize="22sp"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center">
+                <TextView
+                    android:id="@+id/send_currency_symbol"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:textSize="24sp"
+                    android:text="EUR"
+                    android:gravity="center"/>
+
+                <EditText
+                    android:id="@+id/currency_edit_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="3dp"
+                    android:gravity="center"
+                    android:inputType="numberDecimal"
+                    android:enabled="false"
+                    android:textSize="48sp"
+                    tools:text="50"/>
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/address"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="3dp"
+                android:text="Plus fee 0.0001 BTC"
+                android:textSize="22sp"/>
+                <android.support.v7.widget.RecyclerView
+                    xmlns:picker="http://schemas.android.com/apk/res/com.wefika.horizontalpicker"
+                    android:id="@+id/senderAccountsRecyclerView"
+                    android:scrollbars="none"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="46dp"
+                    android:textColor="@color/horizontalpicker_text_color"
+                    android:textSize="14sp"/>
+
+            <include layout="@layout/sender_btc_accounts_add_menu"/>
+            <include layout="@layout/sender_btc_accounts_menu"/>
+            <include layout="@layout/sender_debitcard_add_menu"/>
+            <include layout="@layout/sender_debitcard_choose_menu"/>
+
+                <android.support.v7.widget.RecyclerView
+                    android:id="@+id/receiverAccountsRecyclerView"
+                    android:scrollbars="none"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/horizontalpicker_text_color"
+                    android:textSize="14sp"/>
+
+
+            <include layout="@layout/receiver_btc_accounts_menu"/>
+            <include layout="@layout/receiver_btc_contacts_menu"/>
+            <include layout="@layout/receiver_btc_contacts_add_menu"/>
+            <include layout="@layout/receiver_bankaccount_add_menu"/>
+        </LinearLayout>
+    </ScrollView>
+</com.mycelium.sporeui.view.SendView>

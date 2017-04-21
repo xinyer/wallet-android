@@ -1,0 +1,65 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+
+repositories {
+    jcenter()
+}
+
+android {
+    compileSdkVersion 25
+    buildToolsVersion androidSdkBuildVersion
+
+    defaultConfig {
+        applicationId "com.mycelium.spvmodule"
+        minSdkVersion 19
+        targetSdkVersion 25
+        versionCode 1
+        versionName "1.0"
+        multiDexEnabled true
+    }
+    buildTypes {
+        all {
+            minifyEnabled true
+            proguardFile 'proguard.cfg'
+        }
+        debug {
+            applicationIdSuffix '.test'
+            debuggable true
+        }
+    }
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
+
+    signingConfigs {
+        commonDebug {
+            storeFile commonDebugKeystore
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
+    buildToolsVersion androidSdkBuildVersion
+}
+
+// use the keystore file from the local repository, so that we share the same
+// signatures while developing
+if (commonDebugKeystore.exists()) {
+    android.buildTypes.debug.signingConfig = android.signingConfigs.commonDebug
+    // might be needed later on, if we have a devel flavor (if needed at all)
+    //android.productFlavors.dev.signingConfig = android.signingConfigs.commonDebug
+    logger.info("Using common debug.keystore " + commonDebugKeystore)
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    testCompile "junit:junit:$junitVersion"
+    compile 'com.android.support:appcompat-v7:25.2.0'
+    compile 'com.android.support:support-v4:25.2.0'
+    compile 'com.android.support:multidex:1.0.1'
+    compile 'org.bitcoinj:bitcoinj-core:0.14.3'
+
+    compile project(includePrefix +':spvmodulecontract')
+    compile project(includePrefix +':myceliummodularizationtools')
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+}

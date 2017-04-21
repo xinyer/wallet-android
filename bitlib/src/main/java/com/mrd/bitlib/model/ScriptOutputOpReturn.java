@@ -56,5 +56,4 @@ public class ScriptOutputOpReturn extends ScriptOutput implements Serializable {
       // there is no address associated with this output
       return Address.getNullAddress(network);
    }
-
 }

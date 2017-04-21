@@ -34,9 +34,8 @@
 
 package com.mycelium.wallet.activity.main;
 
-import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Build;
 import android.os.Bundle;
@@ -45,15 +44,17 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.TextView;
+
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.R;
 import com.mycelium.wallet.Utils;
-import com.mycelium.wallet.activity.export.VerifyBackupActivity;
 import com.mycelium.wallet.activity.modern.RecordRowBuilder;
 import com.mycelium.wallet.event.AccountChanged;
 import com.mycelium.wallet.event.BalanceChanged;
+import com.mycelium.wallet.event.SpvSyncChanged;
 import com.mycelium.wallet.persistence.MetadataStorage;
 import com.mycelium.wapi.model.Balance;
 import com.mycelium.wapi.wallet.WalletAccount;
@@ -61,9 +62,15 @@ import com.mycelium.wapi.wallet.bip44.Bip44Account;
 import com.mycelium.wapi.wallet.single.SingleAddressAccount;
 import com.squareup.otto.Subscribe;
 
+import java.util.Date;
 import java.util.List;
 
+import static android.view.View.GONE;
+import static android.view.View.VISIBLE;
+
 public class NoticeFragment extends Fragment {
+   private static final long FOUR_HOURS_IN_MILLIS = 4 * 60 * 60 * 1000;
+   private Date bestChainDate;
 
    private enum Notice {
       BACKUP_MISSING, SINGLEKEY_BACKUP_MISSING, MOVE_LEGACY_FUNDS, RESET_PIN_AVAILABLE, RESET_PIN_IN_PROGRESS, NONE
@@ -86,9 +93,9 @@ public class NoticeFragment extends Fragment {
    }
 
    @Override
-   public void onAttach(Activity activity) {
-      _mbwManager = MbwManager.getInstance(activity);
-      super.onAttach(activity);
+   public void onAttach(Context context) {
+      _mbwManager = MbwManager.getInstance(context);
+      super.onAttach(context);
    }
 
    @Override
@@ -160,7 +167,6 @@ public class NoticeFragment extends Fragment {
    }
 
    private OnClickListener noticeClickListener = new OnClickListener() {
-
       @Override
       public void onClick(View v) {
          switch (_notice) {
@@ -181,7 +187,6 @@ public class NoticeFragment extends Fragment {
                break;
          }
       }
-
    };
 
    private void showPinResetWarning() {
@@ -194,7 +199,7 @@ public class NoticeFragment extends Fragment {
 
       if (resetPinRemainingBlocksCount.get()==0){
          // delay is done
-         _mbwManager.showClearPinDialog(this.getActivity(), Optional.<Runnable>of(new Runnable() {
+         _mbwManager.showClearPinDialog(getActivity(), Optional.<Runnable>of(new Runnable() {
             @Override
             public void run() {
                recheckNotice();
@@ -204,9 +209,9 @@ public class NoticeFragment extends Fragment {
       }
 
       // delay is still remaining, provide option to abort
-      String remaining = Utils.formatBlockcountAsApproxDuration(this.getActivity(), resetPinRemainingBlocksCount.or(1));
-      new AlertDialog.Builder(this.getActivity())
-            .setMessage(String.format(this.getActivity().getString(R.string.pin_forgotten_abort_pin_reset), remaining))
+      String remaining = Utils.formatBlockcountAsApproxDuration(getActivity(), resetPinRemainingBlocksCount.or(1));
+      new AlertDialog.Builder(getActivity())
+            .setMessage(String.format(getActivity().getString(R.string.pin_forgotten_abort_pin_reset), remaining))
             .setTitle(this.getActivity().getString(R.string.pin_forgotten_reset_pin_dialog_title))
             .setPositiveButton(this.getActivity().getString(R.string.yes), new DialogInterface.OnClickListener() {
                @Override
@@ -225,7 +230,6 @@ public class NoticeFragment extends Fragment {
    }
 
    private OnClickListener warningClickListener = new OnClickListener() {
-
       @Override
       public void onClick(View v) {
          if (!shouldWarnAboutHeartbleedBug()) {
@@ -261,36 +265,7 @@ public class NoticeFragment extends Fragment {
       return Build.VERSION.RELEASE.equals("4.1.1");
    }
 
-
-   //this got replaced by VerifyWordlistBackup, but stays here unused, in case we ever need again the old backup functionality
-   private class VerifyBackupDialog extends Dialog {
-
-      public VerifyBackupDialog(final Activity activity) {
-         super(activity);
-         this.setContentView(R.layout.backup_verification_warning_dialog);
-         this.setTitle(R.string.verify_backup_title);
-
-         findViewById(R.id.btBackup).setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-               VerifyBackupDialog.this.dismiss();
-               Utils.pinProtectedBackup(activity);
-            }
-
-         });
-
-         findViewById(R.id.btVerifyBackup).setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-               VerifyBackupDialog.this.dismiss();
-               VerifyBackupActivity.callMe(activity);
-            }
-
-         });
-      }
-   }
+   //VerifyBackupDialog got replaced by `private class VerifyBackupDialog extends Dialog` long before 2017, but staid here unused, in case we ever need again the old backup functionality
 
    private void updateUi() {
       if (!isAdded()) {
@@ -298,14 +273,22 @@ public class NoticeFragment extends Fragment {
       }
 
       // Show button, that a PIN reset is in progress and allow to abort it
-      _root.findViewById(R.id.btPinResetNotice).setVisibility(_notice == Notice.RESET_PIN_AVAILABLE || _notice == Notice.RESET_PIN_IN_PROGRESS ? View.VISIBLE : View.GONE);
+      _root.findViewById(R.id.btPinResetNotice).setVisibility(_notice == Notice.RESET_PIN_AVAILABLE || _notice == Notice.RESET_PIN_IN_PROGRESS ? VISIBLE : GONE);
 
       // Only show the "Secure My Funds" button when necessary
-      _root.findViewById(R.id.btBackupMissing).setVisibility(_notice == Notice.BACKUP_MISSING || _notice == Notice.SINGLEKEY_BACKUP_MISSING ? View.VISIBLE : View.GONE);
+      _root.findViewById(R.id.btBackupMissing).setVisibility(_notice == Notice.BACKUP_MISSING || _notice == Notice.SINGLEKEY_BACKUP_MISSING ? VISIBLE : GONE);
 
       // Only show the heartbleed warning when necessary
-      _root.findViewById(R.id.btWarning).setVisibility(shouldWarnAboutHeartbleedBug() ? View.VISIBLE : View.GONE);
+      _root.findViewById(R.id.btWarning).setVisibility(shouldWarnAboutHeartbleedBug() ? VISIBLE : GONE);
 
+      // Show SPV sync progress if necessary
+      TextView spvTextView = (TextView) _root.findViewById(R.id.tvSpvSyncProgress);
+      if(bestChainDate != null && bestChainDate.before(new Date(System.currentTimeMillis() - FOUR_HOURS_IN_MILLIS))) {
+         spvTextView.setText(getActivity().getString(R.string.spv_sync_progress, Utils.getFormattedDate(getActivity(), bestChainDate)));
+         spvTextView.setVisibility(VISIBLE);
+      } else {
+         spvTextView.setVisibility(GONE);
+      }
    }
 
    private void recheckNotice() {
@@ -326,5 +309,9 @@ public class NoticeFragment extends Fragment {
       recheckNotice();
    }
 
-
+   @Subscribe
+   public void spvSyncChanged(SpvSyncChanged event) {
+      this.bestChainDate = event.bestChainDate;
+      recheckNotice();
+   }
 }

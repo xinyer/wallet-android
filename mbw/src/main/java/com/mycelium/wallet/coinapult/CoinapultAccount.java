@@ -52,11 +52,12 @@ import com.mrd.bitlib.StandardTransactionBuilder.UnsignedTransaction;
 import com.mrd.bitlib.crypto.InMemoryPrivateKey;
 import com.mrd.bitlib.model.Address;
 import com.mrd.bitlib.model.NetworkParameters;
+import com.mrd.bitlib.model.OutPoint;
 import com.mrd.bitlib.model.OutputList;
+import com.mrd.bitlib.model.TransactionOutput;
 import com.mrd.bitlib.util.ByteWriter;
 import com.mrd.bitlib.util.HashUtils;
 import com.mrd.bitlib.util.Sha256Hash;
-import com.mycelium.WapiLogger;
 import com.mycelium.wallet.ExchangeRateManager;
 import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.event.BalanceChanged;
@@ -71,6 +72,7 @@ import com.mycelium.wapi.wallet.currency.CurrencyBasedBalance;
 import com.mycelium.wapi.wallet.currency.CurrencyValue;
 import com.mycelium.wapi.wallet.currency.ExactCurrencyValue;
 import com.squareup.otto.Bus;
+import org.bitcoinj.core.TransactionOutPoint;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -113,7 +115,7 @@ public class CoinapultAccount extends SynchronizeAbleWalletAccount {
 
 
    public CoinapultAccount(CoinapultManager manager, MetadataStorage metadataStorage, InMemoryPrivateKey accountKey,
-                           ExchangeRateManager exchangeRateManager, Handler handler, Bus eventBus, WapiLogger logger, Currency coinapultCurrency) {
+                           ExchangeRateManager exchangeRateManager, Handler handler, Bus eventBus, Currency coinapultCurrency) {
       this.manager = manager;
       this.eventBus = eventBus;
       this.handler = handler;
@@ -388,6 +390,11 @@ public class CoinapultAccount extends SynchronizeAbleWalletAccount {
    }
 
    @Override
+   public Collection<Address> getAddresses() {
+      return Lists.newArrayList(currentAddress.get());
+   }
+
+   @Override
    public boolean canSpend() {
       return true;
    }
@@ -567,6 +574,11 @@ public class CoinapultAccount extends SynchronizeAbleWalletAccount {
       // there might be more, but currently we only know about this one...
       Optional<Address> receivingAddress = getReceivingAddress();
       return receivingAddress.isPresent() && receivingAddress.get().equals(address);
+   }
+
+   @Override
+   public void notifyNewTransactionDiscovered(TransactionEx transactionEx, Map<OutPoint, TransactionOutput> connectedOutputs, Set<OutPoint> utxoSet, boolean fetchMissingOutputs) {
+      // not supported for coinapult accounts - ignore it
    }
 
    @Override

@@ -39,6 +39,7 @@ import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -50,6 +51,7 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.WindowManager;
 import android.widget.Toast;
+
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
@@ -68,6 +70,7 @@ import com.mrd.bitlib.util.CoinUtil.Denomination;
 import com.mrd.bitlib.util.HashUtils;
 import com.mycelium.WapiLogger;
 import com.mycelium.lt.api.LtApiClient;
+import com.mycelium.modularizationtools.CommunicationManager;
 import com.mycelium.net.ServerEndpointType;
 import com.mycelium.net.TorManager;
 import com.mycelium.net.TorManagerOrbot;
@@ -107,7 +110,7 @@ import static android.os.Build.VERSION.SDK_INT;
 import static android.os.Build.VERSION_CODES.GINGERBREAD;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class MbwManager {
+public class MbwManager implements WalletManager.TransactionFetcher {
    private static final String PROXY_HOST = "socksProxyHost";
    private static final String PROXY_PORT = "socksProxyPort";
    private static final String SELECTED_ACCOUNT = "selectedAccount";
@@ -173,10 +176,12 @@ public class MbwManager {
 
    private EvictingQueue<LogEntry> _wapiLogs = EvictingQueue.create(100);
    private Cache<String, Object> _semiPersistingBackgroundObjects = CacheBuilder.newBuilder().maximumSize(10).build();
+   private boolean _useSpvModule = false;
 
    private MbwManager(Context evilContext) {
       _applicationContext = Preconditions.checkNotNull(evilContext.getApplicationContext());
       _environment = MbwEnvironment.verifyEnvironment(_applicationContext);
+      checkAndRePairModules();
       String version = VersionManager.determineVersion(_applicationContext);
 
       // Preferences
@@ -283,6 +288,20 @@ public class MbwManager {
                   _environment.getBlockExplorerList().get(0).getIdentifier()));
    }
 
+   /**
+    * Makes sure that all installed and activated modules are paired, so they can be called in a
+    * secure manner.
+    */
+   private void checkAndRePairModules() {
+      CommunicationManager communicationManager = CommunicationManager.Companion.getInstance(_applicationContext);
+      String flavor = _environment.getNetwork().isTestnet() ? ".test" : "";
+      _useSpvModule = communicationManager.requestPair("com.mycelium.spvmodule" + flavor);
+   }
+
+   public boolean useSpvModule() {
+      return _useSpvModule;
+   }
+
    public void addExtraAccounts(AccountProvider accounts) {
       _walletManager.addExtraAccounts(accounts);
       _hasCoinapultAccounts = null;  // invalidate cache
@@ -323,7 +342,7 @@ public class MbwManager {
 
    private void createTempWalletManager() {
       //for managing temp accounts created through scanning
-      _tempWalletManager = createTempWalletManager(_environment);
+      _tempWalletManager = createTempWalletManager(_applicationContext, _environment);
       _tempWalletManager.addObserver(_eventTranslator);
    }
 
@@ -535,7 +554,8 @@ public class MbwManager {
 
       // Create and return wallet manager
       WalletManager walletManager = new WalletManager(secureKeyValueStore,
-            backing, environment.getNetwork(), _wapi, externalSignatureProviderProxy);
+            backing, environment.getNetwork(), _wapi, externalSignatureProviderProxy,
+              this, useSpvModule());
 
       // notify the walletManager about the current selected account
       UUID lastSelectedAccountId = getLastSelectedAccountId();
@@ -551,7 +571,7 @@ public class MbwManager {
     * @param environment the Mycelium environment
     * @return a new in memory backed wallet manager instance
     */
-   private WalletManager createTempWalletManager(MbwEnvironment environment) {
+   private WalletManager createTempWalletManager(final Context context, MbwEnvironment environment) {
       // Create in-memory account backing
       WalletManagerBacking backing = new InMemoryWalletManagerBacking();
 
@@ -560,7 +580,8 @@ public class MbwManager {
 
       // Create and return wallet manager
       WalletManager walletManager = new WalletManager(secureKeyValueStore,
-            backing, environment.getNetwork(), _wapi, null);
+            backing, environment.getNetwork(), _wapi, null,
+              this, useSpvModule());
 
       walletManager.disableTransactionHistorySynchronization();
       return walletManager;
@@ -1281,5 +1302,20 @@ public class MbwManager {
       getWalletManager(false).startSynchronization(syncMode);
       // also fetch a new exchange rate, if necessary
       getExchangeRateManager().requestOptionalRefresh();
+   }
+
+   @Override
+   public void getTransactions(Set<WalletManager.AddressWithCreationTime> addresses) {
+      String flavor = _environment.getNetwork().isTestnet() ? ".test" : "";
+      Intent service = new Intent();
+      //TODO: harmonize names and capitalization. monitor addresses?
+      service.setAction("com.mycelium.wallet.receiveTransactions");
+      String[] addressStrings = new String[addresses.size()];
+      int i=0;
+      for(WalletManager.AddressWithCreationTime awct : addresses) {
+         addressStrings[i++] = awct.address + ";" + awct.creationTime;
+      }
+      service.putExtra("ADDRESSES", addressStrings);
+      CommunicationManager.Companion.getInstance(_applicationContext).send("com.mycelium.spvmodule" + flavor, service);
    }
 }

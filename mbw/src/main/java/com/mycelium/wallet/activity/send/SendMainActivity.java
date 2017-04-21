@@ -548,7 +548,7 @@ public class SendMainActivity extends Activity {
    }
 
    private TransactionStatus tryCreateUnsignedTransaction() {
-      if(isCoinapult()) {
+      if (isCoinapult()) {
          return tryCreateCoinapultTX();
       } else {
          return tryCreateUnsignedTransactionFromWallet();

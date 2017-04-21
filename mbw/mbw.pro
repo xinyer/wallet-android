@@ -251,3 +251,27 @@
 #    java.lang.Object writeReplace();
 #    java.lang.Object readResolve();
 #}
+
+# Rules from https://github.com/grandstaish/paperparcel
+-dontwarn org.jetbrains.annotations.**
+-keepclassmembers class nz.bradcampbell.paperparcel.PaperParcelMapping {
+  static ** FROM_ORIGINAL;
+  static ** FROM_PARCELABLE;
+}
+
+#ButterKnife
+-keep class **$$ViewInjector { *; }
+-keep class **$$ViewBinder { *; }
+-keepnames class * { @butterknife.InjectView *;}
+
+
+
+-dontwarn javax.jcr.**
+-dontwarn org.slf4j.**
+-keep,includedescriptorclasses class com.google.protobuf.ExtensionRegistry$** { *; }
+-keepclassmembers class com.google.protobuf.ExtensionRegistry { com.google.protobuf.ExtensionRegistry$FileDescriptor descriptor; }
+
+# https://stackoverflow.com/questions/33047806/proguard-duplicate-definition-of-library-class#35742739
+-dontnote android.net.http.*
+-dontnote org.apache.commons.codec.**
+-dontnote org.apache.http.**
