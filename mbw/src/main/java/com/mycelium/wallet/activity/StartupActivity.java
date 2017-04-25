@@ -478,8 +478,13 @@ public class StartupActivity extends Activity {
          String content = data.getStringExtra("base58Key");
          if (content != null) {
             InMemoryPrivateKey key = InMemoryPrivateKey.fromBase58String(content, _mbwManager.getNetwork()).get();
-            UUID account = MbwManager.getInstance(this).createOnTheFlyAccount(key);
-            SendInitializationActivity.callMe(this, account, true);
+           UUID account = null;
+           try {
+             account = MbwManager.getInstance(this).createOnTheFlyAccount(key);
+           } catch (WalletManager.WalletManagerException e) {
+             throw new RuntimeException(e);
+           }
+           SendInitializationActivity.callMe(this, account, true);
             finish();
             return;
          }

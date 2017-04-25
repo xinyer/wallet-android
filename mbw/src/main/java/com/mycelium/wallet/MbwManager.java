@@ -458,17 +458,17 @@ public class MbwManager implements WalletManager.TransactionFetcher {
 
          // Create an account from this record
          UUID account;
-         if (record.hasPrivateKey()) {
-            try {
+         try {
+            if (record.hasPrivateKey()) {
                account = _walletManager.createSingleAddressAccount(record.key, AesKeyCipher.defaultKeyCipher());
-            } catch (KeyCipher.InvalidKeyCipher invalidKeyCipher) {
-               throw new RuntimeException(invalidKeyCipher);
+            } else {
+               account = _walletManager.createSingleAddressAccount(record.address);
             }
-         } else {
-            account = _walletManager.createSingleAddressAccount(record.address);
+         } catch (KeyCipher.InvalidKeyCipher | WalletManager.WalletManagerException e) {
+           throw new RuntimeException(e);
          }
 
-         //check whether this was the selected record
+        //check whether this was the selected record
          if (record.address.toString().equals(lastAddress)) {
             setSelectedAccount(account);
          }
@@ -1039,14 +1039,14 @@ public class MbwManager implements WalletManager.TransactionFetcher {
       return _walletManager;
    }
 
-   public UUID createOnTheFlyAccount(Address address) {
+   public UUID createOnTheFlyAccount(Address address) throws WalletManager.WalletManagerException {
       UUID accountId = _tempWalletManager.createSingleAddressAccount(address);
       _tempWalletManager.getAccount(accountId).setAllowZeroConfSpending(true);
       _tempWalletManager.setActiveAccount(accountId);  // this also starts a sync
       return accountId;
    }
 
-   public UUID createOnTheFlyAccount(InMemoryPrivateKey privateKey) {
+   public UUID createOnTheFlyAccount(InMemoryPrivateKey privateKey) throws WalletManager.WalletManagerException {
       UUID accountId;
       try {
          accountId = _tempWalletManager.createSingleAddressAccount(privateKey, AesKeyCipher.defaultKeyCipher());

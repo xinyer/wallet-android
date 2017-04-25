@@ -106,10 +106,15 @@ public abstract class HdAccountSelectorActivity extends Activity implements Mast
             MbwManager mbwManager = MbwManager.getInstance(getApplicationContext());
             WalletManager walletManager = mbwManager.getWalletManager(true);
 
-            UUID id = masterseedScanManager.createOnTheFlyAccount(
-                  account.accountRoot,
-                  walletManager,
-                  account.keyPath.getLastIndex());
+            UUID id = null;
+            try {
+               id = masterseedScanManager.createOnTheFlyAccount(
+                     account.accountRoot,
+                     walletManager,
+                     account.keyPath.getLastIndex());
+            } catch (WalletManager.WalletManagerException e) {
+               throw new RuntimeException(e);
+            }
 
             Bip44Account tempAccount = (Bip44Account) walletManager.getAccount(id);
             tempAccount.doSynchronization(SyncMode.NORMAL_WITHOUT_TX_LOOKUP);

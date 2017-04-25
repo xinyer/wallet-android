@@ -428,7 +428,8 @@ public abstract class ExternalSignatureDeviceManager extends AbstractAccountScan
    }
 
    @Override
-   public UUID createOnTheFlyAccount(HdKeyNode accountRoot, WalletManager walletManager, int accountIndex) {
+   public UUID createOnTheFlyAccount(HdKeyNode accountRoot, WalletManager walletManager,
+                                     int accountIndex) throws WalletManager.WalletManagerException {
       UUID account;
       if (walletManager.hasAccount(accountRoot.getUuid())) {
          // Account already exists

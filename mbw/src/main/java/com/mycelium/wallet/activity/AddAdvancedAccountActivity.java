@@ -37,6 +37,7 @@ package com.mycelium.wallet.activity;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -45,6 +46,7 @@ import com.mrd.bitlib.crypto.HdKeyNode;
 import com.mrd.bitlib.crypto.InMemoryPrivateKey;
 import com.mrd.bitlib.model.Address;
 import com.mrd.bitlib.model.NetworkParameters;
+import com.mycelium.wallet.BuildConfig;
 import com.mycelium.wallet.activity.modern.Toaster;
 import com.mycelium.wallet.extsig.trezor.activity.TrezorAccountImportActivity;
 import com.mycelium.wallet.extsig.keepkey.activity.KeepKeyAccountImportActivity;
@@ -56,6 +58,7 @@ import com.mycelium.wallet.extsig.ledger.activity.LedgerAccountImportActivity;
 import com.mycelium.wallet.persistence.MetadataStorage;
 import com.mycelium.wapi.wallet.AesKeyCipher;
 import com.mycelium.wapi.wallet.KeyCipher;
+import com.mycelium.wapi.wallet.WalletManager;
 
 import java.util.UUID;
 
@@ -63,6 +66,7 @@ public class AddAdvancedAccountActivity extends Activity {
    public static final String BUY_TREZOR_LINK = "https://buytrezor.com?a=mycelium.com";
    public static final String BUY_KEEPKEY_LINK = "https://keepkey.go2cloud.org/SH1M";
    public static final String BUY_LEDGER_LINK = "https://www.ledgerwallet.com/r/494d?path=/products";
+   private static final String LOG_TAG = AddAdvancedAccountActivity.class.getCanonicalName();
 
    public static void callMe(Activity activity, int requestCode) {
       Intent intent = new Intent(activity, AddAdvancedAccountActivity.class);
@@ -250,21 +254,34 @@ public class AddAdvancedAccountActivity extends Activity {
 
          _mbwManager.getMetadataStorage().setOtherAccountBackupState(acc, backupState);
 
-      } catch (KeyCipher.InvalidKeyCipher invalidKeyCipher) {
-         throw new RuntimeException(invalidKeyCipher);
+      } catch (KeyCipher.InvalidKeyCipher | WalletManager.WalletManagerException e) {
+         throw new RuntimeException(e);
       }
       finishOk(acc);
    }
 
    private void returnAccount(HdKeyNode hdKeyNode) {
-      UUID acc = _mbwManager.getWalletManager(false).createUnrelatedBip44Account(hdKeyNode);
+      UUID acc = null;
+      try {
+         acc = _mbwManager.getWalletManager(false).createUnrelatedBip44Account(hdKeyNode);
+      } catch (WalletManager.WalletManagerException e) {
+         throw new RuntimeException(e);
+      }
       // set BackupState as ignored - we currently have no option to backup xPrivs after all
       _mbwManager.getMetadataStorage().setOtherAccountBackupState(acc, MetadataStorage.BackupState.IGNORED);
       finishOk(acc);
    }
 
-   private void returnAccount(Address address) {
-      UUID acc = _mbwManager.getWalletManager(false).createSingleAddressAccount(address);
+   private void returnAccount(Address address)  {
+      UUID acc = null;
+      try {
+         acc = _mbwManager.getWalletManager(false).createSingleAddressAccount(address);
+      } catch (WalletManager.WalletManagerException e) {
+         if(BuildConfig.DEBUG) {
+            Log.e(LOG_TAG, e.getLocalizedMessage(), e);
+         }
+         finishNok();
+      }
       finishOk(acc);
    }
 
@@ -272,6 +289,12 @@ public class AddAdvancedAccountActivity extends Activity {
       Intent result = new Intent();
       result.putExtra(AddAccountActivity.RESULT_KEY, account);
       setResult(RESULT_OK, result);
+      finish();
+   }
+
+   private void finishNok() {
+      Intent result = new Intent();
+      setResult(RESULT_CANCELED, result);
       finish();
    }
 }

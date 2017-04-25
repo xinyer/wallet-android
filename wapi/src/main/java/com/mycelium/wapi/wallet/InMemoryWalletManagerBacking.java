@@ -197,6 +197,11 @@ public class InMemoryWalletManagerBacking implements WalletManagerBacking {
       }
 
       @Override
+      public void storeAddressCreationTime(Address address, long timestamp) {
+         InMemoryWalletManagerBacking.this.storeAddressCreationTime(address, timestamp);
+      }
+
+      @Override
       public boolean updateAccountContext(SingleAddressAccountContext context) {
          // Since this is in-memory we don't try to optimize and just update all values
          _singleAddressAccountContexts.put(context.getId(), new SingleAddressAccountContext(context));

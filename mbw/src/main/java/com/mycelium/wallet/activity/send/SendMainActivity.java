@@ -42,6 +42,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -129,7 +130,8 @@ public class SendMainActivity extends Activity {
    private static final int BROADCAST_REQUEST_CODE = 7;
    private static final int REQUEST_PAYMENT_HANDLER = 8;
    public static final String RAW_PAYMENT_REQUEST = "rawPaymentRequest";
-   private BillPay _sepaPayment;
+  private static final String LOG_TAG = SendMainActivity.class.getCanonicalName();
+  private BillPay _sepaPayment;
 
    public static final String ACCOUNT = "account";
    private static final String AMOUNT = "amount";
@@ -293,7 +295,12 @@ public class SendMainActivity extends Activity {
       if (_receivingAddress == null) {
          HdKeyNode hdKey = (HdKeyNode) getIntent().getSerializableExtra(HD_KEY);
          if (hdKey != null) {
-            setReceivingAddressFromKeynode(hdKey);
+           try {
+             setReceivingAddressFromKeynode(hdKey);
+           } catch (WalletManager.WalletManagerException e) {
+             //TODO handle this better. Nelson
+             Log.e(LOG_TAG, e.getLocalizedMessage(), e);
+           }
          }
       }
 
@@ -1009,7 +1016,11 @@ public class SendMainActivity extends Activity {
                   return;
                }
             } else if (type == StringHandlerActivity.ResultType.HD_NODE) {
-               setReceivingAddressFromKeynode(StringHandlerActivity.getHdKeyNode(intent));
+              try {
+                setReceivingAddressFromKeynode(StringHandlerActivity.getHdKeyNode(intent));
+              } catch (WalletManager.WalletManagerException e) {
+                throw new RuntimeException(e);
+              }
             } else {
                throw new IllegalStateException("Unexpected result type from scan: " + type.toString());
             }
@@ -1092,7 +1103,7 @@ public class SendMainActivity extends Activity {
       }
    }
 
-   private void setReceivingAddressFromKeynode(HdKeyNode hdKeyNode) {
+   private void setReceivingAddressFromKeynode(HdKeyNode hdKeyNode) throws WalletManager.WalletManagerException {
       _progress = ProgressDialog.show(this, "", getString(R.string.retrieving_pubkey_address), true);
       _receivingAcc = _mbwManager.getWalletManager(true).createUnrelatedBip44Account(hdKeyNode);
       _xpubSyncing = true;

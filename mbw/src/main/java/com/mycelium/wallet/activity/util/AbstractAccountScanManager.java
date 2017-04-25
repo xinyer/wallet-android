@@ -276,7 +276,7 @@ public abstract class AbstractAccountScanManager implements AccountScanManager {
       passphraseSyncQueue.add(Optional.fromNullable(passphrase));
    }
 
-   abstract public UUID createOnTheFlyAccount(HdKeyNode accountRoot, WalletManager walletManager, int accountIndex);
+   abstract public UUID createOnTheFlyAccount(HdKeyNode accountRoot, WalletManager walletManager, int accountIndex) throws WalletManager.WalletManagerException;
 
    // returns the next Bip44 account based on the last scanned account
    @Override

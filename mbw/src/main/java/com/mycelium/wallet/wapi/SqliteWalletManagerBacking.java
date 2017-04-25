@@ -371,7 +371,7 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
       Map<Address, Long> map = new HashMap<>();
       Cursor cursor = _database.rawQuery("SELECT address, timestamp FROM addressTimestamp;", null);
       while(cursor.moveToNext()) {
-         map.put(Address.fromString(cursor.getString(1)), cursor.getLong(2));
+         map.put(Address.fromString(cursor.getString(0)), cursor.getLong(1));
       }
       cursor.close();
       return map;
@@ -1038,7 +1038,7 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          List<TransactionEx> list = new LinkedList<>();
          try {
             cursor = _db.rawQuery("SELECT id, height, time, binary FROM " + txTableName
-                        + " ORDER BY height desc limit ? offset ?",
+                        + " ORDER BY height DESC LIMIT ? OFFSET ?",
                   new String[]{Integer.toString(limit), Integer.toString(offset)});
             while (cursor.moveToNext()) {
                TransactionEx tex = new TransactionEx(new Sha256Hash(cursor.getBlob(0)), cursor.getInt(1),
@@ -1060,7 +1060,7 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          try {
             cursor = _db.rawQuery("SELECT id, height, time, binary FROM " + txTableName
                         + " WHERE time >= ?"
-                        + " ORDER BY height desc",
+                        + " ORDER BY height DESC",
                   new String[]{Long.toString(since / 1000)});
             while (cursor.moveToNext()) {
                TransactionEx tex = new TransactionEx(new Sha256Hash(cursor.getBlob(0)), cursor.getInt(1),
@@ -1079,6 +1079,11 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
       public boolean updateAccountContext(Bip44AccountContext context) {
          return updateBip44AccountContext(context);
       }
+
+      public void storeAddressCreationTime(Address address, long timestamp) {
+         SqliteWalletManagerBacking.this.storeAddressCreationTime(address, timestamp);
+      }
+
 
       @Override
       public boolean updateAccountContext(SingleAddressAccountContext context) {
@@ -1102,44 +1107,33 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
 
       @Override
       public void onCreate(SQLiteDatabase db) {
-         beginTransaction();
-         try {
-            db.execSQL("CREATE TABLE single (id TEXT PRIMARY KEY, address BLOB, addressstring TEXT, archived INTEGER, blockheight INTEGER);");
-            db.execSQL("CREATE TABLE bip44 (id TEXT PRIMARY KEY, accountIndex INTEGER, archived INTEGER, blockheight INTEGER, lastExternalIndexWithActivity INTEGER, lastInternalIndexWithActivity INTEGER, firstMonitoredInternalIndex INTEGER, lastDiscovery, accountType INTEGER, accountSubId INTEGER);");
-            db.execSQL("CREATE TABLE kv (k BLOB NOT NULL, v BLOB, checksum BLOB, subId INTEGER NOT NULL, PRIMARY KEY (k, subId) );");
-            db.execSQL("CREATE TABLE addressTimestamp (address TEXT PRIMARY KEY, timestamp INTEGER);");
-            setTransactionSuccessful();
-         } finally {
-            endTransaction();
-         }
+         db.execSQL("CREATE TABLE single (id TEXT PRIMARY KEY, address BLOB, addressstring TEXT, archived INTEGER, blockheight INTEGER);");
+         db.execSQL("CREATE TABLE bip44 (id TEXT PRIMARY KEY, accountIndex INTEGER, archived INTEGER, blockheight INTEGER, lastExternalIndexWithActivity INTEGER, lastInternalIndexWithActivity INTEGER, firstMonitoredInternalIndex INTEGER, lastDiscovery, accountType INTEGER, accountSubId INTEGER);");
+         db.execSQL("CREATE TABLE kv (k BLOB NOT NULL, v BLOB, checksum BLOB, subId INTEGER NOT NULL, PRIMARY KEY (k, subId) );");
+         db.execSQL("CREATE TABLE addressTimestamp (address TEXT PRIMARY KEY, timestamp INTEGER DEFAULT 0);");
       }
+
 
       @Override
       public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-         beginTransaction();
-         try {
-            if (oldVersion < 2) {
-               db.execSQL("ALTER TABLE kv ADD COLUMN checksum BLOB");
-            }
-            if (oldVersion < 3) {
-               // add column to the secure kv table to indicate sub-stores
-               // use a temporary table to migrate the table, as sqlite does not allow to change primary keys constraints
-               db.execSQL("CREATE TABLE kv_new (k BLOB NOT NULL, v BLOB, checksum BLOB, subId INTEGER NOT NULL, PRIMARY KEY (k, subId) );");
-               db.execSQL("INSERT INTO kv_new SELECT k, v, checksum, 0 FROM kv");
-               db.execSQL("ALTER TABLE kv RENAME TO kv_old");
-               db.execSQL("ALTER TABLE kv_new RENAME TO kv");
-               db.execSQL("DROP TABLE kv_old");
+         if (oldVersion < 2) {
+            db.execSQL("ALTER TABLE kv ADD COLUMN checksum BLOB");
+         }
+         if (oldVersion < 3) {
+            // add column to the secure kv table to indicate sub-stores
+            // use a temporary table to migrate the table, as sqlite does not allow to change primary keys constraints
+            db.execSQL("CREATE TABLE kv_new (k BLOB NOT NULL, v BLOB, checksum BLOB, subId INTEGER NOT NULL, PRIMARY KEY (k, subId) );");
+            db.execSQL("INSERT INTO kv_new SELECT k, v, checksum, 0 FROM kv");
+            db.execSQL("ALTER TABLE kv RENAME TO kv_old");
+            db.execSQL("ALTER TABLE kv_new RENAME TO kv");
+            db.execSQL("DROP TABLE kv_old");
 
-               // add column to store what account type it is
-               db.execSQL("ALTER TABLE bip44 ADD COLUMN accountType INTEGER DEFAULT 0");
-               db.execSQL("ALTER TABLE bip44 ADD COLUMN accountSubId INTEGER DEFAULT 0");
-            }
-            if (oldVersion < 4) {
-               db.execSQL("CREATE TABLE IF NOT EXISTS addressTimestamp (address TEXT PRIMARY KEY, timestamp INTEGER);");
-            }
-            setTransactionSuccessful();
-         } finally {
-            endTransaction();
+            // add column to store what account type it is
+            db.execSQL("ALTER TABLE bip44 ADD COLUMN accountType INTEGER DEFAULT 0");
+            db.execSQL("ALTER TABLE bip44 ADD COLUMN accountSubId INTEGER DEFAULT 0");
+         }
+         if (oldVersion < 4) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS addressTimestamp (address TEXT PRIMARY KEY, timestamp INTEGER DEFAULT 0);");
          }
       }
    }

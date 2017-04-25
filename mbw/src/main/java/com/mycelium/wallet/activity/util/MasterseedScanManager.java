@@ -96,7 +96,7 @@ public class MasterseedScanManager extends AbstractAccountScanManager {
    }
 
    @Override
-   public UUID createOnTheFlyAccount(HdKeyNode accountRoot, WalletManager walletManager, int accountIndex) {
+   public UUID createOnTheFlyAccount(HdKeyNode accountRoot, WalletManager walletManager, int accountIndex) throws WalletManager.WalletManagerException {
       UUID account;
       if (walletManager.hasAccount(accountRoot.getUuid())){
          // Account already exists

@@ -198,7 +198,7 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
          }
          addressMap = _externalAddresses;
       }
-      while (index >= 0) {
+      for (;index >= 0; index--) {
          if (addressMap.inverse().containsKey(index)) {
             return;
          }
@@ -215,10 +215,9 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
         if(lastIndexWithActivity != -1) {
           Address addressLastActivity = addressMap.inverse().get(_context.getLastInternalIndexWithActivity());
           timestamp = ((WalletManagerBacking) _backing).getCreationTimeByAddress(addressLastActivity)
-          - (2 * 24 * 60 * 60 * 1000); //Minus two days in millisecond.
+              - (2 * 24 * 60 * 60 * 1000); //Minus two days in millisecond.
         }
-        ((WalletManagerBacking) _backing).storeAddressCreationTime(address, timestamp);
-         index--;
+        _backing.storeAddressCreationTime(address, timestamp);
       }
    }
 

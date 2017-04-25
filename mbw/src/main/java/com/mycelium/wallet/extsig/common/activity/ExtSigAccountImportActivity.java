@@ -46,6 +46,7 @@ import com.mycelium.wallet.Utils;
 import com.mycelium.wallet.extsig.common.ExternalSignatureDeviceManager;
 import com.mycelium.wallet.persistence.MetadataStorage;
 import com.mycelium.wapi.wallet.AccountScanManager;
+import com.mycelium.wapi.wallet.WalletManager;
 import com.squareup.otto.Subscribe;
 
 import java.util.UUID;
@@ -62,12 +63,17 @@ public abstract class ExtSigAccountImportActivity extends ExtSigAccountSelectorA
             // create the new account and get the uuid of it
             MbwManager mbwManager = MbwManager.getInstance(ExtSigAccountImportActivity.this);
 
-            UUID acc = mbwManager.getWalletManager(false)
-                  .createExternalSignatureAccount(
-                        item.xPub,
-                        (ExternalSignatureDeviceManager) masterseedScanManager,
-                        item.accountHdKeyPath.getLastIndex()
-                  );
+            UUID acc = null;
+            try {
+               acc = mbwManager.getWalletManager(false)
+                     .createExternalSignatureAccount(
+                           item.xPub,
+                           (ExternalSignatureDeviceManager) masterseedScanManager,
+                           item.accountHdKeyPath.getLastIndex()
+                     );
+            } catch (WalletManager.WalletManagerException e) {
+               throw new RuntimeException(e);
+            }
 
             // Mark this account as backup warning ignored
             mbwManager.getMetadataStorage().setOtherAccountBackupState(acc, MetadataStorage.BackupState.IGNORED);
@@ -109,12 +115,17 @@ public abstract class ExtSigAccountImportActivity extends ExtSigAccountSelectorA
                   MbwManager mbwManager = MbwManager.getInstance(ExtSigAccountImportActivity.this);
 
                   if (nextAccount.isPresent()) {
-                     UUID acc = mbwManager.getWalletManager(false)
-                           .createExternalSignatureAccount(
-                                 nextAccount.get(),
-                                 (ExternalSignatureDeviceManager) masterseedScanManager,
-                                 nextAccount.get().getIndex()
-                           );
+                     UUID acc = null;
+                     try {
+                        acc = mbwManager.getWalletManager(false)
+                              .createExternalSignatureAccount(
+                                    nextAccount.get(),
+                                    (ExternalSignatureDeviceManager) masterseedScanManager,
+                                    nextAccount.get().getIndex()
+                              );
+                     } catch (WalletManager.WalletManagerException e) {
+                        throw new RuntimeException(e);
+                     }
 
                      mbwManager.getMetadataStorage().setOtherAccountBackupState(acc, MetadataStorage.BackupState.IGNORED);
 

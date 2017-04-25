@@ -186,8 +186,8 @@ public class StringHandleConfig implements Serializable {
             if (!key.isPresent()) return false;
             try {
                handlerActivity.getWalletManager().createSingleAddressAccount(key.get(), AesKeyCipher.defaultKeyCipher());
-            } catch (KeyCipher.InvalidKeyCipher invalidKeyCipher) {
-               throw new RuntimeException(invalidKeyCipher);
+            } catch (KeyCipher.InvalidKeyCipher | WalletManager.WalletManagerException e) {
+               throw new RuntimeException(e);
             }
             handlerActivity.finishOk();
             return true;
@@ -204,7 +204,12 @@ public class StringHandleConfig implements Serializable {
          public boolean handle(StringHandlerActivity handlerActivity, String content) {
             Optional<InMemoryPrivateKey> key = getPrivateKey(handlerActivity.getNetwork(), content);
             if (!key.isPresent()) return false;
-            UUID account = MbwManager.getInstance(handlerActivity).createOnTheFlyAccount(key.get());
+            UUID account = null;
+            try {
+               account = MbwManager.getInstance(handlerActivity).createOnTheFlyAccount(key.get());
+            } catch (WalletManager.WalletManagerException e) {
+               throw new RuntimeException(e);
+            }
             //we dont know yet where at what to send
             BitcoinUri uri = new BitcoinUri(null,null,null);
             SendInitializationActivity.callMe(handlerActivity, account,uri, true);
@@ -305,7 +310,7 @@ public class StringHandleConfig implements Serializable {
                SendInitializationActivity.callMe(handlerActivity, acc, uri, true);
                handlerActivity.finishOk();
                return true;
-            } catch (HdKeyNode.KeyGenerationException ex){
+            } catch (HdKeyNode.KeyGenerationException | WalletManager.WalletManagerException ex){
                return false;
             }
          }
@@ -396,7 +401,12 @@ public class StringHandleConfig implements Serializable {
             if (!address.isPresent()) {
                return false;
             }
-            UUID account = MbwManager.getInstance(handlerActivity).createOnTheFlyAccount(address.get());
+            UUID account = null;
+            try {
+               account = MbwManager.getInstance(handlerActivity).createOnTheFlyAccount(address.get());
+            } catch (WalletManager.WalletManagerException e) {
+               throw new RuntimeException(e);
+            }
             //we dont know yet where at what to send
             BitcoinUri uri = new BitcoinUri(null,null,null);
             SendInitializationActivity.callMe(handlerActivity, account, uri, true);
@@ -545,7 +555,12 @@ public class StringHandleConfig implements Serializable {
                handlerActivity.finishError(R.string.unrecognized_format, content);
                //started with bitcoin: but could not be parsed, was handled
             } else {
-               UUID account = MbwManager.getInstance(handlerActivity).createOnTheFlyAccount(uri.get().address);
+               UUID account = null;
+               try {
+                  account = MbwManager.getInstance(handlerActivity).createOnTheFlyAccount(uri.get().address);
+               } catch (WalletManager.WalletManagerException e) {
+                  throw new RuntimeException(e);
+               }
                //we dont know yet where at what to send
                BitcoinUri targeturi = new BitcoinUri(null,null,null);
                SendInitializationActivity.callMe(handlerActivity, account, targeturi, true);

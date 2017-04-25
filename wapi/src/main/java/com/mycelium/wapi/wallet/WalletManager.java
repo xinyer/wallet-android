@@ -39,6 +39,7 @@ import com.mycelium.wapi.wallet.single.PublicPrivateKeyStore;
 import com.mycelium.wapi.wallet.single.SingleAddressAccount;
 import com.mycelium.wapi.wallet.single.SingleAddressAccountContext;
 
+import java.security.PrivilegedActionException;
 import java.util.*;
 
 import static com.google.common.base.Predicates.*;
@@ -166,7 +167,7 @@ public class WalletManager {
     * @param address the address to use
     * @return the ID of the new account
     */
-   public UUID createSingleAddressAccount(Address address) {
+   public UUID createSingleAddressAccount(Address address) throws WalletManagerException {
       UUID id = SingleAddressAccount.calculateId(address);
       synchronized (_walletAccounts) {
          if (_walletAccounts.containsKey(id)) {
@@ -175,7 +176,10 @@ public class WalletManager {
          _backing.beginTransaction();
          try {
             SingleAddressAccountContext context = new SingleAddressAccountContext(id, address, false, 0);
-            _backing.createSingleAddressAccountContext(context);
+            //TODO Verify if this the best procedure to handle this error. Nelson
+            if(!_backing.createSingleAddressAccountContext(context)) {
+               throw new WalletManagerException("Could not create a single address account context.");
+            }
             SingleAddressAccountBacking accountBacking = _backing.getSingleAddressAccountBacking(context.getId());
             Preconditions.checkNotNull(accountBacking);
             PublicPrivateKeyStore store = new PublicPrivateKeyStore(_secureKeyValueStore);
@@ -196,7 +200,7 @@ public class WalletManager {
     * @param hdKeyNode the xPub/xPriv to use
     * @return the ID of the new account
     */
-   public UUID createUnrelatedBip44Account(HdKeyNode hdKeyNode) {
+   public UUID createUnrelatedBip44Account(HdKeyNode hdKeyNode) throws WalletManagerException {
       final int accountIndex = 0;  // use any index for this account, as we don't know and we don't care
       final Bip44AccountKeyManager keyManager;
 
@@ -233,7 +237,9 @@ public class WalletManager {
                context = new Bip44AccountContext(keyManager.getAccountId(), accountIndex, false,
                      ACCOUNT_TYPE_UNRELATED_X_PUB, secureStorage.getSubId());
             }
-            _backing.createBip44AccountContext(context);
+            if(!_backing.createBip44AccountContext(context)) {
+               throw new WalletManagerException("Unable to create a BIP44 account context.");
+            }
 
             // Get the backing for the new account
             Bip44AccountBacking accountBacking = _backing.getBip44AccountBacking(context.getId());
@@ -259,7 +265,7 @@ public class WalletManager {
       }
    }
 
-   public UUID createExternalSignatureAccount(HdKeyNode hdKeyNode, ExternalSignatureProvider externalSignatureProvider, int accountIndex) {
+   public UUID createExternalSignatureAccount(HdKeyNode hdKeyNode, ExternalSignatureProvider externalSignatureProvider, int accountIndex) throws WalletManagerException {
       SecureSubKeyValueStore newSubKeyStore = getSecureStorage().createNewSubKeyStore();
       Bip44AccountKeyManager keyManager = Bip44PubOnlyAccountKeyManager.createFromPublicAccountRoot(hdKeyNode, _network, accountIndex, newSubKeyStore);
       final UUID id = keyManager.getAccountId();
@@ -276,7 +282,10 @@ public class WalletManager {
             // Generate the context for the account
             Bip44AccountContext context = new Bip44AccountContext(keyManager.getAccountId(), accountIndex, false,
                   externalSignatureProvider.getBIP44AccountType(), newSubKeyStore.getSubId());
-            _backing.createBip44AccountContext(context);
+            //TODO Verify if using a Runtime Exception in this case if the best procedure. Nelson
+            if(!_backing.createBip44AccountContext(context)) {
+               throw new WalletManagerException("Unable to create a BIP44 account context.");
+            }
 
             // Get the backing for the new account
             Bip44AccountBacking accountBacking = _backing.getBip44AccountBacking(context.getId());
@@ -306,7 +315,8 @@ public class WalletManager {
     * @return the ID of the new account
     * @throws InvalidKeyCipher
     */
-   public UUID createSingleAddressAccount(InMemoryPrivateKey privateKey, KeyCipher cipher) throws InvalidKeyCipher {
+   public UUID createSingleAddressAccount(InMemoryPrivateKey privateKey, KeyCipher cipher)
+       throws InvalidKeyCipher, WalletManagerException {
       PublicKey publicKey = privateKey.getPublicKey();
       Address address = publicKey.toAddress(_network);
       PublicPrivateKeyStore store = new PublicPrivateKeyStore(_secureKeyValueStore);
@@ -1028,7 +1038,10 @@ public class WalletManager {
             // Generate the context for the account
             Bip44AccountContext context = new Bip44AccountContext(keyManager.getAccountId(),
                 accountIndex, false);
-            _backing.createBip44AccountContext(context);
+            //TODO Verify if using a Runtime Exception in this case if the best procedure. Nelson
+            if(!_backing.createBip44AccountContext(context)) {
+               throw new RuntimeException("Unable to create a BIP44 account context.");
+            }
 
             // Get the backing for the new account
             Bip44AccountBacking accountBacking = _backing.getBip44AccountBacking(context.getId());
@@ -1073,7 +1086,10 @@ public class WalletManager {
 
             // Generate the context for the account
             Bip44AccountContext context = new Bip44AccountContext(keyManager.getAccountId(), accountIndex, false);
-            _backing.createBip44AccountContext(context);
+            //TODO Verify if using a Runtime Exception in this case if the best procedure. Nelson
+            if(!_backing.createBip44AccountContext(context)) {
+               throw new RuntimeException("Unable to create a BIP44 account context.");
+            }
 
             // Get the backing for the new account
             Bip44AccountBacking accountBacking = _backing.getBip44AccountBacking(context.getId());
@@ -1212,6 +1228,57 @@ public class WalletManager {
       AddressWithCreationTime(String address, long creationTime) {
          this.address = address;
          this.creationTime = creationTime;
+      }
+   }
+
+   public class WalletManagerException extends Exception {
+
+      /**
+       * Constructs a new exception with the specified detail message.  The
+       * cause is not initialized, and may subsequently be initialized by
+       * a call to {@link #initCause}.
+       *
+       * @param message the detail message. The detail message is saved for
+       *                later retrieval by the {@link #getMessage()} method.
+       */
+      public WalletManagerException(String message) {
+         super(message);
+      }
+
+      /**
+       * Constructs a new exception with the specified detail message and
+       * cause.  <p>Note that the detail message associated with
+       * {@code cause} is <i>not</i> automatically incorporated in
+       * this exception's detail message.
+       *
+       * @param message the detail message (which is saved for later retrieval
+       *                by the {@link #getMessage()} method).
+       * @param cause   the cause (which is saved for later retrieval by the
+       *                {@link #getCause()} method).  (A <tt>null</tt> value is
+       *                permitted, and indicates that the cause is nonexistent or
+       *                unknown.)
+       * @since 1.4
+       */
+      public WalletManagerException(String message, Throwable cause) {
+         super(message, cause);
+      }
+
+      /**
+       * Constructs a new exception with the specified cause and a detail
+       * message of <tt>(cause==null ? null : cause.toString())</tt> (which
+       * typically contains the class and detail message of <tt>cause</tt>).
+       * This constructor is useful for exceptions that are little more than
+       * wrappers for other throwables (for example, {@link
+       * PrivilegedActionException}).
+       *
+       * @param cause the cause (which is saved for later retrieval by the
+       *              {@link #getCause()} method).  (A <tt>null</tt> value is
+       *              permitted, and indicates that the cause is nonexistent or
+       *              unknown.)
+       * @since 1.4
+       */
+      public WalletManagerException(Throwable cause) {
+         super(cause);
       }
    }
 }
