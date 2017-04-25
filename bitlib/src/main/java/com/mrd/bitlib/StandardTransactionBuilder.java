@@ -35,8 +35,6 @@ import com.mrd.bitlib.util.Sha256Hash;
 import java.io.Serializable;
 import java.util.*;
 
-import static com.mrd.bitlib.TransactionUtils.MINIMUM_OUTPUT_VALUE;
-
 public class StandardTransactionBuilder {
    // 1000sat per 1000Bytes, from https://github.com/bitcoin/bitcoin/blob/849a7e645323062878604589df97a1cd75517eb1/src/main.cpp#L78
    private static final long MIN_RELAY_FEE = 1000;
@@ -70,7 +68,7 @@ public class StandardTransactionBuilder {
 
       public OutputTooSmallException(long value) {
          super("An output was added with a value of " + value
-               + " satoshis, which is smaller than the minimum accepted by the Bitcoin network");
+             + " satoshis, which is smaller than the minimum accepted by the Bitcoin network");
       }
    }
 
@@ -116,7 +114,7 @@ public class StandardTransactionBuilder {
       }
 
       public UnsignedTransaction(List<TransactionOutput> outputs, List<UnspentTransactionOutput> funding,
-                                  IPublicKeyRing keyRing, NetworkParameters network) {
+                                 IPublicKeyRing keyRing, NetworkParameters network) {
          _network = network;
          _outputs = outputs.toArray(new TransactionOutput[outputs.size()]);
          _funding = funding.toArray(new UnspentTransactionOutput[funding.size()]);
@@ -240,7 +238,7 @@ public class StandardTransactionBuilder {
    }
 
    public void addOutput(TransactionOutput output) throws OutputTooSmallException {
-      if (output.value < MINIMUM_OUTPUT_VALUE) {
+      if (output.value < TransactionUtils.MINIMUM_OUTPUT_VALUE) {
          throw new OutputTooSmallException(output.value);
       }
       _outputs.add(output);
@@ -291,8 +289,9 @@ public class StandardTransactionBuilder {
     * @param changeAddress The address to send any change to, can be null
     * @param keyRing       The public key ring matching the unspent outputs
     * @param network       The network we are working on
-    * @param minerFeeToUse The miner fee in sat to pay for every kilobytes of transaction size
+    * @param minerFeeToUse The miner fee to pay for every 1000 bytes of transaction size
     * @return An unsigned transaction or null if not enough funds were available
+    * @throws InsufficientFundsException
     */
    public UnsignedTransaction createUnsignedTransaction(Collection<UnspentTransactionOutput> inventory,
                                                         Address changeAddress, IPublicKeyRing keyRing,
@@ -300,48 +299,64 @@ public class StandardTransactionBuilder {
        throws InsufficientFundsException, UnableToBuildTransactionException {
       // Make a copy so we can mutate the list
       List<UnspentTransactionOutput> unspent = new LinkedList<>(inventory);
-      CoinSelector coinSelector = new FifoCoinSelector(minerFeeToUse, unspent);
-      long fee = coinSelector.getFee();
-      long outputSum = coinSelector.getOutputSum();
-      List<UnspentTransactionOutput> funding = pruneRedundantOutputs(coinSelector.getFundings(), fee + outputSum);
-      boolean needChangeOutputInEstimation = needChangeOutputInEstimation(funding, outputSum, minerFeeToUse);
+      OldestOutputsFirst oldestOutputsFirst = new OldestOutputsFirst(minerFeeToUse, unspent);
+      long fee = oldestOutputsFirst.getFee();
+      long outputSum = oldestOutputsFirst.getOutputSum();
+      List<UnspentTransactionOutput> funding = pruneRedundantOutputs(oldestOutputsFirst.getAllNeededFundings(), fee + outputSum);
 
-      // the number of inputs might have changed - recalculate the fee
-      int outputsSizeInFeeEstimation = _outputs.size();
-      if (needChangeOutputInEstimation) {
-         outputsSizeInFeeEstimation += 1;
-      }
-      fee = estimateFee(funding.size(), outputsSizeInFeeEstimation, minerFeeToUse);
 
-      long found = 0;
-      for (UnspentTransactionOutput output : funding) {
-         found += output.value;
-      }
-      // We have found all the funds we need
-      long toSend = fee + outputSum;
+      List<TransactionOutput> outputs = null;
+      boolean outputSizeAndEstimateMatch = false;
+      boolean needChangeOutputInEstimation = false;
+      while (!outputSizeAndEstimateMatch) {
+         // the number of inputs might have changed - recalculate the fee
+         int outputsSizeInFeeEstimation = _outputs.size();
+         if(needChangeOutputInEstimation) {
+            outputsSizeInFeeEstimation += 1;
+         }
+         fee = estimateFee(funding.size(), outputsSizeInFeeEstimation, minerFeeToUse);
 
-      if (changeAddress == null) {
-         // If no change address is specified, get the richest address from the
-         // funding set
-         changeAddress = getRichest(funding, network);
-      }
+         long found = 0;
+         for (UnspentTransactionOutput output : funding) {
+            found += output.value;
+         }
+         // We have fund all the funds we need
+         long toSend = fee + outputSum;
 
-      // We have our funding, calculate change
-      long change = found - toSend;
+         if (changeAddress == null) {
+            // If no change address s specified, get the richest address from the
+            // funding set
+            changeAddress = extractRichest(funding, network);
+         }
 
-       // Get a copy of all outputs
-       outputs = new LinkedList<>(_outputs);
+         // We have our funding, calculate change
+         long change = found - toSend;
 
-       if (change >= TransactionUtils.MINIMUM_OUTPUT_VALUE) {
-         // We have more funds than needed, add an output to our change address
+         // Get a copy of all outputs
+         outputs = new LinkedList<>(_outputs);
 
-         // But only if the change is larger than the minimum output accepted
-         // by the network
-         TransactionOutput changeOutput = createOutput(changeAddress, change, _network);
-         // Select a random position for our change so it is harder to analyze our addresses in the block chain.
-         // It is OK to use the weak java Random class for this purpose.
-         int position = new Random().nextInt(outputs.size() + 1);
-         outputs.add(position, changeOutput);
+         if (change >= TransactionUtils.MINIMUM_OUTPUT_VALUE) {
+            // We have more funds than needed, add an output to our change address
+
+            // But only if the change is larger than the minimum output accepted
+            // by the network
+            TransactionOutput changeOutput = createOutput(changeAddress, change, _network);
+            // Select a random position for our change so it is harder to analyze our addresses in the block chain.
+            // It is OK to use the weak java Random class for this purpose.
+            int position = new Random().nextInt(outputs.size() + 1);
+            outputs.add(position, changeOutput);
+         } else if(_outputs.size() == outputsSizeInFeeEstimation || needChangeOutputInEstimation) {
+            // The number of outputs in the transaction and in our estimation match.
+            // Or we already added a change output in the estimation but The change output would be smaller (or zero)
+            // than what the network would accept.
+            // In this case we leave it be as a small increased miner fee.
+            outputSizeAndEstimateMatch = true;
+         } else {
+         /*
+         We need to add a change output in the estimation so we recalculate everything.
+         */
+            needChangeOutputInEstimation = true;
+         }
       }
 
       UnsignedTransaction unsignedTransaction = new UnsignedTransaction(outputs, funding, keyRing, network);
@@ -352,7 +367,7 @@ public class StandardTransactionBuilder {
       long calculatedFee = unsignedTransaction.calculateFee();
       float estimatedFeePerKb = (long) ((float) calculatedFee / ((float) estimateTransactionSize / 1000));
 
-      // set a limit of MAX_MINER_FEE_PER_KB as absolute limit - it is very likely a bug in the fee estimator or transaction composer
+      // set a limit of 20mBtc/1000Bytes as absolute limit - it is very likely a bug in the fee estimator or transaction composer
       if (estimatedFeePerKb > Transaction.MAX_MINER_FEE_PER_KB) {
          throw new UnableToBuildTransactionException(
              String.format(Locale.getDefault(),
@@ -364,37 +379,6 @@ public class StandardTransactionBuilder {
       return unsignedTransaction;
    }
 
-   private boolean needChangeOutputInEstimation(List<UnspentTransactionOutput> funding,
-                                                long outputSum, long minerFeeToUse) {
-      long fee = estimateFee(funding.size(), _outputs.size(), minerFeeToUse);
-
-      long found = 0;
-      for (UnspentTransactionOutput output : funding) {
-         found += output.value;
-      }
-      // We have found all the funds we need
-      long toSend = fee + outputSum;
-
-      // We have our funding, calculate change
-      long change = found - toSend;
-
-      if (change >= MINIMUM_OUTPUT_VALUE) {
-         // We need to add a change output in the estimation.
-         return true;
-      } else {
-         // The change output would be smaller (or zero) than what the network would accept.
-         // In this case we leave it be as a small increased miner fee.
-         return false;
-      }
-   }
-
-
-   /**
-    * Greedy picks the biggest UTXOs until the outputSum is met.
-    * @param funding UTXO list in any order
-    * @param outputSum amount to spend
-    * @return shuffled list of UTXOs
-    */
    private List<UnspentTransactionOutput> pruneRedundantOutputs(List<UnspentTransactionOutput> funding, long outputSum) {
       List<UnspentTransactionOutput> largestToSmallest = Ordering.natural().reverse().onResultOf(new Function<UnspentTransactionOutput, Comparable>() {
          @Override
@@ -418,7 +402,7 @@ public class StandardTransactionBuilder {
    }
 
    @VisibleForTesting
-   Address getRichest(Collection<UnspentTransactionOutput> unspent, final NetworkParameters network) {
+   Address extractRichest(Collection<UnspentTransactionOutput> unspent, final NetworkParameters network) {
       Preconditions.checkArgument(!unspent.isEmpty());
       Function<UnspentTransactionOutput, Address> txout2Address = new Function<UnspentTransactionOutput, Address>() {
          @Override
@@ -427,11 +411,11 @@ public class StandardTransactionBuilder {
          }
       };
       Multimap<Address, UnspentTransactionOutput> index = Multimaps.index(unspent, txout2Address);
-      Address ret = getRichest(index);
+      Address ret = extractRichest(index);
       return Preconditions.checkNotNull(ret);
    }
 
-   private Address getRichest(Multimap<Address, UnspentTransactionOutput> index) {
+   private Address extractRichest(Multimap<Address, UnspentTransactionOutput> index) {
       Address ret = null;
       long maxSum = 0;
       for (Address address : index.keys()) {
@@ -439,8 +423,8 @@ public class StandardTransactionBuilder {
          long newSum = sum(unspentTransactionOutputs);
          if (newSum > maxSum) {
             ret = address;
-            maxSum = newSum;
          }
+         maxSum = newSum;
       }
       return ret;
    }
@@ -520,7 +504,7 @@ public class StandardTransactionBuilder {
     *
     * @param inputs  the number of inputs of the transaction
     * @param outputs the number of outputs of a transaction
-    * @return The estimated transaction size in bytes
+    * @return The estimated transaction size
     */
    public static int estimateTransactionSize(int inputs, int outputs) {
       int estimate = 0;
@@ -544,61 +528,52 @@ public class StandardTransactionBuilder {
    public static long estimateFee(int inputs, int outputs, long minerFeePerKb) {
       // fee is based on the size of the transaction, we have to pay for
       // every 1000 bytes
-      float txSizeKb = (float) (estimateTransactionSize(inputs, outputs) / 1000.0); //in kilobytes
-      long requiredFee = (long) (txSizeKb * minerFeePerKb);
+      int txSize = estimateTransactionSize(inputs, outputs);
+      long requiredFee = (long) (((float) txSize / 1000.0) * minerFeePerKb);
 
       // check if our estimation leads to a small fee that's below the default bitcoind-MIN_RELAY_FEE
       // if so, use the MIN_RELAY_FEE
       if (requiredFee < MIN_RELAY_FEE) {
          requiredFee = MIN_RELAY_FEE;
       }
+
       return requiredFee;
    }
 
-   private interface CoinSelector {
-      List<UnspentTransactionOutput> getFundings();
-      long getFee();
-      long getOutputSum();
-   }
-
-   private class FifoCoinSelector implements CoinSelector {
+   // TODO: generalize this into an interface and provide different coin-selectors
+   private class OldestOutputsFirst {
       private List<UnspentTransactionOutput> allFunding;
-      private long feeSat;
+      private long fee;
       private long outputSum;
 
-      public FifoCoinSelector(long feeSatPerKb, List<UnspentTransactionOutput> unspent)
-          throws InsufficientFundsException {
+      public OldestOutputsFirst(long minerFeeToUse, List<UnspentTransactionOutput> unspent) throws InsufficientFundsException {
          // Find the funding for this transaction
          allFunding = new LinkedList<>();
-         feeSat = estimateFee(unspent.size(), 1, feeSatPerKb);
+         fee = minerFeeToUse;
          outputSum = outputSum();
-         long foundSat = 0;
-         while (foundSat < feeSat + outputSum) {
-            UnspentTransactionOutput unspentTransactionOutput = extractOldest(unspent);
-            if (unspentTransactionOutput == null) {
+         long found = 0;
+         while (found < fee + outputSum) {
+            UnspentTransactionOutput output = extractOldest(unspent);
+            if (output == null) {
                // We do not have enough funds
-               throw new InsufficientFundsException(outputSum, feeSat);
+               throw new InsufficientFundsException(outputSum, fee);
             }
-            foundSat += unspentTransactionOutput.value;
-            allFunding.add(unspentTransactionOutput);
-            feeSat = estimateFee(allFunding.size(),
-                needChangeOutputInEstimation(allFunding, outputSum, feeSatPerKb)
-                    ? _outputs.size() + 1
-                    : _outputs.size(), feeSatPerKb);
+            found += output.value;
+            allFunding.add(output);
+            // When we estimate the fee we automatically add an extra output for an eventual change output.
+            // This slightly increases the change for paying a little extra, but adding change is the norm
+            fee = estimateFee(allFunding.size(), _outputs.size() + 1, minerFeeToUse);
          }
       }
 
-      @Override
-      public List<UnspentTransactionOutput> getFundings() {
+      public List<UnspentTransactionOutput> getAllNeededFundings() {
          return allFunding;
       }
 
-      @Override
       public long getFee() {
-         return feeSat;
+         return fee;
       }
 
-      @Override
       public long getOutputSum() {
          return outputSum;
       }
