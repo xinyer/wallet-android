@@ -311,7 +311,7 @@ public class NoticeFragment extends Fragment {
 
    @Subscribe
    public void spvSyncChanged(SpvSyncChanged event) {
-      this.bestChainDate = event.bestChainDate;
-      recheckNotice();
+      bestChainDate = event.bestChainDate;
+      updateUi();
    }
 }
