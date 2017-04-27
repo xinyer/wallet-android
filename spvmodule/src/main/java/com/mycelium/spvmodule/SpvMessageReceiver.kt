@@ -16,6 +16,9 @@ import org.bitcoinj.core.Transaction
 import org.bitcoinj.core.TransactionConfidence
 import org.bitcoinj.core.TransactionConfidence.ConfidenceType.*
 import org.bitcoinj.core.TransactionOutput
+import org.bitcoinj.store.BlockStoreException
+import org.bitcoinj.store.SPVBlockStore
+import java.io.File
 import java.nio.ByteBuffer
 import java.util.*
 
@@ -72,6 +75,13 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
                 if(addresses.size > 0) {
                     // bulk insert now
                     wallet.addWatchedAddresses(addresses, minTimestamp)
+
+                    // TODO: this is unsupported in bitcoinj-core:0.14.3
+                    // wallet.clearTransactions(getBlockHeight(minTimestamp))
+                    if(minTimestamp < wallet.lastBlockSeenTimeSecs && minTimestamp < System.currentTimeMillis() / 1000 - 600) {
+                        // crude heuristics to avoid an unnecessary rescan, risking to miss a rescan.
+                        wallet.reset()
+                    }
                     context.contentResolver.bulkInsert(BlockchainContract.Address.CONTENT_URI(BuildConfig.APPLICATION_ID), contentValuesArray.toTypedArray())
                 }
                 // send back all known transactions. others will follow as we find them.
@@ -82,5 +92,25 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
         }
         // start service to check for new transactions and maybe to broadcast a transaction
         context.startService(clone)
+    }
+
+    private fun  getBlockHeight(minTimestamp: Long): Int {
+        val blockChainFile = File(context.getDir("blockstore", Context.MODE_PRIVATE), Constants.Files.BLOCKCHAIN_FILENAME)
+        if (!blockChainFile.exists()) {
+            Log.e(TAG, "blockchain file not found!?!?")
+            return -1
+        }
+        try {
+            val blockStore = SPVBlockStore(Constants.NETWORK_PARAMETERS, blockChainFile)
+            var block = blockStore.chainHead // detect corruptions as early as possible
+            while(block.header.timeSeconds > minTimestamp - 4 * 60 * 60) { // block timestamps may be off by 4h. be safe.
+                block = block.getPrev(blockStore)
+            }
+            return block.height
+        } catch (x: BlockStoreException) {
+            val msg = "blockstore cannot be created"
+            Log.e(TAG, msg, x)
+            throw Error(msg, x)
+        }
     }
 }
