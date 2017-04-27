@@ -2,27 +2,33 @@ build:
   script:
     - "cp -ru /cache/root/.android /cache/root/.gradle /cache/root/.profile /cache/root/android-sdk-linux /root/ 2>/dev/null || :"
     - mkdir -p ~/.gradle/
-    - cd /builds/mycelium/android-public
+    - cd /builds/mycelium/mycelium-com-wallet
     - echo working on branch $CI_BUILD_REF_NAME''
     - "if [ $CI_BUILD_REF_NAME'' == 'master' ]; then gradleParam=''; else gradleParam='-PskipProguard'; fi"
-    - ./gradlew build $gradleParam -Pbranch=$CI_BUILD_REF_NAME''
+    - ./gradlew clean test lint build $gradleParam -Pbranch=$CI_BUILD_REF_NAME''
     - "mkdir /cache/root 2>/dev/null || :"
     - cp -ru /root/.android /root/.gradle /root/.profile /root/android-sdk-linux /cache/root
   type: build
   artifacts:
+    expire_in: 4 weeks
     paths:
-      - /builds/mycelium/android-public/mbw/build/outputs/logs/
-      - /builds/mycelium/android-public/mbw/build/outputs/lint-results.xml
-      - /builds/mycelium/android-public/mbw/build/outputs/lint-results.html
-      - /builds/mycelium/android-public/mbw/build/outputs/lint-results_files/
-      - /builds/mycelium/android-public/mbw/build/outputs/apk/mbw-btctestnet-debug-*build*.apk
-      - /builds/mycelium/android-public/btchip/build/outputs/
-      - /builds/mycelium/android-public/trezor/build/outputs/
+      - LVL/build/reports/
+      - bitlib/build/reports/
+      - btchip/build/outputs/
+      - coinapult/build/reports/
+      - lt-api/build/reports/
+      - libs/zxing-android/build/reports/
+      - libs/nordpol/build/reports/
+      - mbw/build/outputs/logs/
+      - mbw/build/outputs/lint-results.xml
+      - mbw/build/outputs/lint-results.html
+      - mbw/build/outputs/lint-results_files/
+      - mbw/build/outputs/apk/mbw-btctestnet-debug-*build*.apk
+      - mbw/build/reports/
+      - mbwlib/build/reports/
+      - trezor/build/outputs/
+      - trezor/build/reports/
+      - wapi/build/reports/
+
   tags:
     - 4GB_RAM
-
-#TODO: check the public folder for changes and push to github, ideally giving tribute to the authors and retaining the commit messages (slightly scary as that might leak info from the private repository)
-#TODO: if apk changed, update the mycelium.com/site folder?
-#TODO: fix lint issues
-#TODO: upgrade to latest build tools
-#TODO: figure out how to setup certain runners to use less ram
