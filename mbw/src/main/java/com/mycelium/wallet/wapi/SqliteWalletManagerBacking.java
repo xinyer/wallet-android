@@ -71,6 +71,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.mycelium.wallet.persistence.SQLiteQueryWithBlobs.uuidToBytes;
 
 public class SqliteWalletManagerBacking implements WalletManagerBacking {
@@ -235,9 +236,7 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          setTransactionSuccessful();
          return result;
       } catch(SQLException e) {
-         if(BuildConfig.DEBUG) {
-            Log.e(LOG_TAG, e.getLocalizedMessage(), e);
-         }
+         logException(e);
          return false;
       } finally {
          endTransaction();
@@ -315,9 +314,8 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          setTransactionSuccessful();
          return result;
       } catch(SQLException e) {
-         if(BuildConfig.DEBUG) {
-            Log.e(LOG_TAG, e.getLocalizedMessage(), e);
-         }         return false;
+         logException(e);
+         return false;
       } finally {
          endTransaction();
       }
@@ -334,9 +332,8 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          setTransactionSuccessful();
          return result;
       } catch(SQLException e) {
-         if(BuildConfig.DEBUG) {
-            Log.e(LOG_TAG, e.getLocalizedMessage(), e);
-         }         return false;
+         logException(e);
+         return false;
       } finally {
          endTransaction();
       }
@@ -358,9 +355,8 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          setTransactionSuccessful();
          return result;
       } catch(SQLException e) {
-         if(BuildConfig.DEBUG) {
-            Log.e(LOG_TAG, e.getLocalizedMessage(), e);
-         }         return false;
+         logException(e);
+         return false;
       } finally {
          endTransaction();
       }
@@ -393,9 +389,8 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          setTransactionSuccessful();
          return result;
       } catch(SQLException e) {
-         if(BuildConfig.DEBUG) {
-            Log.e(LOG_TAG, e.getLocalizedMessage(), e);
-         }         return false;
+         logException(e);
+         return false;
       } finally {
          endTransaction();
       }
@@ -417,25 +412,30 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          setTransactionSuccessful();
          return result;
       } catch(SQLException e) {
-         if(BuildConfig.DEBUG) {
-            Log.e(LOG_TAG, e.getLocalizedMessage(), e);
-         }         return false;
+         logException(e);
+         return false;
       } finally {
          endTransaction();
+      }
+   }
+
+   private void logException(SQLException e) {
+      if(BuildConfig.DEBUG) {
+         Log.e(LOG_TAG, e.getLocalizedMessage(), e);
       }
    }
 
    @Override
    public Bip44AccountBacking getBip44AccountBacking(UUID accountId) {
       SqliteAccountBacking backing = _backings.get(accountId);
-      Preconditions.checkNotNull(backing);
+      checkNotNull(backing);
       return backing;
    }
 
    @Override
    public SingleAddressAccountBacking getSingleAddressAccountBacking(UUID accountId) {
       SqliteAccountBacking backing = _backings.get(accountId);
-      Preconditions.checkNotNull(backing);
+      checkNotNull(backing);
       return backing;
    }
 
@@ -636,9 +636,8 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             setTransactionSuccessful();
             return result;
          } catch(SQLException e) {
-            if(BuildConfig.DEBUG) {
-               Log.e(LOG_TAG, e.getLocalizedMessage(), e);
-            }            return false;
+            logException(e);
+            return false;
          } finally {
             endTransaction();
          }
@@ -694,9 +693,8 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             setTransactionSuccessful();
             return result;
          } catch(SQLException e) {
-            if(BuildConfig.DEBUG) {
-               Log.e(LOG_TAG, e.getLocalizedMessage(), e);
-            }            return false;
+            logException(e);
+            return false;
          } finally {
             endTransaction();
          }
@@ -710,9 +708,8 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             setTransactionSuccessful();
             return result;
          } catch(SQLException e) {
-            if(BuildConfig.DEBUG) {
-               Log.e(LOG_TAG, e.getLocalizedMessage(), e);
-            }            return false;
+            logException(e);
+            return false;
          } finally {
             endTransaction();
          }
@@ -731,13 +728,11 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             setTransactionSuccessful();
             return result;
          } catch(SQLException e) {
-            if(BuildConfig.DEBUG) {
-               Log.e(LOG_TAG, e.getLocalizedMessage(), e);
-            }            return false;
+            logException(e);
+            return false;
          } finally {
             endTransaction();
          }
-
       }
 
       @Override
@@ -755,9 +750,8 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             setTransactionSuccessful();
             return result;
          } catch(SQLException e) {
-            if(BuildConfig.DEBUG) {
-               Log.e(LOG_TAG, e.getLocalizedMessage(), e);
-            }            return false;
+            logException(e);
+            return false;
          } finally {
             endTransaction();
          }
@@ -772,9 +766,8 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             setTransactionSuccessful();
             return result;
          } catch(SQLException e) {
-            if(BuildConfig.DEBUG) {
-               Log.e(LOG_TAG, e.getLocalizedMessage(), e);
-            }            return false;
+            logException(e);
+            return false;
          } finally {
             endTransaction();
          }
@@ -835,9 +828,8 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             }
             return result;
          } catch(SQLException e) {
-            if(BuildConfig.DEBUG) {
-               Log.e(LOG_TAG, e.getLocalizedMessage(), e);
-            }            return false;
+            logException(e);
+            return false;
          } finally {
             endTransaction();
          }
@@ -891,9 +883,8 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             setTransactionSuccessful();
             return result;
          } catch(SQLException e) {
-            if(BuildConfig.DEBUG) {
-               Log.e(LOG_TAG, e.getLocalizedMessage(), e);
-            }            return false;
+            logException(e);
+            return false;
          } finally {
             endTransaction();
          }
@@ -974,9 +965,8 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             setTransactionSuccessful();
             return result;
          } catch(SQLException e) {
-            if(BuildConfig.DEBUG) {
-               Log.e(LOG_TAG, e.getLocalizedMessage(), e);
-            }            return false;
+            logException(e);
+            return false;
          } finally {
             endTransaction();
          }
@@ -1008,9 +998,8 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             setTransactionSuccessful();
             return result;
          } catch(SQLException e) {
-            if(BuildConfig.DEBUG) {
-               Log.e(LOG_TAG, e.getLocalizedMessage(), e);
-            }            return false;
+            logException(e);
+            return false;
          } finally {
             endTransaction();
          }
@@ -1084,7 +1073,6 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          SqliteWalletManagerBacking.this.storeAddressCreationTime(address, timestamp);
       }
 
-
       @Override
       public boolean updateAccountContext(SingleAddressAccountContext context) {
          return updateSingleAddressAccountContext(context);
@@ -1112,7 +1100,6 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          db.execSQL("CREATE TABLE kv (k BLOB NOT NULL, v BLOB, checksum BLOB, subId INTEGER NOT NULL, PRIMARY KEY (k, subId) );");
          db.execSQL("CREATE TABLE addressTimestamp (address TEXT PRIMARY KEY, timestamp INTEGER DEFAULT 0);");
       }
-
 
       @Override
       public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
