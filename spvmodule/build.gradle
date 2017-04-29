@@ -6,7 +6,7 @@ repositories {
 }
 
 android {
-    compileSdkVersion 25
+    compileSdkVersion androidCompileSdkVersion
     buildToolsVersion androidSdkBuildVersion
 
     defaultConfig {
@@ -54,8 +54,8 @@ if (commonDebugKeystore.exists()) {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile "junit:junit:$junitVersion"
-    compile 'com.android.support:appcompat-v7:25.2.0'
-    compile 'com.android.support:support-v4:25.2.0'
+    compile "com.android.support:appcompat-v7:$androidSupportVersion"
+    compile "com.android.support:support-v4:$androidSupportVersion"
     compile 'com.android.support:multidex:1.0.1'
     compile 'org.bitcoinj:bitcoinj-core:0.14.3'
 

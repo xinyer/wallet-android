@@ -15,7 +15,7 @@ if (System.getenv()['MYCELIUM_BUILD_SYSTEM'] == 'server') {
     include 'sporeui'
     include 'spvmodulecontract'
     include 'spvmodule'
-    include 'spvmoduledash'
+    //include 'spvmoduledash'
     include 'bitcoinaccountmodulecontract'
     include 'bitcoinaccountmodule'
     include 'mbw'

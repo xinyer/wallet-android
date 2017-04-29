@@ -1,14 +1,15 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-kapt'
 
 android {
-    compileSdkVersion 24
+    compileSdkVersion androidCompileSdkVersion
     buildToolsVersion androidSdkBuildVersion
 
     defaultConfig {
         applicationId "com.mycelium.sporeui"
         minSdkVersion 19
-        targetSdkVersion 24
+        targetSdkVersion 25
         versionCode 1
         versionName "1.0"
     }
@@ -25,11 +26,9 @@ android {
         //exclude 'META-INF/NOTICE' // will not include NOTICE file
         exclude 'META-INF/LICENSE' // will not include LICENSE file
     }
-    buildToolsVersion androidSdkBuildVersion
-}
-
-kapt {
-    generateStubs = true
+    lintOptions {
+        disable 'ResourceType','MissingTranslation'
+    }
 }
 
 repositories {
@@ -45,6 +44,8 @@ dependencies {
     compile project(includePrefix +':libs:zxing-android')
     testCompile "junit:junit:$junitVersion"
     compile 'com.android.support:appcompat-v7:25.2.0'
+    compile "com.android.support:animated-vector-drawable:25.2.0"
+    compile "com.android.support:design:25.2.0"
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     compile 'com.pawegio.kandroid:kandroid:0.6.7@aar'
 

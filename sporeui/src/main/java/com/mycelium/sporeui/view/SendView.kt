@@ -25,14 +25,9 @@ import com.mycelium.sporeui.ui.ReceiverRecyclerViewItem
 import com.mycelium.sporeui.ui.SendRecyclerViewAdapter
 import com.mycelium.sporeui.ui.SenderRecyclerViewItem
 import com.pawegio.kandroid.find
-import com.wefika.horizontalpicker.HorizontalPicker
-import eu.davidea.flexibleadapter.FlexibleAdapter
-import eu.davidea.flexibleadapter.SelectableAdapter
 import flow.Flow
 import java.util.*
 import javax.inject.Inject
-import kotlin.reflect.jvm.internal.impl.resolve.scopes.receivers.Receiver
-
 
 @Layout(R.layout.screen_send)
 class SendView constructor(context: Context = null!!, attrs: AttributeSet = null!!) : LinearLayout(context, attrs) {
@@ -124,26 +119,21 @@ class SendView constructor(context: Context = null!!, attrs: AttributeSet = null
             Flow.get(scanButton).set(ScanActivity())
         }
 */
-        currencyEditText.setText(screen.currencyValue.value.toEngineeringString());
-        sendCurrencySymbol.setText(screen.currencyValue.currencyCode)
-        sendCurrencySymbol.setOnClickListener(
-                object : View.OnClickListener {
-                    override fun onClick(v: View?) {
-                        sendScreenPresenter.changeCurrency(
-                                SendScreenPresenter.CURRENCY.valueOf(sendCurrencySymbol.text.toString()),
-                                currencyEditText.text.toString().toLong())
-                    }
-
-                }
-        )
+        currencyEditText.setText(screen.currencyValue.value.toEngineeringString())
+        sendCurrencySymbol.text = screen.currencyValue.currencyCode
+        sendCurrencySymbol.setOnClickListener {
+            sendScreenPresenter.changeCurrency(
+                    SendScreenPresenter.CURRENCY.valueOf(sendCurrencySymbol.text.toString()),
+                    currencyEditText.text.toString().toLong())
+        }
 
         val senderAccountsRecyclerView = findViewById(R.id.senderAccountsRecyclerView) as RecyclerView
 
-        val senderVTO : ViewTreeObserver = senderAccountsRecyclerView.getViewTreeObserver();
+        val senderVTO : ViewTreeObserver = senderAccountsRecyclerView.viewTreeObserver
         senderVTO.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener{
             override fun onPreDraw(): Boolean {
-                senderAccountsRecyclerView.getViewTreeObserver().removeOnPreDrawListener(this)
-                senderFinalWidth = senderAccountsRecyclerView.getMeasuredWidth()
+                senderAccountsRecyclerView.viewTreeObserver.removeOnPreDrawListener(this)
+                senderFinalWidth = senderAccountsRecyclerView.measuredWidth
                 senderItemWidth = resources.getDimension(R.dimen.item_dob_width)
                 senderPadding = (senderFinalWidth - senderItemWidth) / 2
                 senderFirstItemWidth = senderPadding
@@ -151,7 +141,7 @@ class SendView constructor(context: Context = null!!, attrs: AttributeSet = null
 
                 val layoutManager = LinearLayoutManager(context)
                 layoutManager.orientation = LinearLayoutManager.HORIZONTAL
-                senderAccountsRecyclerView.setLayoutManager(layoutManager)
+                senderAccountsRecyclerView.layoutManager = layoutManager
                 senderAccountsRecyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
                     override fun onScrollStateChanged(recyclerView: RecyclerView?, newState: Int) {
                         super.onScrollStateChanged(recyclerView, newState)
@@ -167,29 +157,27 @@ class SendView constructor(context: Context = null!!, attrs: AttributeSet = null
                         senderAllPixels += dx
                     }
                 })
-                val myItems : List<SenderRecyclerViewItem> = sendScreenPresenter.getSenderAccountsList()
+                val myItems : List<SenderRecyclerViewItem> = sendScreenPresenter.senderAccountsList
                 senderAccounts.addAll(myItems)
                 val senderAccountsRecyclerViewAdapter : SendRecyclerViewAdapter =
                         SendRecyclerViewAdapter(senderAccounts.toTypedArray(),
                                 senderFirstItemWidth.toInt(),
-                                object : SendRecyclerViewAdapter.ViewHolder.ViewHolderClickListener {
-                                    override fun onClick(adapter : SendRecyclerViewAdapter, position: Int) {
-                                        //adapter.setSelecteditem(position)
-                                        if(position == adapter.getSelectedPosition()) {
-                                            when (position) {
-                                                0 -> openOrCloseMenu(senderBtcAccountsAddMenu, true)
-                                                1 -> openOrCloseMenu(senderBtcAccountsMenu, true)
-                                                2 -> openOrCloseMenu(senderDebitcardAddMenu, true)
-                                                3 -> openOrCloseMenu(senderDebitcardChooseMenu, true)
-                                                else -> {
-                                                    Log.e(marker, "selected an item not hardcoded in the senderAccountsHorizontalPicker onItemClicked listener.")
-                                                }
+                                SendRecyclerViewAdapter.ViewHolder.ViewHolderClickListener { adapter, position ->
+                                    //adapter.setSelecteditem(position)
+                                    if(position == adapter.selectedPosition) {
+                                        when (position) {
+                                            0 -> openOrCloseMenu(senderBtcAccountsAddMenu, true)
+                                            1 -> openOrCloseMenu(senderBtcAccountsMenu, true)
+                                            2 -> openOrCloseMenu(senderDebitcardAddMenu, true)
+                                            3 -> openOrCloseMenu(senderDebitcardChooseMenu, true)
+                                            else -> {
+                                                Log.e(marker, "selected an item not hardcoded in the senderAccountsHorizontalPicker onItemClicked listener.")
                                             }
                                         }
-                                        adapter.notifyDataSetChanged()
                                     }
+                                    adapter.notifyDataSetChanged()
                                 })
-                senderAccountsRecyclerView.setAdapter(senderAccountsRecyclerViewAdapter)
+                senderAccountsRecyclerView.adapter = senderAccountsRecyclerViewAdapter
                 setSelectedItem(senderAccountsRecyclerView.adapter)
                 return true
             }
@@ -202,11 +190,11 @@ class SendView constructor(context: Context = null!!, attrs: AttributeSet = null
 
         val receiverAccountsRecyclerView = findViewById(R.id.receiverAccountsRecyclerView) as RecyclerView
 
-        val receiverVTO : ViewTreeObserver = receiverAccountsRecyclerView.getViewTreeObserver();
+        val receiverVTO : ViewTreeObserver = receiverAccountsRecyclerView.viewTreeObserver
         receiverVTO.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener{
             override fun onPreDraw(): Boolean {
-                receiverAccountsRecyclerView.getViewTreeObserver().removeOnPreDrawListener(this)
-                receiverFinalWidth = receiverAccountsRecyclerView.getMeasuredWidth()
+                receiverAccountsRecyclerView.viewTreeObserver.removeOnPreDrawListener(this)
+                receiverFinalWidth = receiverAccountsRecyclerView.measuredWidth
                 receiverItemWidth = resources.getDimension(R.dimen.item_dob_width)
                 receiverPadding = (receiverFinalWidth - receiverItemWidth) / 2
                 receiverFirstItemWidth = receiverPadding
@@ -214,7 +202,7 @@ class SendView constructor(context: Context = null!!, attrs: AttributeSet = null
 
                 val layoutManager = LinearLayoutManager(context)
                 layoutManager.orientation = LinearLayoutManager.HORIZONTAL
-                receiverAccountsRecyclerView.setLayoutManager(layoutManager)
+                receiverAccountsRecyclerView.layoutManager = layoutManager
                 receiverAccountsRecyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
                     override fun onScrollStateChanged(recyclerView: RecyclerView?, newState: Int) {
                         super.onScrollStateChanged(recyclerView, newState)
@@ -230,30 +218,27 @@ class SendView constructor(context: Context = null!!, attrs: AttributeSet = null
                         receiverAllPixels += dx
                     }
                 })
-                val myItems : List<ReceiverRecyclerViewItem> = sendScreenPresenter.getReceiverAccountsList()
+                val myItems : List<ReceiverRecyclerViewItem> = sendScreenPresenter.receiverAccountsList
                 receiverAccounts.addAll(myItems)
                 val receiverAccountsRecyclerViewAdapter : ReceiverRecyclerViewAdapter =
                         ReceiverRecyclerViewAdapter(receiverAccounts.toTypedArray(),
                                 receiverFirstItemWidth.toInt(),
-                                object : ReceiverRecyclerViewAdapter.ViewHolder.ViewHolderClickListener {
-                                    override fun onClick(adapter : ReceiverRecyclerViewAdapter,
-                                                         position: Int) {
-                                        //adapter.setSelecteditem(position)
-                                        if(position == adapter.getSelectedPosition()) {
-                                            when (position) {
-                                                1 -> openOrCloseMenu(receiverBtcAccountsMenu, true)
-                                                2 -> openOrCloseMenu(receiverBtcContactsMenu, true)
-                                                3 -> openOrCloseMenu(receiverBtcContactsAddMenu, true)
-                                                4 -> openOrCloseMenu(receiverBankaccountAddMenu, true)
-                                                else -> {
-                                                    Log.e(marker, "selected an item not hardcoded in the receiverAccountsHorizontalPicker onItemClicked listener.")
-                                                }
+                                ReceiverRecyclerViewAdapter.ViewHolder.ViewHolderClickListener { adapter, position ->
+                                    //adapter.setSelecteditem(position)
+                                    if(position == adapter.selectedPosition) {
+                                        when (position) {
+                                            1 -> openOrCloseMenu(receiverBtcAccountsMenu, true)
+                                            2 -> openOrCloseMenu(receiverBtcContactsMenu, true)
+                                            3 -> openOrCloseMenu(receiverBtcContactsAddMenu, true)
+                                            4 -> openOrCloseMenu(receiverBankaccountAddMenu, true)
+                                            else -> {
+                                                Log.e(marker, "selected an item not hardcoded in the receiverAccountsHorizontalPicker onItemClicked listener.")
                                             }
                                         }
-                                        adapter.notifyDataSetChanged()
                                     }
+                                    adapter.notifyDataSetChanged()
                                 })
-                receiverAccountsRecyclerView.setAdapter(receiverAccountsRecyclerViewAdapter)
+                receiverAccountsRecyclerView.adapter = receiverAccountsRecyclerViewAdapter
                 setSelectedItem(receiverAccountsRecyclerView.adapter)
                 return true
             }
@@ -331,7 +316,7 @@ class SendView constructor(context: Context = null!!, attrs: AttributeSet = null
 
     fun setNewCurrencyValue(currencyValue: CurrencyValue) {
         currencyEditText.setText(currencyValue.value.toEngineeringString())
-        sendCurrencySymbol.setText(currencyValue.currencyCode)
+        sendCurrencySymbol.text = currencyValue.currencyCode
     }
 
     private fun initializeInjection(context: Context) {
