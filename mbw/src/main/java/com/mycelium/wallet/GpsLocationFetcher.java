@@ -37,7 +37,6 @@ package com.mycelium.wallet;
 import java.util.List;
 
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Handler;
@@ -46,8 +45,12 @@ import com.mycelium.lt.api.model.GpsLocation;
 import com.mycelium.lt.location.*;
 import com.mycelium.wallet.lt.AddressDescription;
 
-public class GpsLocationFetcher {
+import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
+import static android.content.pm.PackageManager.PERMISSION_GRANTED;
+import static android.os.Build.VERSION.SDK_INT;
+import static android.support.v4.content.ContextCompat.checkSelfPermission;
 
+public class GpsLocationFetcher {
    public static class GpsLocationEx extends GpsLocation {
       private static final long serialVersionUID = 1L;
 
@@ -64,11 +67,9 @@ public class GpsLocationFetcher {
          }
          return new GpsLocationEx(location.latitude, location.longitude, location.name, "");
       }
-
    }
 
    public static abstract class Callback {
-
       private Context _context;
       private Handler _handler;
       private boolean _cancelled;
@@ -89,7 +90,6 @@ public class GpsLocationFetcher {
       protected abstract void onGpsLocationObtained(GpsLocationEx location);
 
       protected abstract void onGpsError(RemoteGeocodeException error);
-
    }
 
    public void getNetworkLocation(final Callback callback) {
@@ -120,7 +120,6 @@ public class GpsLocationFetcher {
                   }
                });
             }
-
          }
       });
       t.setDaemon(true);
@@ -128,37 +127,29 @@ public class GpsLocationFetcher {
    }
 
    private GpsLocationEx getNetworkLocation(Context context) throws RemoteGeocodeException {
-      if (!canObtainGpsPosition(context)) {
+      if (!context.getPackageManager().hasSystemFeature("android.hardware.location.network")) {
+         return null;
+      }
+      String permission = "android.permission.ACCESS_COARSE_LOCATION";
+      if(context.checkCallingOrSelfPermission(permission) != PERMISSION_GRANTED) {
          return null;
       }
       LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
       Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
       if (lastKnownLocation == null)
          return null;
-      final List<Geocode> list;
 
       Geocoder geocoder = MbwManager.getInstance(context).getLocalTraderManager().getGeocoder();
       GeocodeResponse response = geocoder.getFromLocation(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
 
-      list = response.results;
-      if (list.isEmpty()) {
+      final List<Geocode> geocodes = response.results;
+      if (geocodes.isEmpty()) {
          return null;
       }
 
-      Geocode geocode = list.get(0);
+      Geocode geocode = geocodes.get(0);
 
       return new GpsLocationEx(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude(),
             new AddressDescription(geocode).toString(), geocode.getCountryCode());
    }
-
-   private static boolean canObtainGpsPosition(Context context) {
-      final boolean hasFeature = context.getPackageManager().hasSystemFeature("android.hardware.location.network");
-      if (!hasFeature) {
-         return false;
-      }
-      String permission = "android.permission.ACCESS_COARSE_LOCATION";
-      int res = context.checkCallingOrSelfPermission(permission);
-      return (res == PackageManager.PERMISSION_GRANTED);
-   }
-
 }

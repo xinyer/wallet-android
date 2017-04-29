@@ -377,17 +377,6 @@ public class ModernMain extends ActionBarActivity {
       return super.onPrepareOptionsMenu(menu);
    }
 
-   @SuppressWarnings("unused")
-   private boolean canObtainLocation() {
-      final boolean hasFeature = getPackageManager().hasSystemFeature("android.hardware.location.network");
-      if (!hasFeature) {
-         return false;
-      }
-      String permission = "android.permission.ACCESS_COARSE_LOCATION";
-      int res = checkCallingOrSelfPermission(permission);
-      return (res == PackageManager.PERMISSION_GRANTED);
-   }
-
    @Override
    public boolean onOptionsItemSelected(MenuItem item) {
       final int itemId = item.getItemId();
