@@ -41,7 +41,6 @@ public class Transaction implements Serializable {
    private static final long ONE_uBTC_IN_SATOSHIS = 100;
    private static final long ONE_mBTC_IN_SATOSHIS = 1000 * ONE_uBTC_IN_SATOSHIS;
 
-   public static final int MIN_TRANSACTION_SIZE = 100;
    public static final long MAX_MINER_FEE_PER_KB = 20L * ONE_mBTC_IN_SATOSHIS; // 2000sat/B
 
    public int version;

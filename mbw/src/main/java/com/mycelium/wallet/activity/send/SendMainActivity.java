@@ -130,8 +130,8 @@ public class SendMainActivity extends Activity {
    private static final int BROADCAST_REQUEST_CODE = 7;
    private static final int REQUEST_PAYMENT_HANDLER = 8;
    public static final String RAW_PAYMENT_REQUEST = "rawPaymentRequest";
-  private static final String LOG_TAG = SendMainActivity.class.getCanonicalName();
-  private BillPay _sepaPayment;
+   private static final String LOG_TAG = SendMainActivity.class.getCanonicalName();
+   private BillPay _sepaPayment;
 
    public static final String ACCOUNT = "account";
    private static final String AMOUNT = "amount";

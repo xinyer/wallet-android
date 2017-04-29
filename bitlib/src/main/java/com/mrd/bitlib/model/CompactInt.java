@@ -37,7 +37,7 @@ public class CompactInt {
     */
    public static long fromByteBuffer(ByteBuffer buf) {
       if (buf.remaining() < 1) {
-         // XXX make all callers check for -1
+         // TODO: make all callers check for -1
          return -1;
       }
       long first = 0x00000000000000FFL & ((long) buf.get());

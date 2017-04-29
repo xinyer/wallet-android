@@ -22,7 +22,6 @@ import com.mrd.bitlib.util.ByteWriter;
 import com.mrd.bitlib.util.HexUtils;
 
 import java.io.Serializable;
-import java.security.PrivilegedActionException;
 
 public class TransactionOutput implements Serializable {
    private static final long serialVersionUID = 1L;
@@ -38,7 +37,7 @@ public class TransactionOutput implements Serializable {
          ScriptOutput script = ScriptOutput.fromScriptBytes(scriptBytes);
          return new TransactionOutput(value, script);
       } catch (InsufficientBytesException e) {
-         throw new TransactionOutputParsingException("Unable to parse transaction output: " + e.getMessage(), e);
+         throw new TransactionOutputParsingException("Unable to parse transaction output: " + e.getMessage());
       }
    }
 
@@ -75,12 +74,5 @@ public class TransactionOutput implements Serializable {
       public TransactionOutputParsingException(String message) {
          super(message);
       }
-
-     /**
-      * {@inheritDoc}
-      */
-     public TransactionOutputParsingException(String message, Throwable cause) {
-       super(message, cause);
-     }
    }
 }
