@@ -754,22 +754,16 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
          return false;
       }
       Transaction tx = TransactionEx.toTransaction(tex);
-      _backing.beginTransaction();
-      try {
-         // See if any of the outputs are stored locally and remove them
-         for (int i = 0; i < tx.outputs.length; i++) {
-            OutPoint outPoint = new OutPoint(tx.getHash(), i);
-            TransactionOutputEx utxo = _backing.getUnspentOutput(outPoint);
-            if (utxo != null) {
-               _backing.deleteUnspentOutput(outPoint);
-            }
+      // See if any of the outputs are stored locally and remove them
+      for (int i = 0; i < tx.outputs.length; i++) {
+         OutPoint outPoint = new OutPoint(tx.getHash(), i);
+         TransactionOutputEx utxo = _backing.getUnspentOutput(outPoint);
+         if (utxo != null) {
+            _backing.deleteUnspentOutput(outPoint);
          }
-         // remove it from the backing
-         _backing.deleteTransaction(transactionId);
-         _backing.setTransactionSuccessful();
-      } finally {
-         _backing.endTransaction();
       }
+      // remove it from the backing
+      _backing.deleteTransaction(transactionId);
       updateLocalBalance(); //will still need a new sync besides re-calculating
       return true;
    }
@@ -788,28 +782,20 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
       } catch (TransactionParsingException e) {
          return false;
       }
-
-      _backing.beginTransaction();
-      try {
-
-         // See if any of the outputs are stored locally and remove them
-         for (int i = 0; i < tx.outputs.length; i++) {
-            OutPoint outPoint = new OutPoint(tx.getHash(), i);
-            TransactionOutputEx utxo = _backing.getUnspentOutput(outPoint);
-            if (utxo != null) {
-               _backing.deleteUnspentOutput(outPoint);
-            }
+      // See if any of the outputs are stored locally and remove them
+      for (int i = 0; i < tx.outputs.length; i++) {
+         OutPoint outPoint = new OutPoint(tx.getHash(), i);
+         TransactionOutputEx utxo = _backing.getUnspentOutput(outPoint);
+         if (utxo != null) {
+            _backing.deleteUnspentOutput(outPoint);
          }
-
-         // Remove a queued transaction from our outgoing buffer
-         _backing.deleteOutgoingTransaction(transaction);
-
-         // remove it from the backing
-         _backing.deleteTransaction(transaction);
-         _backing.setTransactionSuccessful();
-      } finally {
-         _backing.endTransaction();
       }
+
+      // Remove a queued transaction from our outgoing buffer
+      _backing.deleteOutgoingTransaction(transaction);
+
+      // remove it from the backing
+      _backing.deleteTransaction(transaction);
 
       // calc the new balance to remove the outgoing amount
       // the total balance will still be wrong, as we already deleted some UTXOs to build the queued transaction
@@ -821,7 +807,6 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
    }
 
    private void markTransactionAsSpent(TransactionEx transaction) {
-      _backing.beginTransaction();
       final Transaction parsedTransaction;
       try {
          parsedTransaction = Transaction.fromBytes(transaction.binary);
@@ -829,33 +814,28 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
          _logger.logInfo(String.format("Unable to parse transaction %s: %s", transaction.txid, e.getMessage()));
          return;
       }
-      try {
-         // Remove inputs from unspent, marking them as spent
-         for (TransactionInput input : parsedTransaction.inputs) {
-            TransactionOutputEx parentOutput = _backing.getUnspentOutput(input.outPoint);
-            if (parentOutput != null) {
-               _backing.deleteUnspentOutput(input.outPoint);
-               _backing.putParentTransactionOutput(parentOutput);
-            }
+      // Remove inputs from unspent, marking them as spent
+      for (TransactionInput input : parsedTransaction.inputs) {
+         TransactionOutputEx parentOutput = _backing.getUnspentOutput(input.outPoint);
+         if (parentOutput != null) {
+            _backing.deleteUnspentOutput(input.outPoint);
+            _backing.putParentTransactionOutput(parentOutput);
          }
-
-         // See if any of the outputs are for ourselves and store them as
-         // unspent
-         for (int i = 0; i < parsedTransaction.outputs.length; i++) {
-            TransactionOutput output = parsedTransaction.outputs[i];
-            if (isMine(output.script)) {
-               _backing.putUnspentOutput(new TransactionOutputEx(new OutPoint(parsedTransaction.getHash(), i), -1,
-                     output.value, output.script.getScriptBytes(), false));
-            }
-         }
-
-         // Store transaction locally, so we have it in our history and don't
-         // need to fetch it in a minute
-         _backing.putTransaction(transaction);
-         _backing.setTransactionSuccessful();
-      } finally {
-         _backing.endTransaction();
       }
+
+      // See if any of the outputs are for ourselves and store them as
+      // unspent
+      for (int i = 0; i < parsedTransaction.outputs.length; i++) {
+         TransactionOutput output = parsedTransaction.outputs[i];
+         if (isMine(output.script)) {
+            _backing.putUnspentOutput(new TransactionOutputEx(new OutPoint(parsedTransaction.getHash(), i), -1,
+                output.value, output.script.getScriptBytes(), false));
+         }
+      }
+
+      // Store transaction locally, so we have it in our history and don't
+      // need to fetch it in a minute
+      _backing.putTransaction(transaction);
 
       // Tell account that we have a new transaction
       onNewTransaction(TransactionEx.fromUnconfirmedTransaction(parsedTransaction), parsedTransaction);

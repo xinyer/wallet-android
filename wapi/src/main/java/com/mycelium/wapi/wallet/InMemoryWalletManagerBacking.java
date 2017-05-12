@@ -39,20 +39,6 @@ public class InMemoryWalletManagerBacking implements WalletManagerBacking {
    private final Map<Address, Long> addressCreationTimestamps = new HashMap<>();
    private int maxSubId = 0;
 
-   @Override
-   public void beginTransaction() {
-      // not supported
-   }
-
-   @Override
-   public void setTransactionSuccessful() {
-      // not supported
-   }
-
-   @Override
-   public void endTransaction() {
-      // not supported
-   }
 
    @Override
    public List<Bip44AccountContext> loadBip44AccountContexts() {
@@ -213,21 +199,6 @@ public class InMemoryWalletManagerBacking implements WalletManagerBacking {
          // Since this is in-memory we don't try to optimize and just update all values
          _singleAddressAccountContexts.put(context.getId(), new SingleAddressAccountContext(context));
          return true;
-      }
-
-      @Override
-      public void beginTransaction() {
-         InMemoryWalletManagerBacking.this.beginTransaction();
-      }
-
-      @Override
-      public void setTransactionSuccessful() {
-         InMemoryWalletManagerBacking.this.setTransactionSuccessful();
-      }
-
-      @Override
-      public void endTransaction() {
-         InMemoryWalletManagerBacking.this.endTransaction();
       }
 
       @Override

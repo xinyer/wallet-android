@@ -25,11 +25,6 @@ import java.util.Map;
 import java.util.UUID;
 
 public interface WalletManagerBacking extends SecureKeyValueStoreBacking {
-   void beginTransaction();
-
-   void setTransactionSuccessful();
-
-   void endTransaction();
 
    boolean createBip44AccountContext(Bip44AccountContext context);
 

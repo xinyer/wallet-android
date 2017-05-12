@@ -173,23 +173,17 @@ public class WalletManager {
          if (_walletAccounts.containsKey(id)) {
             return id;
          }
-         _backing.beginTransaction();
-         try {
-            SingleAddressAccountContext context = new SingleAddressAccountContext(id, address, false, 0);
-            //TODO Verify if this the best procedure to handle this error. Nelson
-            if(!_backing.createSingleAddressAccountContext(context)) {
-               throw new WalletManagerException("Could not create a single address account context.");
-            }
-            SingleAddressAccountBacking accountBacking = _backing.getSingleAddressAccountBacking(context.getId());
-            Preconditions.checkNotNull(accountBacking);
-            PublicPrivateKeyStore store = new PublicPrivateKeyStore(_secureKeyValueStore);
-            SingleAddressAccount account = new SingleAddressAccount(context, store, _network, accountBacking, _wapi);
-            context.persist(accountBacking);
-            _backing.setTransactionSuccessful();
-            addAccount(account);
-         } finally {
-            _backing.endTransaction();
+         SingleAddressAccountContext context = new SingleAddressAccountContext(id, address, false, 0);
+         //TODO Verify if this the best procedure to handle this error. Nelson
+         if(!_backing.createSingleAddressAccountContext(context)) {
+            throw new WalletManagerException("Could not create a single address account context.");
          }
+         SingleAddressAccountBacking accountBacking = _backing.getSingleAddressAccountBacking(context.getId());
+         Preconditions.checkNotNull(accountBacking);
+         PublicPrivateKeyStore store = new PublicPrivateKeyStore(_secureKeyValueStore);
+         SingleAddressAccount account = new SingleAddressAccount(context, store, _network, accountBacking, _wapi);
+         context.persist(accountBacking);
+         addAccount(account);
       }
       return id;
    }
@@ -225,43 +219,37 @@ public class WalletManager {
          if (_walletAccounts.containsKey(id)) {
             return id;
          }
-         _backing.beginTransaction();
-         try {
 
-            // Generate the context for the account
-            Bip44AccountContext context;
-            if (hdKeyNode.isPrivateHdKeyNode()) {
-               context = new Bip44AccountContext(keyManager.getAccountId(), accountIndex, false,
-                     ACCOUNT_TYPE_UNRELATED_X_PRIV, secureStorage.getSubId());
-            } else {
-               context = new Bip44AccountContext(keyManager.getAccountId(), accountIndex, false,
-                     ACCOUNT_TYPE_UNRELATED_X_PUB, secureStorage.getSubId());
-            }
-            if(!_backing.createBip44AccountContext(context)) {
-               throw new WalletManagerException("Unable to create a BIP44 account context.");
-            }
-
-            // Get the backing for the new account
-            Bip44AccountBacking accountBacking = _backing.getBip44AccountBacking(context.getId());
-            Preconditions.checkNotNull(accountBacking);
-
-            // Create actual account
-            Bip44Account account;
-            if (hdKeyNode.isPrivateHdKeyNode()) {
-               account = new Bip44Account(context, keyManager, _network, accountBacking, _wapi);
-            } else {
-               account = new Bip44PubOnlyAccount(context, keyManager, _network, accountBacking, _wapi);
-            }
-
-            // Finally persist context and add account
-            context.persist(accountBacking);
-            _backing.setTransactionSuccessful();
-            addAccount(account);
-            _bip44Accounts.add(account);
-            return id;
-         } finally {
-            _backing.endTransaction();
+         // Generate the context for the account
+         Bip44AccountContext context;
+         if (hdKeyNode.isPrivateHdKeyNode()) {
+            context = new Bip44AccountContext(keyManager.getAccountId(), accountIndex, false,
+                ACCOUNT_TYPE_UNRELATED_X_PRIV, secureStorage.getSubId());
+         } else {
+            context = new Bip44AccountContext(keyManager.getAccountId(), accountIndex, false,
+                ACCOUNT_TYPE_UNRELATED_X_PUB, secureStorage.getSubId());
          }
+         if(!_backing.createBip44AccountContext(context)) {
+            throw new WalletManagerException("Unable to create a BIP44 account context.");
+         }
+
+         // Get the backing for the new account
+         Bip44AccountBacking accountBacking = _backing.getBip44AccountBacking(context.getId());
+         Preconditions.checkNotNull(accountBacking);
+
+         // Create actual account
+         Bip44Account account;
+         if (hdKeyNode.isPrivateHdKeyNode()) {
+            account = new Bip44Account(context, keyManager, _network, accountBacking, _wapi);
+         } else {
+            account = new Bip44PubOnlyAccount(context, keyManager, _network, accountBacking, _wapi);
+         }
+
+         // Finally persist context and add account
+         context.persist(accountBacking);
+         addAccount(account);
+         _bip44Accounts.add(account);
+         return id;
       }
    }
 
@@ -271,38 +259,32 @@ public class WalletManager {
       final UUID id = keyManager.getAccountId();
 
       synchronized (_walletAccounts) {
-         _backing.beginTransaction();
-         try {
 
-            // check if it already exists
-            if (_walletAccounts.containsKey(id)) {
-               return id;
-            }
-
-            // Generate the context for the account
-            Bip44AccountContext context = new Bip44AccountContext(keyManager.getAccountId(), accountIndex, false,
-                  externalSignatureProvider.getBIP44AccountType(), newSubKeyStore.getSubId());
-            //TODO Verify if using a Runtime Exception in this case if the best procedure. Nelson
-            if(!_backing.createBip44AccountContext(context)) {
-               throw new WalletManagerException("Unable to create a BIP44 account context.");
-            }
-
-            // Get the backing for the new account
-            Bip44AccountBacking accountBacking = _backing.getBip44AccountBacking(context.getId());
-            Preconditions.checkNotNull(accountBacking);
-
-            // Create actual account
-            Bip44Account account = new Bip44AccountExternalSignature(context, keyManager, _network, accountBacking, _wapi, externalSignatureProvider);
-
-            // Finally persist context and add account
-            context.persist(accountBacking);
-            _backing.setTransactionSuccessful();
-            addAccount(account);
-            _bip44Accounts.add(account);
-            return account.getId();
-         } finally {
-            _backing.endTransaction();
+         // check if it already exists
+         if (_walletAccounts.containsKey(id)) {
+            return id;
          }
+
+         // Generate the context for the account
+         Bip44AccountContext context = new Bip44AccountContext(keyManager.getAccountId(), accountIndex, false,
+             externalSignatureProvider.getBIP44AccountType(), newSubKeyStore.getSubId());
+         //TODO Verify if using a Runtime Exception in this case if the best procedure. Nelson
+         if(!_backing.createBip44AccountContext(context)) {
+            throw new WalletManagerException("Unable to create a BIP44 account context.");
+         }
+
+         // Get the backing for the new account
+         Bip44AccountBacking accountBacking = _backing.getBip44AccountBacking(context.getId());
+         Preconditions.checkNotNull(accountBacking);
+
+         // Create actual account
+         Bip44Account account = new Bip44AccountExternalSignature(context, keyManager, _network, accountBacking, _wapi, externalSignatureProvider);
+
+         // Finally persist context and add account
+         context.persist(accountBacking);
+         addAccount(account);
+         _bip44Accounts.add(account);
+         return account.getId();
       }
    }
 
@@ -461,39 +443,39 @@ public class WalletManager {
       return Preconditions.checkNotNull(normalAccount);
    }
 
-  /**
-   * Get a wallet account
-   *
-   * @param index the index of the account to get
-   * @return a wallet account
-   */
-  public Bip44Account getBip44Account(int index) {
-    Bip44Account result = null;
-    for (Bip44Account bip44Account:
-         _bip44Accounts) {
-      if(bip44Account.getAccountIndex() == index) {
-        result = bip44Account;
-        break;
+   /**
+    * Get a wallet account
+    *
+    * @param index the index of the account to get
+    * @return a wallet account
+    */
+   public Bip44Account getBip44Account(int index) {
+      Bip44Account result = null;
+      for (Bip44Account bip44Account:
+          _bip44Accounts) {
+         if(bip44Account.getAccountIndex() == index) {
+            result = bip44Account;
+            break;
+         }
       }
-    }
-    return Preconditions.checkNotNull(result);
-  }
+      return Preconditions.checkNotNull(result);
+   }
 
-  /**
-   * Checks if the account is already created.
-   *
-   * @param index the index of the account to get
-   * @return a wallet account
-   */
-  public boolean doesBip44AccountExists(int index) {
-    for (Bip44Account bip44Account:
-        _bip44Accounts) {
-      if(bip44Account.getAccountIndex() == index) {
-        return true;
+   /**
+    * Checks if the account is already created.
+    *
+    * @param index the index of the account to get
+    * @return a wallet account
+    */
+   public boolean doesBip44AccountExists(int index) {
+      for (Bip44Account bip44Account:
+          _bip44Accounts) {
+         if(bip44Account.getAccountIndex() == index) {
+            return true;
+         }
       }
-    }
-    return false;
-  }
+      return false;
+   }
 
    /**
     * Make the wallet manager synchronize all its active accounts.
@@ -1029,38 +1011,32 @@ public class WalletManager {
       HdKeyNode root = HdKeyNode.fromSeed(masterSeed.getBip32Seed());
 
       synchronized (_walletAccounts) {
-         _backing.beginTransaction();
-         try {
-            // Create the base keys for the account
-            Bip44AccountKeyManager keyManager = Bip44AccountKeyManager.createNew(root, _network,
-                accountIndex, _secureKeyValueStore, cipher);
+         // Create the base keys for the account
+         Bip44AccountKeyManager keyManager = Bip44AccountKeyManager.createNew(root, _network,
+             accountIndex, _secureKeyValueStore, cipher);
 
-            // Generate the context for the account
-            Bip44AccountContext context = new Bip44AccountContext(keyManager.getAccountId(),
-                accountIndex, false);
-            //TODO Verify if using a Runtime Exception in this case if the best procedure. Nelson
-            if(!_backing.createBip44AccountContext(context)) {
-               throw new RuntimeException("Unable to create a BIP44 account context.");
-            }
-
-            // Get the backing for the new account
-            Bip44AccountBacking accountBacking = _backing.getBip44AccountBacking(context.getId());
-            Preconditions.checkNotNull(accountBacking);
-
-            // Create actual account
-            Bip44Account account = new Bip44Account(context, keyManager, _network, accountBacking, _wapi);
-
-            // Finally persist context and add account
-            context.persist(accountBacking);
-            _backing.setTransactionSuccessful();
-            account.archiveAccount();
-
-            addAccount(account);
-            _bip44Accounts.add(account);
-            return account.getId();
-         } finally {
-            _backing.endTransaction();
+         // Generate the context for the account
+         Bip44AccountContext context = new Bip44AccountContext(keyManager.getAccountId(),
+             accountIndex, false);
+         //TODO Verify if using a Runtime Exception in this case if the best procedure. Nelson
+         if(!_backing.createBip44AccountContext(context)) {
+            throw new RuntimeException("Unable to create a BIP44 account context.");
          }
+
+         // Get the backing for the new account
+         Bip44AccountBacking accountBacking = _backing.getBip44AccountBacking(context.getId());
+         Preconditions.checkNotNull(accountBacking);
+
+         // Create actual account
+         Bip44Account account = new Bip44Account(context, keyManager, _network, accountBacking, _wapi);
+
+         // Finally persist context and add account
+         context.persist(accountBacking);
+         account.archiveAccount();
+
+         addAccount(account);
+         _bip44Accounts.add(account);
+         return account.getId();
       }
    }
 
@@ -1079,35 +1055,29 @@ public class WalletManager {
          // Determine the next BIP44 account index
          int accountIndex = getNextBip44Index();
 
-         _backing.beginTransaction();
-         try {
-            // Create the base keys for the account
-            Bip44AccountKeyManager keyManager = Bip44AccountKeyManager.createNew(root, _network, accountIndex, _secureKeyValueStore, cipher);
+         // Create the base keys for the account
+         Bip44AccountKeyManager keyManager = Bip44AccountKeyManager.createNew(root, _network, accountIndex, _secureKeyValueStore, cipher);
 
-            // Generate the context for the account
-            Bip44AccountContext context = new Bip44AccountContext(keyManager.getAccountId(), accountIndex, false);
-            //TODO Verify if using a Runtime Exception in this case if the best procedure. Nelson
-            if(!_backing.createBip44AccountContext(context)) {
-               throw new RuntimeException("Unable to create a BIP44 account context.");
-            }
-
-            // Get the backing for the new account
-            Bip44AccountBacking accountBacking = _backing.getBip44AccountBacking(context.getId());
-            Preconditions.checkNotNull(accountBacking);
-
-
-            // Create actual account
-            Bip44Account account = new Bip44Account(context, keyManager, _network, accountBacking, _wapi);
-
-            // Finally persist context and add account
-            context.persist(accountBacking);
-            _backing.setTransactionSuccessful();
-            addAccount(account);
-            _bip44Accounts.add(account);
-            return account.getId();
-         } finally {
-            _backing.endTransaction();
+         // Generate the context for the account
+         Bip44AccountContext context = new Bip44AccountContext(keyManager.getAccountId(), accountIndex, false);
+         //TODO Verify if using a Runtime Exception in this case if the best procedure. Nelson
+         if(!_backing.createBip44AccountContext(context)) {
+            throw new RuntimeException("Unable to create a BIP44 account context.");
          }
+
+         // Get the backing for the new account
+         Bip44AccountBacking accountBacking = _backing.getBip44AccountBacking(context.getId());
+         Preconditions.checkNotNull(accountBacking);
+
+
+         // Create actual account
+         Bip44Account account = new Bip44Account(context, keyManager, _network, accountBacking, _wapi);
+
+         // Finally persist context and add account
+         context.persist(accountBacking);
+         addAccount(account);
+         _bip44Accounts.add(account);
+         return account.getId();
       }
    }
 

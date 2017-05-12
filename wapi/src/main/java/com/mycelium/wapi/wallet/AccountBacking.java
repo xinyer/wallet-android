@@ -27,12 +27,6 @@ import java.util.Map;
 
 public interface AccountBacking {
 
-   void beginTransaction();
-
-   void setTransactionSuccessful();
-
-   void endTransaction();
-
    void clear();
 
    Collection<TransactionOutputEx> getAllUnspentOutputs();
