@@ -204,8 +204,8 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
          }
          Address address = Preconditions.checkNotNull(_keyManager.getAddress(isChangeChain, index));
          addressMap.put(address, index);
-        // Save address with timestamp in DB. Nelson
-        long timestamp = System.currentTimeMillis();
+        // Save address with timestamp in DB.
+        long timestamp = 0;
         int lastIndexWithActivity;
         if(isChangeChain) {
           lastIndexWithActivity = _context.getLastInternalIndexWithActivity();
@@ -213,8 +213,8 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
           lastIndexWithActivity = _context.getLastExternalIndexWithActivity();
         }
         if(lastIndexWithActivity != -1) {
-          Address addressLastActivity = addressMap.inverse().get(_context.getLastInternalIndexWithActivity());
-          timestamp = ((WalletManagerBacking) _backing).getCreationTimeByAddress(addressLastActivity)
+          Address addressLastActivity = addressMap.inverse().get(lastIndexWithActivity);
+          timestamp = _backing.getCreationTimeByAddress(addressLastActivity)
               - (2 * 24 * 60 * 60 * 1000); //Minus two days in millisecond.
         }
         _backing.storeAddressCreationTime(address, timestamp);
