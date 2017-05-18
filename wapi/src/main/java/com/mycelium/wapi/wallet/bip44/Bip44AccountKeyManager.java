@@ -161,16 +161,23 @@ public class Bip44AccountKeyManager {
       return publicLeafNode.getPublicKey();
    }
 
+   public boolean doesAddressExistAlready(boolean isChangeChain, int index) {
+      byte[] id = getLeafNodeId(_network, _accountIndex, isChangeChain, index, false);
+      byte[] addressNodeBytes = _secureKeyValueStore.getPlaintextValue(id);
+
+      return addressNodeBytes != null;
+   }
+
    public HdDerivedAddress getAddress(boolean isChangeChain, int index) {
       // See if we have it in the store
       byte[] id = getLeafNodeId(_network, _accountIndex, isChangeChain, index, false);
       byte[] addressNodeBytes = _secureKeyValueStore.getPlaintextValue(id);
       final Bip44Address path = HdKeyPath
-            .BIP44
-            .getCoinTypeBitcoin(_network.isTestnet())
-            .getAccount(_accountIndex)
-            .getChain(!isChangeChain)
-            .getAddress(index);
+          .BIP44
+          .getCoinTypeBitcoin(_network.isTestnet())
+          .getAccount(_accountIndex)
+          .getChain(!isChangeChain)
+          .getAddress(index);
 
       if (addressNodeBytes != null) {
          // We have it already, no need to calculate it

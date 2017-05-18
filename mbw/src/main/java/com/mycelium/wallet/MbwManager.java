@@ -114,6 +114,7 @@ public class MbwManager implements WalletManager.TransactionFetcher {
    private static final String PROXY_HOST = "socksProxyHost";
    private static final String PROXY_PORT = "socksProxyPort";
    private static final String SELECTED_ACCOUNT = "selectedAccount";
+   private static final String LOG_TAG = MbwManager.class.getCanonicalName();
    private static volatile MbwManager _instance = null;
 
    /**
@@ -1316,6 +1317,18 @@ public class MbwManager implements WalletManager.TransactionFetcher {
          addressStrings[i++] = awct.address + ";" + awct.creationTime;
       }
       service.putExtra("ADDRESSES", addressStrings);
-      CommunicationManager.Companion.getInstance(_applicationContext).send("com.mycelium.spvmodule" + flavor, service);
+
+      if(BuildConfig.DEBUG) {
+         StringBuilder sb = new StringBuilder();
+         for (String s :
+             addressStrings) {
+            sb.append(s);
+            sb.append("\t");
+         }
+         Log.d(LOG_TAG, "getTransactions: Intent is " + service + ", Addresses are : " + sb.toString());
+      }
+
+      CommunicationManager.Companion.getInstance(_applicationContext)
+          .send("com.mycelium.spvmodule" + flavor, service);
    }
 }

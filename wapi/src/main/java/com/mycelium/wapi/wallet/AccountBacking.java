@@ -51,6 +51,8 @@ public interface AccountBacking {
 
    boolean putTransaction(TransactionEx transaction);
 
+   long getOldestTransactionTimestamp();
+
    TransactionEx getTransaction(Sha256Hash hash);
 
    boolean deleteTransaction(Sha256Hash hash);

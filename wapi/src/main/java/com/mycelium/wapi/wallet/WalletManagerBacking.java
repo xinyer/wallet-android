@@ -48,8 +48,4 @@ public interface WalletManagerBacking extends SecureKeyValueStoreBacking {
    boolean deleteSingleAddressAccountContext(UUID accountId);
 
    Map<Address,Long> getAllAddressCreationTimes();
-
-   Long getCreationTimeByAddress(Address address);
-
-   boolean storeAddressCreationTime(Address address, long unixTimeSeconds);
 }

@@ -93,6 +93,7 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
    private final SQLiteStatement _insertOrReplaceAddressTimestamp;
    private final SQLiteStatement _getTimestampForAddress;
 
+
    SqliteWalletManagerBacking(Context context) {
       OpenHelper _openHelper = new OpenHelper(context);
       _database = _openHelper.getWritableDatabase();
@@ -371,29 +372,6 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
       }
       cursor.close();
       return map;
-   }
-
-   @Override
-   public Long getCreationTimeByAddress(Address address) {
-      _getTimestampForAddress.bindString(1, address.toString());
-      return _getTimestampForAddress.simpleQueryForLong();
-   }
-
-   @Override
-   public boolean storeAddressCreationTime(Address address, long unixTimeSeconds) {
-      beginTransaction();
-      try {
-         _insertOrReplaceAddressTimestamp.bindString(1, address.toString());
-         _insertOrReplaceAddressTimestamp.bindLong(2, unixTimeSeconds);
-         boolean result = _insertOrReplaceAddressTimestamp.executeInsert() != -1;
-         setTransactionSuccessful();
-         return result;
-      } catch(SQLException e) {
-         logException(e);
-         return false;
-      } finally {
-         endTransaction();
-      }
    }
 
    @Override
@@ -835,7 +813,26 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          }
       }
 
-      private boolean putReferencedOutputs(byte[] rawTx) {
+      @Override
+      public long getOldestTransactionTimestamp() {
+         Cursor cursor = null;
+         try {
+            SQLiteQueryWithBlobs blobQuery = new SQLiteQueryWithBlobs(_db);
+            cursor = blobQuery.query(false, txTableName, new String[]{"time"}, "id = ?", null,
+                null, null, "time ASC", "1");
+            //"SELECT time FROM tx ORDER BY time ASC LIMIT 1"
+            if (cursor.moveToNext()) {
+               return cursor.getInt(0);
+            }
+            return 0;
+         } finally {
+            if (cursor != null) {
+               cursor.close();
+            }
+         }
+      }
+
+     private boolean putReferencedOutputs(byte[] rawTx) {
          try {
             final Transaction transaction = Transaction.fromBytes(rawTx);
             final List<OutPoint> refersOutpoint = new ArrayList<>();
@@ -1069,8 +1066,27 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          return updateBip44AccountContext(context);
       }
 
-      public void storeAddressCreationTime(Address address, long timestamp) {
-         SqliteWalletManagerBacking.this.storeAddressCreationTime(address, timestamp);
+      @Override
+      public Long getCreationTimeByAddress(Address address) {
+         _getTimestampForAddress.bindString(1, address.toString());
+         return _getTimestampForAddress.simpleQueryForLong();
+      }
+
+      @Override
+      public boolean storeAddressCreationTime(Address address, long unixTimeSeconds) {
+         beginTransaction();
+         try {
+            _insertOrReplaceAddressTimestamp.bindString(1, address.toString());
+            _insertOrReplaceAddressTimestamp.bindLong(2, unixTimeSeconds);
+            boolean result = _insertOrReplaceAddressTimestamp.executeInsert() != -1;
+            setTransactionSuccessful();
+            return result;
+         } catch(SQLException e) {
+            logException(e);
+            return false;
+         } finally {
+            endTransaction();
+         }
       }
 
       @Override

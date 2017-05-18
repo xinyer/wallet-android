@@ -101,16 +101,6 @@ public class InMemoryWalletManagerBacking implements WalletManagerBacking {
       return addressCreationTimestamps;
    }
 
-   @Override
-   public Long getCreationTimeByAddress(Address address) {
-      return addressCreationTimestamps.get(address);
-   }
-
-   @Override
-   public boolean storeAddressCreationTime(Address address, long unixTimeSeconds) {
-      addressCreationTimestamps.put(address, unixTimeSeconds);
-      return true;
-   }
 
    @Override
    public boolean deleteBip44AccountContext(UUID accountId) {
@@ -197,8 +187,25 @@ public class InMemoryWalletManagerBacking implements WalletManagerBacking {
       }
 
       @Override
-      public void storeAddressCreationTime(Address address, long timestamp) {
-         InMemoryWalletManagerBacking.this.storeAddressCreationTime(address, timestamp);
+      public Long getCreationTimeByAddress(Address address) {
+         return addressCreationTimestamps.get(address);
+      }
+
+      @Override
+      public boolean storeAddressCreationTime(Address address, long unixTimeSeconds) {
+         addressCreationTimestamps.put(address, unixTimeSeconds);
+         return true;
+      }
+
+      @Override
+      public long getOldestTransactionTimestamp() {
+         long timestamp = Long.MAX_VALUE;
+         for (TransactionEx transaction : _transactions.values()) {
+            if(timestamp > transaction.time) {
+               timestamp = transaction.time;
+            }
+         }
+         return timestamp == Long.MAX_VALUE ? 0 : timestamp;
       }
 
       @Override

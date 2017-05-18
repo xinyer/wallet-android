@@ -2,17 +2,22 @@ package com.mycelium.modularizationtools
 
 import android.app.Service
 import android.content.Intent
+import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import com.mycelium.modularizationtools.Constants.Companion.TAG
 
 class MessageReceiver : Service() {
+    private val LOG_TAG: String? = this.javaClass.canonicalName
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (null == intent || null == intent.action || !intent.hasExtra("key")) {
-            Log.d(TAG, "onStartCommand failed: Intent was $intent")
+            Log.d(LOG_TAG, "onStartCommand failed: Intent was $intent")
             return Service.START_NOT_STICKY
         }
-        Log.d(TAG, "onStartCommand: Intent is $intent")
+
+        Log.d(LOG_TAG, "onStartCommand: Intent is " +  intent.toUri(Intent.URI_INTENT_SCHEME))
+
         val key = intent.getLongExtra("key", 0)
         intent.removeExtra("key") // no need to share the key with other packages that might leak it
         val callerPackage: String
@@ -20,7 +25,7 @@ class MessageReceiver : Service() {
             // verify sender and get sending package name
             callerPackage = CommunicationManager.getInstance(this).getPackageName(key)
         } catch (e: SecurityException) {
-            Log.e(TAG, "onStartCommand failed: ${e.message}")
+            Log.e(LOG_TAG, "onStartCommand failed: ${e.message}")
             return Service.START_NOT_STICKY
         }
         if(application !is ModuleMessageReceiver) {

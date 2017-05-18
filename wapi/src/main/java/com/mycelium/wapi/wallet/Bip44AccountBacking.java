@@ -20,7 +20,11 @@ import com.mrd.bitlib.model.Address;
 import com.mycelium.wapi.wallet.bip44.Bip44AccountContext;
 
 public interface Bip44AccountBacking extends AccountBacking {
-   boolean updateAccountContext(Bip44AccountContext context);
 
-   void storeAddressCreationTime(Address address, long timestamp);
+  boolean updateAccountContext(Bip44AccountContext context);
+
+  boolean storeAddressCreationTime(Address address, long timestamp);
+
+  Long getCreationTimeByAddress(Address addressLastActivity);
+
 }
