@@ -71,7 +71,6 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                         transactionBytesBuffer.get(transactionBytes, 0, transactionBytes.size)
 
                         val transaction = Transaction.fromBytes(transactionBytes)
-                        Log.d(TAG, "onReceive: transaction received: " + transaction)
                         val connectedOutputs = HashMap<OutPoint, TransactionOutput>()
 
                         for (input in transaction.inputs) {
@@ -124,6 +123,8 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                                     val txid = Sha256Hash.fromString(txBJ.hash.toString())
                                     val time = (txBJ.updateTime.time / 1000L).toInt()
                                     val tEx = TransactionEx(txid, blockHeight, time, transactionBytes)
+                                    Log.d(TAG, "com.mycelium.wallet.receivedTransactions, onMessage:"
+                                            + " tEx = $tEx, time = $time")
                                     account.notifyNewTransactionDiscovered(tEx, connectedOutputs, utxoSet, false)
                                     // Need to launch synchronisation after we notified of a new transaction
                                     // discovered and updated the lookahead of address to observe when using SPV
