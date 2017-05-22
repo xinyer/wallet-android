@@ -56,7 +56,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
 
     override fun onCreate() {
         if (INSTANCE != null && INSTANCE !== this) {
-            Log.w(TAG, "Application was instanciated more than once?")
+            Log.w(LOG_TAG, "Application was instanciated more than once?")
         }
         INSTANCE = this
 
@@ -68,7 +68,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         enableStrictMode()
         propagate(Constants.CONTEXT)
 
-        Log.i(TAG, "=== starting app using configuration: ${if (Constants.TEST) "test" else "prod"}, ${Constants.NETWORK_PARAMETERS.id}")
+        Log.i(LOG_TAG, "=== starting app using configuration: ${if (Constants.TEST) "test" else "prod"}, ${Constants.NETWORK_PARAMETERS.id}")
 
         super.onCreate()
 
@@ -126,15 +126,15 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
                 if (wallet!!.params != Constants.NETWORK_PARAMETERS)
                     throw UnreadableWalletException("bad wallet network parameters: " + wallet!!.params.id)
 
-                Log.i(TAG, "wallet loaded from: '$walletFile', took ${System.currentTimeMillis() - start}ms")
+                Log.i(LOG_TAG, "wallet loaded from: '$walletFile', took ${System.currentTimeMillis() - start}ms")
             } catch (x: FileNotFoundException) {
-                Log.e(TAG, "problem loading wallet", x)
+                Log.e(LOG_TAG, "problem loading wallet", x)
 
                 Toast.makeText(this@SpvModuleApplication, x.javaClass.name, Toast.LENGTH_LONG).show()
 
                 wallet = restoreWalletFromBackup()
             } catch (x: UnreadableWalletException) {
-                Log.e(TAG, "problem loading wallet", x)
+                Log.e(LOG_TAG, "problem loading wallet", x)
                 Toast.makeText(this@SpvModuleApplication, x.javaClass.name, Toast.LENGTH_LONG).show()
                 wallet = restoreWalletFromBackup()
             } finally {
@@ -159,7 +159,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         } else {
             wallet = Wallet(Constants.NETWORK_PARAMETERS)
             backupWallet()
-            Log.i(TAG, "new wallet created")
+            Log.i(LOG_TAG, "new wallet created")
         }
     }
 
@@ -179,7 +179,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
 
             // Toast.makeText(this, R.string.toast_wallet_reset, Toast.LENGTH_LONG).show();
 
-            Log.i(TAG, "wallet restored from backup: '${Constants.Files.WALLET_KEY_BACKUP_PROTOBUF}'")
+            Log.i(LOG_TAG, "wallet restored from backup: '${Constants.Files.WALLET_KEY_BACKUP_PROTOBUF}'")
 
             return wallet
         } catch (x: IOException) {
@@ -210,8 +210,10 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         val start = System.currentTimeMillis()
 
         wallet.saveToFile(walletFile!!)
-        Log.d(TAG, "wallet saved to: $walletFile', took ${System.currentTimeMillis() - start}ms")
+        Log.d(LOG_TAG, "wallet saved to: $walletFile', took ${System.currentTimeMillis() - start}ms")
     }
+
+    private val LOG_TAG: String? = this.javaClass.canonicalName
 
     fun backupWallet() {
         val builder = WalletProtobufSerializer().walletToProto(wallet!!).toBuilder()
@@ -229,7 +231,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
             os = openFileOutput(Constants.Files.WALLET_KEY_BACKUP_PROTOBUF, Context.MODE_PRIVATE)
             walletProto.writeTo(os)
         } catch (x: IOException) {
-            Log.e(TAG, "problem writing key backup", x)
+            Log.e(LOG_TAG, "problem writing key backup", x)
         } finally {
             try {
                 if (os != null) {
@@ -243,7 +245,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
 
     private fun migrateBackup() {
         if (!getFileStreamPath(Constants.Files.WALLET_KEY_BACKUP_PROTOBUF).exists()) {
-            Log.i(TAG, "migrating automatic backup to protobuf")
+            Log.i(LOG_TAG, "migrating automatic backup to protobuf")
 
             // make sure there is at least one recent backup
             backupWallet()
@@ -255,7 +257,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
             if (filename.startsWith(Constants.Files.WALLET_KEY_BACKUP_BASE58)
                     || filename.startsWith(Constants.Files.WALLET_KEY_BACKUP_PROTOBUF + '.') || filename.endsWith(".tmp")) {
                 val file = File(filesDir, filename)
-                Log.i(TAG, "removing obsolete file: '$file'")
+                Log.i(LOG_TAG, "removing obsolete file: '$file'")
                 file.delete()
             }
         }
@@ -344,6 +346,8 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
             return versionMessage.subVer
         }
 
+        private val LOG_TAG: String? = this::class.java.canonicalName
+
         fun scheduleStartBlockchainService(context: Context) {
             val config = Configuration(PreferenceManager.getDefaultSharedPreferences(context))
             val lastUsedAgo = config.lastUsedAgo
@@ -357,7 +361,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
             else
                 alarmInterval = AlarmManager.INTERVAL_DAY
 
-            Log.i(TAG, "last used ${lastUsedAgo / DateUtils.MINUTE_IN_MILLIS} minutes ago, rescheduling blockchain sync in roughly ${alarmInterval / DateUtils.MINUTE_IN_MILLIS} minutes")
+            Log.i(LOG_TAG, "last used ${lastUsedAgo / DateUtils.MINUTE_IN_MILLIS} minutes ago, rescheduling blockchain sync in roughly ${alarmInterval / DateUtils.MINUTE_IN_MILLIS} minutes")
 
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
             val alarmIntent = PendingIntent.getService(context, 0, Intent(context, SpvService::class.java), 0)

@@ -21,6 +21,8 @@ open class PairingProvider : ContentProvider() {
         return true
     }
 
+    private val LOG_TAG: String? = this::class.java.canonicalName
+
     /**
      * Heavy hack ahead! Sorry!
      *
@@ -32,7 +34,7 @@ open class PairingProvider : ContentProvider() {
      */
     override fun query(uri: Uri, projection: Array<String>?, selection: String?, selectionArgs: Array<String>?, sortOrder: String?): Cursor? {
         val key = selection!!.toLong()
-        Log.d(TAG, "query($key, $callingPackage)")
+        Log.d(LOG_TAG, "query($key, $callingPackage)")
         communicationManager!!.pair(key, callingPackage)
         return null
     }

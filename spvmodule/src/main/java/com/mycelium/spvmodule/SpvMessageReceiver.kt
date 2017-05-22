@@ -24,7 +24,7 @@ import java.util.*
 
 class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
     override fun onMessage(callingPackageName: String, intent: Intent) {
-        Log.d(TAG, "onStartCommand($callingPackageName, $intent)")
+        Log.d(LOG_TAG, "onStartCommand($callingPackageName, $intent)")
         val communicationManager = CommunicationManager.Companion.getInstance(context)
         val clone = intent.clone() as Intent
         clone.setClass(context, SpvService::class.java)
@@ -51,7 +51,7 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
                 for (addressTimeString in addressStrings) {
                     val addressTimeStrings = addressTimeString.split(";")
                     if (addressTimeStrings.size != 2) {
-                        Log.e(TAG, "Received $addressTimeString but expected address;timestamp")
+                        Log.e(LOG_TAG, "Received $addressTimeString but expected address;timestamp")
                     }
                     val addressString = addressTimeStrings[0]
                     val timestamp = addressTimeStrings[1].toLong()
@@ -78,11 +78,14 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
 
                     // TODO: this is unsupported in bitcoinj-core:0.14.3
                     // wallet.clearTransactions(getBlockHeight(minTimestamp))
-                    if(minTimestamp < wallet.lastBlockSeenTimeSecs && minTimestamp < System.currentTimeMillis() / 1000 - 600) {
+                    if(minTimestamp < wallet.lastBlockSeenTimeSecs
+                            && minTimestamp < System.currentTimeMillis() / 1000 - 600) {
                         // crude heuristics to avoid an unnecessary rescan, risking to miss a rescan.
                         wallet.reset()
                     }
-                    context.contentResolver.bulkInsert(BlockchainContract.Address.CONTENT_URI(BuildConfig.APPLICATION_ID), contentValuesArray.toTypedArray())
+                    context.contentResolver.bulkInsert(
+                            BlockchainContract.Address.CONTENT_URI(BuildConfig.APPLICATION_ID),
+                            contentValuesArray.toTypedArray())
                 }
                 // send back all known transactions. others will follow as we find them.
                 val transactionSet = wallet.getTransactions(false)
@@ -94,10 +97,12 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
         context.startService(clone)
     }
 
+    private val LOG_TAG: String? = this.javaClass.canonicalName
+
     private fun  getBlockHeight(minTimestamp: Long): Int {
         val blockChainFile = File(context.getDir("blockstore", Context.MODE_PRIVATE), Constants.Files.BLOCKCHAIN_FILENAME)
         if (!blockChainFile.exists()) {
-            Log.e(TAG, "blockchain file not found!?!?")
+            Log.e(LOG_TAG, "blockchain file not found!?!?")
             return -1
         }
         try {
@@ -109,7 +114,7 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
             return block.height
         } catch (x: BlockStoreException) {
             val msg = "blockstore cannot be created"
-            Log.e(TAG, msg, x)
+            Log.e(LOG_TAG, msg, x)
             throw Error(msg, x)
         }
     }

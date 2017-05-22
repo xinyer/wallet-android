@@ -19,15 +19,16 @@ import java.util.*
 class CommunicationManager private constructor(val context: Context) {
     private val trustedPackages = HashMap<String, PackageMetaData>()
     private val sessionFilename = "sessions.json"
+    private val LOG_TAG: String? = this::class.java.canonicalName
 
     init {
-        Log.d(TAG, "Initializing for package ${context.applicationContext.packageName}")
+        Log.d(LOG_TAG, "Initializing for package ${context.applicationContext.packageName}")
         loadTrustedPackages()
         loadSessions()
     }
 
     private fun saveSessions() {
-        Log.d(TAG, "saveSessions()")
+        Log.d(LOG_TAG, "saveSessions()")
         val gson = GsonBuilder().create()
         try {
             val outputStream: OutputStream = context.openFileOutput(sessionFilename, Context.MODE_PRIVATE)
@@ -42,15 +43,15 @@ class CommunicationManager private constructor(val context: Context) {
         val readerDev = InputStreamReader(context.resources.openRawResource(R.raw.trusted_packages))
         val gson = GsonBuilder().create()
         val trustedPackagesArray = gson.fromJson(readerDev, emptyArray<PackageMetaData>().javaClass)
-        Log.d(TAG, "loading trust database of latest package version…")
+        Log.d(LOG_TAG, "loading trust database of latest package version…")
         for (pmd in trustedPackagesArray) {
-            Log.d(TAG, "Trusting ${pmd.name} with sig ${pmd.signature}.")
+            Log.d(LOG_TAG, "Trusting ${pmd.name} with sig ${pmd.signature}.")
             trustedPackages.put(pmd.name, pmd)
         }
     }
 
     private fun loadSessions() {
-        Log.d(TAG, "Restoring sessions for permitted packages…")
+        Log.d(LOG_TAG, "Restoring sessions for permitted packages…")
         val file = File(context.filesDir.absolutePath + File.separator + sessionFilename)
         if(file.exists()) {
             val fileInputStream = context.openFileInput(sessionFilename)
@@ -58,7 +59,7 @@ class CommunicationManager private constructor(val context: Context) {
             val gson = GsonBuilder().create()
             val trustedPackagesArray = gson.fromJson(readerUser, emptyArray<PackageMetaData>().javaClass) ?: emptyArray<PackageMetaData>()
             for (pmd in trustedPackagesArray) {
-                Log.d(TAG, "${pmd.name} uses key ${pmd.key}.")
+                Log.d(LOG_TAG, "${pmd.name} uses key ${pmd.key}.")
                 val packageMetaData = trustedPackages[pmd.name]
                 if (packageMetaData != null) {
                     packageMetaData.key = pmd.key
@@ -96,7 +97,7 @@ class CommunicationManager private constructor(val context: Context) {
      *
      */
     fun requestPair(packageName: String): Boolean {
-        Log.d(TAG, "requestPair")
+        Log.d(LOG_TAG, "requestPair")
         var success = false
         val startTimeMillis = System.currentTimeMillis()
         val cr = context.contentResolver
@@ -107,9 +108,9 @@ class CommunicationManager private constructor(val context: Context) {
             pair(key, packageName)
             success = true
         } catch (e: SecurityException) {
-            Log.e(TAG, "Couldn't pair with $packageName")
+            Log.e(LOG_TAG, "Couldn't pair with $packageName")
         }
-        Log.d(TAG, "It took ${System.currentTimeMillis()-startTimeMillis}ms to ${if(success) "" else "not "} pair with $packageName.")
+        Log.d(LOG_TAG, "It took ${System.currentTimeMillis()-startTimeMillis}ms to ${if(success) "" else "not "} pair with $packageName.")
         return success
     }
 
@@ -133,6 +134,7 @@ class CommunicationManager private constructor(val context: Context) {
         }
     }
 
+
     /**
      * @param key the session key a package should be associated to.
      * @return the package name
@@ -140,9 +142,9 @@ class CommunicationManager private constructor(val context: Context) {
      * reinstalled using an untrusted signature
      */
     fun getPackageName(key: Long): String {
-        Log.d(TAG, "getPackageName($key)")
+        Log.d(LOG_TAG, "getPackageName($key)")
         for (pn in trustedPackages.keys) {
-            Log.d(TAG, "checking package $pn")
+            Log.d(LOG_TAG, "checking package $pn")
             if (trustedPackages[pn]!!.key == key) {
                 checkSignature(pn)
                 return pn
@@ -196,7 +198,7 @@ class CommunicationManager private constructor(val context: Context) {
 
     fun send(receivingPackage: String, intent: Intent) {
         if(!trustedPackages.containsKey(receivingPackage)) {
-            Log.w(TAG, "Can't send to not trusted package $receivingPackage")
+            Log.w(LOG_TAG, "Can't send to not trusted package $receivingPackage")
             return
         }
         val serviceIntent = intent.clone() as Intent

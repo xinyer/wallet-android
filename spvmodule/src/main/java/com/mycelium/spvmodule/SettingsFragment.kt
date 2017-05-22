@@ -97,6 +97,8 @@ class SettingsFragment : PreferenceFragment(), OnPreferenceChangeListener {
         return true
     }
 
+    private val LOG_TAG: String? = this.javaClass.canonicalName
+
     private fun updateTrustedPeer() {
         val trustedPeer = config!!.trustedPeerHost
 
@@ -110,7 +112,7 @@ class SettingsFragment : PreferenceFragment(), OnPreferenceChangeListener {
             object : ResolveDnsTask(backgroundHandler!!) {
                 override fun onSuccess(address: InetAddress) {
                     trustedPeerPreference!!.summary = trustedPeer
-                    Log.i(TAG, "trusted peer '$trustedPeer' resolved to $address")
+                    Log.i(LOG_TAG, "trusted peer '$trustedPeer' resolved to $address")
                 }
 
                 override fun onUnknownHost() {

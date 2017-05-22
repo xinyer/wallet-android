@@ -18,12 +18,14 @@ import com.mycelium.spvmodule.Constants.Companion.TAG
 import com.mycelium.spvmodule.providers.BlockchainContract
 
 class TransactionListFragment : ListFragment() {
+    private val LOG_TAG: String? = this::class.java.canonicalName
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
         val context = activity
         val cr = context.contentResolver
         val uri = BlockchainContract.Transaction.CONTENT_URI(context.packageName)
-        Log.d(TAG, "BlockchainContract.Transaction URI is ${uri}")
+        Log.d(LOG_TAG, "BlockchainContract.Transaction URI is ${uri}")
         val cursor = cr.query(BlockchainContract.Transaction.CONTENT_URI(context.packageName), TransactionsAdapter.fromColumns, null, null, null)
 
         cr.registerContentObserver(BlockchainContract.Transaction.CONTENT_URI(context.packageName), true, object : ContentObserver(null) {
@@ -31,7 +33,7 @@ class TransactionListFragment : ListFragment() {
                 activity.runOnUiThread {
                     // val cursor2 = cr.query(BlockchainContract.Transaction.CONTENT_URI(context.packageName), TransactionsAdapter.fromColumns, null, null, null)
                     // adapter.swapCursor(cursor);
-                    Log.d(TAG, "We actually got notified of a transactions change.")
+                    Log.d(LOG_TAG, "We actually got notified of a transactions change.")
                 }
             }
 
@@ -50,6 +52,8 @@ class TransactionListFragment : ListFragment() {
         private val txid = cursor.getColumnIndexOrThrow(BlockchainContract.Transaction.TRANSACTION_ID)
         private val includedInBlock = cursor.getColumnIndexOrThrow(BlockchainContract.Transaction.INCLUDED_IN_BLOCK)
 
+        private val LOG_TAG: String? = this::class.java.canonicalName
+
         override fun getView(position: Int, convertView: View?, parent: ViewGroup): View? {
             var cv = convertView
             if (cursor.moveToPosition(position)) {
@@ -67,7 +71,7 @@ class TransactionListFragment : ListFragment() {
                 viewHolder.txid.text = cursor.getString(txid)
                 viewHolder.includedInBlock.text = (lastBlockSeenHeight - cursor.getLong(includedInBlock)).toString()
             }
-            Log.d(TAG, "getView at position $position. TXID is ${cursor.getString(txid)}.")
+            Log.d(LOG_TAG, "getView at position $position. TXID is ${cursor.getString(txid)}.")
             return cv
         }
 

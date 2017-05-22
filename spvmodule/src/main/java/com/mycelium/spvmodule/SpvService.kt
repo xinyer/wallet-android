@@ -36,7 +36,8 @@ import android.text.format.DateUtils
 import android.util.Log
 import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.spvmodule.BlockchainState.Impediment
-import com.mycelium.spvmodule.Constants.Companion.TAG
+
+
 import com.mycelium.spvmodule.providers.BlockchainContract
 import org.bitcoinj.core.*
 import org.bitcoinj.core.TransactionConfidence.ConfidenceType
@@ -89,7 +90,8 @@ class SpvService : Service() {
         override fun onTransactionConfidenceChanged(wallet: Wallet, tx: Transaction) {
             super.onTransactionConfidenceChanged(wallet, tx)
             if(BuildConfig.DEBUG) {
-                Log.d(this.javaClass.canonicalName, "onTransactionConfidenceChanged, notifyTransaction, tx = " + tx.toString())
+                Log.d(this.javaClass.canonicalName, "onTransactionConfidenceChanged, notifyTransaction, "
+                        + "tx = " + tx.toString())
             }
             notifyTransaction(tx)
         }
@@ -108,6 +110,10 @@ class SpvService : Service() {
                 val replaying = bestChainHeight < config!!.bestChainHeightEver
                 val isReplayedTx = confidenceType == ConfidenceType.BUILDING && replaying
                 if (isReceived && !isReplayedTx) {
+                    if(BuildConfig.DEBUG) {
+                        Log.d(this.javaClass.canonicalName, "onCoinsReceived, notifyTransaction, "
+                                + "tx = " + tx.toString())
+                    }
                     notifyTransaction(tx)
                 }
             }
@@ -115,6 +121,10 @@ class SpvService : Service() {
 
         override fun onCoinsSent(wallet: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
             transactionsReceived.incrementAndGet()
+            if(BuildConfig.DEBUG) {
+                Log.d(this.javaClass.canonicalName, "onCoinsSent, notifyTransaction, "
+                        + "tx = " + tx.toString())
+            }
             notifyTransaction(tx)
         }
     }
@@ -147,7 +157,7 @@ class SpvService : Service() {
                     cr.insert(BlockchainContract.TransactionOutput.CONTENT_URI(packageName), txoValues)
                 } catch (e:RuntimeException) {
                     // HACK: Until we actually make use of ContentProvider and more specifically txos via CP, this will do.
-                    Log.e(TAG, e.message)
+                    Log.e(LOG_TAG, e.message)
                 }
             }
         } else {
@@ -262,7 +272,7 @@ class SpvService : Service() {
 
             if (ConnectivityManager.CONNECTIVITY_ACTION == action) {
                 val hasConnectivity = !intent.getBooleanExtra(ConnectivityManager.EXTRA_NO_CONNECTIVITY, false)
-                Log.i(TAG, "network is " + if (hasConnectivity) "up" else "down")
+                Log.i(LOG_TAG, "network is " + if (hasConnectivity) "up" else "down")
 
                 if (hasConnectivity)
                     impediments.remove(Impediment.NETWORK)
@@ -270,12 +280,12 @@ class SpvService : Service() {
                     impediments.add(Impediment.NETWORK)
                 check()
             } else if (Intent.ACTION_DEVICE_STORAGE_LOW == action) {
-                Log.i(TAG, "device storage low")
+                Log.i(LOG_TAG, "device storage low")
 
                 impediments.add(Impediment.STORAGE)
                 check()
             } else if (Intent.ACTION_DEVICE_STORAGE_OK == action) {
-                Log.i(TAG, "device storage ok")
+                Log.i(LOG_TAG, "device storage ok")
 
                 impediments.remove(Impediment.STORAGE)
                 check()
@@ -287,7 +297,7 @@ class SpvService : Service() {
             val wallet = SpvModuleApplication.getWallet()
 
             if (impediments.isEmpty() && peerGroup == null) {
-                Log.d(TAG, "acquiring wakelock")
+                Log.d(LOG_TAG, "acquiring wakelock")
                 wakeLock!!.acquire()
 
                 // consistency check
@@ -295,10 +305,10 @@ class SpvService : Service() {
                 val bestChainHeight = blockChain!!.bestChainHeight
                 if (walletLastBlockSeenHeight != -1 && walletLastBlockSeenHeight != bestChainHeight) {
                     val message = "wallet/blockchain out of sync: $walletLastBlockSeenHeight/$bestChainHeight"
-                    Log.e(TAG, message)
+                    Log.e(LOG_TAG, message)
                 }
 
-                Log.i(TAG, "starting peergroup")
+                Log.i(LOG_TAG, "starting peergroup")
                 peerGroup = PeerGroup(Constants.NETWORK_PARAMETERS, blockChain)
                 peerGroup!!.setDownloadTxDependencies(0) // recursive implementation causes StackOverflowError
                 peerGroup!!.addWallet(wallet)
@@ -326,7 +336,7 @@ class SpvService : Service() {
                         var needsTrimPeersWorkaround = false
 
                         if (hasTrustedPeer) {
-                            Log.i(TAG, "trusted peer '$trustedPeerHost' ${if (connectTrustedPeerOnly) " only" else ""}")
+                            Log.i(LOG_TAG, "trusted peer '$trustedPeerHost' ${if (connectTrustedPeerOnly) " only" else ""}")
 
                             val addr = InetSocketAddress(trustedPeerHost, Constants.NETWORK_PARAMETERS.port)
                             if (addr.address != null) {
@@ -355,14 +365,14 @@ class SpvService : Service() {
                 peerGroup!!.startAsync()
                 peerGroup!!.startBlockChainDownload(blockchainDownloadListener)
             } else if (!impediments.isEmpty() && peerGroup != null) {
-                Log.i(TAG, "stopping peergroup")
+                Log.i(LOG_TAG, "stopping peergroup")
                 peerGroup!!.removeDisconnectedEventListener(peerConnectivityListener!!)
                 peerGroup!!.removeConnectedEventListener(peerConnectivityListener!!)
                 peerGroup!!.removeWallet(wallet)
                 peerGroup!!.stopAsync()
                 peerGroup = null
 
-                Log.d(TAG, "releasing wakelock")
+                Log.d(LOG_TAG, "releasing wakelock")
                 wakeLock!!.release()
             }
 
@@ -402,7 +412,7 @@ class SpvService : Service() {
                     }
                     builder.append(entry)
                 }
-                Log.i(TAG, "History of transactions/blocks: " + builder)
+                Log.i(LOG_TAG, "History of transactions/blocks: " + builder)
 
                 // determine if block and transaction activity is idling
                 var isIdle = false
@@ -422,7 +432,7 @@ class SpvService : Service() {
 
                 // if idling, shutdown service
                 if (isIdle) {
-                    Log.i(TAG, "idling detected, stopping service")
+                    Log.i(LOG_TAG, "idling detected, stopping service")
                     stopSelf()
                 }
             }
@@ -442,13 +452,13 @@ class SpvService : Service() {
     }
 
     override fun onUnbind(intent: Intent): Boolean {
-        Log.d(TAG, ".onUnbind()")
+        Log.d(LOG_TAG, ".onUnbind()")
         return super.onUnbind(intent)
     }
 
     override fun onCreate() {
         serviceCreatedAt = System.currentTimeMillis()
-        Log.d(TAG, ".onCreate()")
+        Log.d(LOG_TAG, ".onCreate()")
 
         super.onCreate()
 
@@ -471,7 +481,7 @@ class SpvService : Service() {
         val blockChainFileExists = blockChainFile!!.exists()
 
         if (!blockChainFileExists) {
-            Log.i(TAG, "blockchain does not exist, resetting wallet")
+            Log.i(LOG_TAG, "blockchain does not exist, resetting wallet")
             wallet.reset()
         }
 
@@ -486,9 +496,9 @@ class SpvService : Service() {
                     val start = System.currentTimeMillis()
                     val checkpointsInputStream = assets.open(Constants.Files.CHECKPOINTS_FILENAME)
                     CheckpointManager.checkpoint(Constants.NETWORK_PARAMETERS, checkpointsInputStream, blockStore!!, earliestKeyCreationTime)
-                    Log.i(TAG, "checkpoints loaded from '${Constants.Files.CHECKPOINTS_FILENAME}', took ${System.currentTimeMillis() - start}ms")
+                    Log.i(LOG_TAG, "checkpoints loaded from '${Constants.Files.CHECKPOINTS_FILENAME}', took ${System.currentTimeMillis() - start}ms")
                 } catch (x: IOException) {
-                    Log.e(TAG, "problem reading checkpoints, continuing without", x)
+                    Log.e(LOG_TAG, "problem reading checkpoints, continuing without", x)
                 }
 
             }
@@ -496,7 +506,7 @@ class SpvService : Service() {
             blockChainFile!!.delete()
 
             val msg = "blockstore cannot be created"
-            Log.e(TAG, msg, x)
+            Log.e(LOG_TAG, msg, x)
             throw Error(msg, x)
         }
 
@@ -522,7 +532,7 @@ class SpvService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         org.bitcoinj.core.Context.propagate(Constants.CONTEXT)
         if (intent != null) {
-            Log.i(TAG, "service start command: $intent ${
+            Log.i(LOG_TAG, "service start command: $intent ${
             if (intent.hasExtra(Intent.EXTRA_ALARM_COUNT))
                 " (alarm count: ${intent.getIntExtra(Intent.EXTRA_ALARM_COUNT, 0)})"
             else
@@ -532,7 +542,7 @@ class SpvService : Service() {
             when (intent.action) {
                 ACTION_CANCEL_COINS_RECEIVED -> nm!!.cancel(Constants.NOTIFICATION_ID_COINS_RECEIVED)
                 ACTION_RESET_BLOCKCHAIN -> {
-                    Log.i(TAG, "will remove blockchain on service shutdown")
+                    Log.i(LOG_TAG, "will remove blockchain on service shutdown")
 
                     resetBlockchainOnShutdown = true
                     stopSelf()
@@ -540,25 +550,27 @@ class SpvService : Service() {
                 ACTION_BROADCAST_TRANSACTION -> {
                     val transactionByteArray = intent.getByteArrayExtra("TX")
                     val tx = Transaction(Constants.NETWORK_PARAMETERS, transactionByteArray)
-                    Log.i(TAG, "onReceive: TX = " + tx)
+                    Log.i(LOG_TAG, "onReceive: TX = " + tx)
                     SpvModuleApplication.getWallet().maybeCommitTx(tx)
                     if (peerGroup != null) {
-                        Log.i(TAG, "broadcasting transaction ${tx.hashAsString}")
+                        Log.i(LOG_TAG, "broadcasting transaction ${tx.hashAsString}")
                         peerGroup!!.broadcastTransaction(tx)
                     } else {
-                        Log.w(TAG, "peergroup not available, not broadcasting transaction " + tx.hashAsString)
+                        Log.w(LOG_TAG, "peergroup not available, not broadcasting transaction " + tx.hashAsString)
                     }
                 }
             }
         } else {
-            Log.w(TAG, "service restart, although it was started as non-sticky")
+            Log.w(LOG_TAG, "service restart, although it was started as non-sticky")
         }
         broadcastBlockchainState();
         return START_NOT_STICKY
     }
 
+    private val LOG_TAG: String? = this::class.java.canonicalName
+
     override fun onDestroy() {
-        Log.d(TAG, ".onDestroy()")
+        Log.d(LOG_TAG, ".onDestroy()")
 
         SpvModuleApplication.scheduleStartBlockchainService(this)
 
@@ -576,7 +588,7 @@ class SpvService : Service() {
             peerGroup!!.removeWallet(SpvModuleApplication.getWallet())
             peerGroup!!.stop()
 
-            Log.i(TAG, "peergroup stopped")
+            Log.i(LOG_TAG, "peergroup stopped")
         }
 
         peerConnectivityListener!!.stop()
@@ -592,25 +604,25 @@ class SpvService : Service() {
         application!!.saveWallet()
 
         if (wakeLock!!.isHeld) {
-            Log.d(TAG, "wakelock still held, releasing")
+            Log.d(LOG_TAG, "wakelock still held, releasing")
             wakeLock!!.release()
         }
 
         if (resetBlockchainOnShutdown) {
-            Log.i(TAG, "removing blockchain")
+            Log.i(LOG_TAG, "removing blockchain")
             blockChainFile!!.delete()
         }
 
         super.onDestroy()
 
-        Log.i(TAG, "service was up for ${(System.currentTimeMillis() - serviceCreatedAt) / 1000 / 60} minutes")
+        Log.i(LOG_TAG, "service was up for ${(System.currentTimeMillis() - serviceCreatedAt) / 1000 / 60} minutes")
     }
 
     override fun onTrimMemory(level: Int) {
-        Log.i(TAG, "onTrimMemory($level)")
+        Log.i(LOG_TAG, "onTrimMemory($level)")
 
         if (level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND) {
-            Log.w(TAG, "low memory detected, stopping service")
+            Log.w(LOG_TAG, "low memory detected, stopping service")
             stopSelf()
         }
     }

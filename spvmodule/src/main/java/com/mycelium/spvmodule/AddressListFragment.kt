@@ -34,9 +34,11 @@ class AddressListFragment : ListFragment() {
         private val addressIndex: Int = cursor.getColumnIndexOrThrow(BlockchainContract.Address.ADDRESS_ID)
         private val creationDateIndex: Int = cursor.getColumnIndexOrThrow(BlockchainContract.Address.CREATION_DATE)
 
+        private val LOG_TAG: String? = this.javaClass.canonicalName
+
         override fun getView(position: Int, convertView: View?, parent: ViewGroup): View? {
             var cv = convertView
-            Log.d(TAG,"getView at position $position.")
+            Log.d(LOG_TAG,"getView at position $position.")
             if (cursor.moveToPosition(position)) {
                 val viewHolder: ViewHolder
 

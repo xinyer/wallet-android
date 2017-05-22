@@ -12,6 +12,9 @@ import com.mycelium.spvmodule.providers.data.DatabaseContract.TransactionOutput
 
 class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DatabaseHelper.DATABASE_NAME,
         null, DatabaseHelper.DATABASE_VERSION) {
+
+    private val LOG_TAG: String? = this::class.java.canonicalName
+
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL("DROP TABLE IF EXISTS ${Address.TABLE_NAME};")
         db.execSQL("""
@@ -30,7 +33,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DatabaseHelpe
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        Log.w(TAG, "Upgrading database from version $oldVersion to $newVersion.")
+        Log.w(LOG_TAG, "Upgrading database from version $oldVersion to $newVersion.")
         if (oldVersion < 4) {
             onCreate(db)
         }
