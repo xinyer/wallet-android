@@ -132,9 +132,9 @@ class SpvService : Service() {
     private fun notifyTransaction(tx: Transaction) {
         val txos = HashMap<String, TransactionOutput?>()
         tx.inputs.forEach {txos[it.outpoint.toString()] = it.connectedOutput}
-        val cr = contentResolver
+        val contentResolver = contentResolver
         val values = ContentValues()
-        val cursor = cr.query(BlockchainContract.Transaction.CONTENT_URI(packageName),
+        val cursor = contentResolver.query(BlockchainContract.Transaction.CONTENT_URI(packageName),
                 arrayOf(BlockchainContract.Transaction.TRANSACTION_ID),
                 BlockchainContract.Transaction.TRANSACTION_ID + "=?", arrayOf(tx.hashAsString),
                 null)
@@ -148,13 +148,13 @@ class SpvService : Service() {
             values.put(BlockchainContract.Transaction.TRANSACTION_ID, tx.hashAsString)
             values.put(BlockchainContract.Transaction.TRANSACTION, tx.bitcoinSerialize())
             values.put(BlockchainContract.Transaction.INCLUDED_IN_BLOCK, height)
-            cr.insert(BlockchainContract.Transaction.CONTENT_URI(packageName), values)
+            contentResolver.insert(BlockchainContract.Transaction.CONTENT_URI(packageName), values)
             for(txo in tx.inputs) {
                 val txoValues = ContentValues()
                 txoValues.put(BlockchainContract.TransactionOutput.TXO_ID, txo.outpoint.toString())
                 txoValues.put(BlockchainContract.TransactionOutput.TXO, txo.scriptBytes)
                 try {
-                    cr.insert(BlockchainContract.TransactionOutput.CONTENT_URI(packageName), txoValues)
+                    contentResolver.insert(BlockchainContract.TransactionOutput.CONTENT_URI(packageName), txoValues)
                 } catch (e:RuntimeException) {
                     // HACK: Until we actually make use of ContentProvider and more specifically txos via CP, this will do.
                     Log.e(LOG_TAG, e.message)
@@ -163,7 +163,7 @@ class SpvService : Service() {
         } else {
             // update
             values.put(BlockchainContract.Transaction.INCLUDED_IN_BLOCK, height)
-            cr.update(BlockchainContract.Transaction.CONTENT_URI(packageName), values, "_id=?",
+            contentResolver.update(BlockchainContract.Transaction.CONTENT_URI(packageName), values, "_id=?",
                     arrayOf(tx.hashAsString))
         }
         cursor?.close()
@@ -225,7 +225,8 @@ class SpvService : Service() {
                     contentText += " " +  getString(R.string.notification_chain_status_behind, daysBehind)
                 }
                 if(blockchainState.impediments.size > 0) {
-                    // TODO: this is potentially unreachable as the service stops when offline. Not sure if impediment STORAGE ever shows. Probably both should show.
+                    // TODO: this is potentially unreachable as the service stops when offline.
+                    // Not sure if impediment STORAGE ever shows. Probably both should show.
                     val impedimentsString = blockchainState.impediments.map {it.toString()}.joinToString()
                     contentText += " " +  getString(R.string.notification_chain_status_impediment, impedimentsString)
                 }

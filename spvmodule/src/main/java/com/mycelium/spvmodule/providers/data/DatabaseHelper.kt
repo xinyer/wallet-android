@@ -5,6 +5,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.util.Log
 import com.mycelium.spvmodule.Constants.Companion.TAG
+import com.mycelium.spvmodule.providers.BlockchainContract
 
 import com.mycelium.spvmodule.providers.data.DatabaseContract.Address
 import com.mycelium.spvmodule.providers.data.DatabaseContract.Transaction
@@ -29,6 +30,12 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DatabaseHelpe
                 ${Transaction.TRANSACTION_ID} TEXT PRIMARY KEY,
                 ${Transaction.TRANSACTION} BLOB,
                 ${Transaction.INCLUDED_IN_BLOCK} INTEGER);
+                """.trimIndent())
+        db.execSQL("DROP TABLE IF EXISTS ${TransactionOutput.TABLE_NAME};")
+        db.execSQL("""
+                CREATE TABLE ${TransactionOutput.TABLE_NAME} (
+                ${TransactionOutput.TRANSACTION_OUTPUT_ID} TEXT PRIMARY KEY,
+                ${TransactionOutput.TRANSACTION_OUTPUT} BLOB);
                 """.trimIndent())
     }
 

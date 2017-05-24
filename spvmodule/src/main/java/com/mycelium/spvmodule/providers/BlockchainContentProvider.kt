@@ -34,7 +34,7 @@ class BlockchainContentProvider : ContentProvider() {
             ADDRESS_LIST, TRANSACTION_LIST -> {
             }
             ADDRESS_ID, TRANSACTION_ID -> sel = sel + " _id=" + uri.lastPathSegment
-            else -> throw IllegalArgumentException("Unknown URI " + uri)
+            else -> throw IllegalArgumentException("Unknown URI " + uri) as Throwable
         }
         qb.tables = getTableFromMatch(match)
         val db = dbHelper!!.readableDatabase
