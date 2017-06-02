@@ -1003,7 +1003,7 @@ public class WalletManager {
    /**
     * this is part of a bugfix for where the wallet skipped accounts in conflict with BIP44
     */
-   public UUID createArchivedGapFiller(KeyCipher cipher, Integer accountIndex) throws InvalidKeyCipher {
+   public UUID createArchivedGapFiller(KeyCipher cipher, Integer accountIndex, boolean archived) throws InvalidKeyCipher {
       // Get the master seed
       Bip39.MasterSeed masterSeed = getMasterSeed(cipher);
 
@@ -1032,7 +1032,9 @@ public class WalletManager {
 
          // Finally persist context and add account
          context.persist(accountBacking);
-         account.archiveAccount();
+         if(archived) {
+            account.archiveAccount();
+         }
 
          addAccount(account);
          _bip44Accounts.add(account);

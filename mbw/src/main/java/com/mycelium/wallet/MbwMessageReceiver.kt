@@ -174,7 +174,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
             MbwManager.getInstance(context).getMetadataStorage()
                     .storeAccountLabel(account.id, "Account " + account.accountIndex)
             walletManager.createArchivedGapFiller(AesKeyCipher.defaultKeyCipher(),
-                    account.accountIndex + 1)
+                    account.accountIndex + 1, false)
             walletManager.startSynchronization()
         }
     }
