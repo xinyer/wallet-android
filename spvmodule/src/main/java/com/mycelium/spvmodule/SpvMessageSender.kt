@@ -23,8 +23,8 @@ class SpvMessageSender {
                 // Sorry dude. Don't file this bug report.
                     else -> it.confidence.confidenceType.value
                 }
-                ByteBuffer.allocate(/*1 int*/4 + transactionBytes.size)
-                        .putInt(blockHeight).put(transactionBytes).array()
+                ByteBuffer.allocate(/* 1 int */ 4 + transactionBytes.size + /* 1 Long */ 8)
+                        .putInt(blockHeight).put(transactionBytes).putLong(it.updateTime.time).array()
             }.toTypedArray()
             val txos = HashMap<String, ByteArray>()
             for(tx in transactionSet) {

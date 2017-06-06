@@ -496,8 +496,11 @@ class SpvService : Service() {
                 try {
                     val start = System.currentTimeMillis()
                     val checkpointsInputStream = assets.open(Constants.Files.CHECKPOINTS_FILENAME)
-                    CheckpointManager.checkpoint(Constants.NETWORK_PARAMETERS, checkpointsInputStream, blockStore!!, earliestKeyCreationTime)
-                    Log.i(LOG_TAG, "checkpoints loaded from '${Constants.Files.CHECKPOINTS_FILENAME}', took ${System.currentTimeMillis() - start}ms")
+                    CheckpointManager.checkpoint(Constants.NETWORK_PARAMETERS, checkpointsInputStream,
+                            blockStore!!, earliestKeyCreationTime)
+                    Log.i(LOG_TAG, "checkpoints loaded from '${Constants.Files.CHECKPOINTS_FILENAME}',"
+                            + " took ${System.currentTimeMillis() - start}ms, "
+                            + "earliestKeyCreationTime = '$earliestKeyCreationTime'")
                 } catch (x: IOException) {
                     Log.e(LOG_TAG, "problem reading checkpoints, continuing without", x)
                 }

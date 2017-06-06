@@ -73,7 +73,8 @@ public class Transaction implements Serializable {
    }
 
    // use this builder if you already know the resulting transaction hash to speed up computation
-   public static Transaction fromByteReader(ByteReader reader, Sha256Hash knownTransactionHash) throws TransactionParsingException {
+   public static Transaction fromByteReader(ByteReader reader, Sha256Hash knownTransactionHash)
+       throws TransactionParsingException {
       int size = reader.available();
       try {
          int version = reader.getIntLE();

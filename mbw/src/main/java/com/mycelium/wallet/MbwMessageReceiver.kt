@@ -66,11 +66,14 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                     for (confTransactionBytes in transactionsBytes) {
                         val transactionBytesBuffer = ByteBuffer.wrap(confTransactionBytes)
                         val blockHeight = transactionBytesBuffer.int
-                        val transactionBytes = ByteArray(transactionBytesBuffer.capacity() - 4)
+                        val transactionBytes = ByteArray(transactionBytesBuffer.capacity() - (4 + 8))
                         //Filling up transactionBytes.
                         transactionBytesBuffer.get(transactionBytes, 0, transactionBytes.size)
 
+                        val updateAtTime = transactionBytesBuffer.long
+
                         val transaction = Transaction.fromBytes(transactionBytes)
+
                         val connectedOutputs = HashMap<OutPoint, TransactionOutput>()
 
                         for (input in transaction.inputs) {
@@ -121,6 +124,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                                 else -> {
                                     val txBJ = org.bitcoinj.core.Transaction(networkBJ, transactionBytes)
                                     val txid = Sha256Hash.fromString(txBJ.hash.toString())
+                                    txBJ.updateTime = Date(updateAtTime);
                                     val time = (txBJ.updateTime.time / 1000L).toInt()
                                     val tEx = TransactionEx(txid, blockHeight, time, transactionBytes)
                                     Log.d(TAG, "com.mycelium.wallet.receivedTransactions, onMessage:"

@@ -377,7 +377,8 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
       }
    }
 
-   private void handleNewExternalTransactionsInt(Collection<TransactionExApi> transactions, boolean fetchMissingOutputs) throws WapiException {
+   private void handleNewExternalTransactionsInt(Collection<TransactionExApi> transactions,
+                                                 boolean fetchMissingOutputs) throws WapiException {
       // Transform and put into two arrays with matching indexes
       ArrayList<TransactionEx> texArray = new ArrayList<>(transactions.size());
       ArrayList<Transaction> txArray = new ArrayList<>(transactions.size());
@@ -1225,8 +1226,8 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
          // We failed to check transactions
          return false;
       }
-      for (TransactionStatus t : result.transactions) {
-         TransactionEx localTransactionEx = _backing.getTransaction(t.txid);
+      for (TransactionStatus transactionStatus : result.transactions) {
+         TransactionEx localTransactionEx = _backing.getTransaction(transactionStatus.txid);
          Transaction parsedTransaction;
          if (localTransactionEx != null) {
             try {
@@ -1253,37 +1254,38 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
          }
 
          // if this transaction summary has a risk assessment set, remember it
-         if (t.rbfRisk || t.unconfirmedChainLength > 0 || isDoubleSpend) {
-            riskAssessmentForUnconfirmedTx.put(t.txid, new ConfirmationRiskProfileLocal(t.unconfirmedChainLength, t.rbfRisk, isDoubleSpend));
+         if (transactionStatus.rbfRisk || transactionStatus.unconfirmedChainLength > 0 || isDoubleSpend) {
+            riskAssessmentForUnconfirmedTx.put(transactionStatus.txid, new ConfirmationRiskProfileLocal(transactionStatus.unconfirmedChainLength, transactionStatus.rbfRisk, isDoubleSpend));
          } else {
             // otherwise just remove it if we ever got one
-            riskAssessmentForUnconfirmedTx.remove(t.txid);
+            riskAssessmentForUnconfirmedTx.remove(transactionStatus.txid);
          }
 
          // does the server know anything about this tx?
-         if (!t.found) {
+         if (!transactionStatus.found) {
             if (localTransactionEx != null) {
                // We have a transaction locally that did not get reported back by the server
                // put it into the outgoing queue and mark it as "not transmitted" (even as it might be an incoming tx)
                queueTransaction(localTransactionEx);
             } else {
                // we haven't found it locally (shouldn't happen here) - so delete it to be sure
-               _backing.deleteTransaction(t.txid);
+               _backing.deleteTransaction(transactionStatus.txid);
             }
             continue;
          } else {
             // we got it back from the server and it got confirmations - remove it from out outgoing queue
-            if (t.height > -1 || _backing.isOutgoingTransaction(t.txid)) {
-               _backing.deleteOutgoingTransaction(t.txid);
+            if (transactionStatus.height > -1 || _backing.isOutgoingTransaction(transactionStatus.txid)) {
+               _backing.deleteOutgoingTransaction(transactionStatus.txid);
             }
          }
 
          // update the local transaction
-         if (localTransactionEx != null && (localTransactionEx.height != t.height || localTransactionEx.time != t.time)) {
+         if (localTransactionEx != null && (localTransactionEx.height != transactionStatus.height
+             || localTransactionEx.time != transactionStatus.time)) {
             // The transaction got a new height or timestamp. There could be
             // several reasons for that. It got a new timestamp from the server,
             // it confirmed, or might also be a reorg.
-            TransactionEx newTex = new TransactionEx(localTransactionEx.txid, t.height, t.time, localTransactionEx.binary);
+            TransactionEx newTex = new TransactionEx(localTransactionEx.txid, transactionStatus.height, transactionStatus.time, localTransactionEx.binary);
             _logger.logInfo(String.format("Replacing: %s With: %s", localTransactionEx.toString(), newTex.toString()));
             postEvent(Event.TRANSACTION_HISTORY_CHANGED);
             _backing.deleteTransaction(localTransactionEx.txid);

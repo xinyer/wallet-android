@@ -208,7 +208,7 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
 
       if(!doesAddressExistAlready) {
         // Save address with timestamp in DB
-        long timestamp = 1477958400L; //Test with Nov/01/2016 //System.currentTimeMillis();
+        long timestamp = 1477958400L; //Test with Nov/01/2016 IN SECONDS // Used to be System.currentTimeMillis();
         int lastIndexWithActivity;
         if(isChangeChain) {
           lastIndexWithActivity = _context.getLastInternalIndexWithActivity();
@@ -218,7 +218,7 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
         if(lastIndexWithActivity != -1) {
           Address addressLastActivity = addressMap.inverse().get(lastIndexWithActivity);
           timestamp = _bip44AccountBacking.getCreationTimeByAddress(addressLastActivity)
-              - (2 * 24 * 60 * 60 * 1000); //Minus two days in millisecond.
+              - (2 * 24 * 60 * 60); //Minus two days in seconds.
         }
         _bip44AccountBacking.storeAddressCreationTime(address, timestamp);
       } else if(_bip44AccountBacking.getCreationTimeByAddress(address) == 0L) {
