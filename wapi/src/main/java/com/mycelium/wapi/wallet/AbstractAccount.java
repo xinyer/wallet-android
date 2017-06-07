@@ -393,7 +393,7 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
       }
 
       // Grab and handle parent transactions
-      if( fetchMissingOutputs) {
+      if(fetchMissingOutputs) {
          fetchStoreAndValidateParentOutputs(txArray);
       }
 
@@ -411,27 +411,27 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
 
       // Find list of parent outputs to fetch
       Collection<Sha256Hash> toFetch = new HashSet<>();
-      for (Transaction t : transactions) {
-         for (TransactionInput in : t.inputs) {
-            if (in.outPoint.hash.equals(OutPoint.COINBASE_OUTPOINT.hash)) {
+      for (Transaction transaction : transactions) {
+         for (TransactionInput transactionInput : transaction.inputs) {
+            if (transactionInput.outPoint.hash.equals(OutPoint.COINBASE_OUTPOINT.hash)) {
                // Coinbase input, so no parent
                continue;
             }
-            TransactionOutputEx parentOutput = _backing.getParentTransactionOutput(in.outPoint);
+            TransactionOutputEx parentOutput = _backing.getParentTransactionOutput(transactionInput.outPoint);
             if (parentOutput != null) {
                // We already have the parent output, no need to fetch the entire
                // parent transaction
                parentOutputs.put(parentOutput.outPoint, parentOutput);
                continue;
             }
-            TransactionEx parentTransaction = _backing.getTransaction(in.outPoint.hash);
+            TransactionEx parentTransaction = _backing.getTransaction(transactionInput.outPoint.hash);
             if (parentTransaction != null) {
                // We had the parent transaction in our own transactions, no need to
                // fetch it remotely
                parentTransactions.put(parentTransaction.txid, parentTransaction);
             } else {
                // Need to fetch it
-               toFetch.add(in.outPoint.hash);
+               toFetch.add(transactionInput.outPoint.hash);
             }
          }
       }

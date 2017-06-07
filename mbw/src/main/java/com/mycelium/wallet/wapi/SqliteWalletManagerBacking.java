@@ -829,6 +829,7 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
       @Override
       public boolean putTransaction(TransactionEx tx) {
          beginTransaction();
+         Log.d(LOG_TAG, "testNelson putTransaction id = " + tx.txid);
          try {
             _insertOrReplaceTx.bindBlob(1, tx.txid.getBytes());
             _insertOrReplaceTx.bindLong(2, tx.height == -1 ? Integer.MAX_VALUE : tx.height);
@@ -885,6 +886,7 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
       @Override
       public TransactionEx getTransaction(Sha256Hash hash) {
          Cursor cursor = null;
+         Log.d(LOG_TAG, "testNelson getTransaction id = " + hash);
          try {
             SQLiteQueryWithBlobs blobQuery = new SQLiteQueryWithBlobs(_db);
             blobQuery.bindBlob(1, hash.getBytes());
