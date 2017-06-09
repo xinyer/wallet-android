@@ -27,7 +27,7 @@ import java.util.HashSet
 class PreferenceActivity : PreferenceActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        startService(Intent(this, SpvService::class.java))
+        //startService(Intent(this, SpvService::class.java))
     }
 
     override fun onBuildHeaders(target: List<PreferenceActivity.Header>) {

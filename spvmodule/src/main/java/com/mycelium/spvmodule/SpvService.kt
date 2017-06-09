@@ -75,13 +75,14 @@ class SpvService : Service() {
     private var wakeLock: WakeLock? = null
 
     private var peerConnectivityListener: PeerConnectivityListener? = null
-    private var nm: NotificationManager? = null
+    private var notificationManager: NotificationManager? = null
     private val impediments = EnumSet.noneOf(Impediment::class.java)
     private val transactionsReceived = AtomicInteger()
-    private var serviceCreatedAt: Long = 0
+    private var serviceCreatedAtInMs: Long = 0
     private var resetBlockchainOnShutdown = false
 
-    private val walletEventListener = object : ThrottlingWalletChangeListener(APPWIDGET_THROTTLE_MS) {
+    private val walletEventListener = object
+        : ThrottlingWalletChangeListener(APPWIDGET_THROTTLE_MS) {
         override fun onThrottledWalletChanged() {
             // TODO: 8/11/16
             Log.d(this.javaClass.canonicalName, "onThrottledWalletChanged NOT doing anything as of now.")
@@ -129,6 +130,252 @@ class SpvService : Service() {
         }
     }
 
+    private val LOG_TAG: String? = this::class.java.canonicalName
+
+    private val tickReceiver = object : BroadcastReceiver() {
+        private var lastChainHeight = 0
+        private val activityHistory = LinkedList<ActivityHistoryEntry>()
+
+        override fun onReceive(context: Context, intent: Intent) {
+            val chainHeight = blockChain!!.bestChainHeight
+
+            if (lastChainHeight > 0) {
+                val numBlocksDownloaded = chainHeight - lastChainHeight
+                val numTransactionsReceived = transactionsReceived.getAndSet(0)
+
+                // push history
+                activityHistory.add(0, ActivityHistoryEntry(numTransactionsReceived, numBlocksDownloaded))
+
+                // trim
+                while (activityHistory.size > MAX_HISTORY_SIZE)
+                    activityHistory.removeAt(activityHistory.size - 1)
+
+                // print
+                val builder = StringBuilder()
+                for (entry in activityHistory) {
+                    if (builder.isNotEmpty()) {
+                        builder.append(", ")
+                    }
+                    builder.append(entry)
+                }
+                Log.i(LOG_TAG, "History of transactions/blocks: " + builder)
+
+                // determine if block and transaction activity is idling
+                var isIdle = false
+                if (activityHistory.size >= MIN_COLLECT_HISTORY) {
+                    isIdle = true
+                    for (i in activityHistory.indices) {
+                        val entry = activityHistory[i]
+                        val blocksActive = entry.numBlocksDownloaded > 0 && i <= IDLE_BLOCK_TIMEOUT_MIN
+                        val transactionsActive = entry.numTransactionsReceived > 0 && i <= IDLE_TRANSACTION_TIMEOUT_MIN
+
+                        if (blocksActive || transactionsActive) {
+                            isIdle = false
+                            break
+                        }
+                    }
+                }
+
+                // if idling, shutdown service
+                if (isIdle) {
+                    Log.i(LOG_TAG, "idling detected, stopping service")
+                    stopSelf()
+                }
+            }
+
+            lastChainHeight = chainHeight
+        }
+    }
+
+    private val mBinder = object : Binder() {
+        val service: SpvService
+            get() = this@SpvService
+    }
+
+    override fun onBind(intent: Intent): IBinder? {
+        // TODO: nope. we don't use this. at least not from other apps.
+        return null
+    }
+
+    override fun onUnbind(intent: Intent): Boolean {
+        return false
+    }
+
+    override fun onCreate() {
+        serviceCreatedAtInMs = System.currentTimeMillis()
+        Log.d(LOG_TAG, ".onCreate()")
+
+        super.onCreate()
+
+        notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        val lockName = "$packageName blockchain sync"
+
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, lockName)
+
+        application = getApplication() as SpvModuleApplication
+        config = application!!.configuration
+        val wallet = SpvModuleApplication.getWallet()
+
+        peerConnectivityListener = PeerConnectivityListener()
+
+        broadcastPeerState(0)
+
+        blockChainFile = File(getDir("blockstore", Context.MODE_PRIVATE), Constants.Files.BLOCKCHAIN_FILENAME)
+        val blockChainFileExists = blockChainFile!!.exists()
+
+        if (!blockChainFileExists) {
+            Log.i(LOG_TAG, "blockchain does not exist, resetting wallet")
+            wallet.reset()
+        }
+
+        try {
+            blockStore = SPVBlockStore(Constants.NETWORK_PARAMETERS, blockChainFile!!)
+            blockStore!!.chainHead // detect corruptions as early as possible
+
+            var earliestKeyCreationTime = wallet.earliestKeyCreationTime
+
+            if (!blockChainFileExists && earliestKeyCreationTime > 0) {
+                try {
+                    val start = System.currentTimeMillis()
+                    val checkpointsInputStream = assets.open(Constants.Files.CHECKPOINTS_FILENAME)
+                    earliestKeyCreationTime = earliestKeyCreationTime//1477958400L //Should be earliestKeyCreationTime, testing something.
+                    CheckpointManager.checkpoint(Constants.NETWORK_PARAMETERS, checkpointsInputStream,
+                            blockStore!!, earliestKeyCreationTime)
+                    Log.i(LOG_TAG, "checkpoints loaded from '${Constants.Files.CHECKPOINTS_FILENAME}',"
+                            + " took ${System.currentTimeMillis() - start}ms, "
+                            + "earliestKeyCreationTime = '$earliestKeyCreationTime'")
+                } catch (x: IOException) {
+                    Log.e(LOG_TAG, "problem reading checkpoints, continuing without", x)
+                }
+
+            }
+        } catch (x: BlockStoreException) {
+            blockChainFile!!.delete()
+
+            val msg = "blockstore cannot be created"
+            Log.e(LOG_TAG, msg, x)
+            throw Error(msg, x)
+        }
+
+        try {
+            blockChain = BlockChain(Constants.NETWORK_PARAMETERS, wallet, blockStore!!)
+        } catch (x: BlockStoreException) {
+            throw Error("blockchain cannot be created", x)
+        }
+
+        val intentFilter = IntentFilter()
+        intentFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION)
+        intentFilter.addAction(Intent.ACTION_DEVICE_STORAGE_LOW)
+        intentFilter.addAction(Intent.ACTION_DEVICE_STORAGE_OK)
+        registerReceiver(connectivityReceiver, intentFilter) // implicitly start PeerGroup
+        wallet.addCoinsReceivedEventListener(Threading.SAME_THREAD, walletEventListener)
+        wallet.addCoinsSentEventListener(Threading.SAME_THREAD, walletEventListener)
+        wallet.addChangeEventListener(Threading.SAME_THREAD, walletEventListener)
+        wallet.addTransactionConfidenceEventListener(Threading.SAME_THREAD, walletEventListener)
+
+        registerReceiver(tickReceiver, IntentFilter(Intent.ACTION_TIME_TICK))
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        org.bitcoinj.core.Context.propagate(Constants.CONTEXT)
+        if (intent != null) {
+            Log.i(LOG_TAG, "service start command: $intent ${
+            if (intent.hasExtra(Intent.EXTRA_ALARM_COUNT))
+                " (alarm count: ${intent.getIntExtra(Intent.EXTRA_ALARM_COUNT, 0)})"
+            else
+                ""
+            }")
+
+            when (intent.action) {
+                ACTION_CANCEL_COINS_RECEIVED -> notificationManager!!.cancel(Constants.NOTIFICATION_ID_COINS_RECEIVED)
+                ACTION_RESET_BLOCKCHAIN -> {
+                    Log.i(LOG_TAG, "will remove blockchain on service shutdown")
+
+                    resetBlockchainOnShutdown = true
+                    stopSelf()
+                }
+                ACTION_BROADCAST_TRANSACTION -> {
+                    val transactionByteArray = intent.getByteArrayExtra("TX")
+                    val tx = Transaction(Constants.NETWORK_PARAMETERS, transactionByteArray)
+                    Log.i(LOG_TAG, "onReceive: TX = " + tx)
+                    SpvModuleApplication.getWallet().maybeCommitTx(tx)
+                    if (peerGroup != null) {
+                        Log.i(LOG_TAG, "broadcasting transaction ${tx.hashAsString}")
+                        peerGroup!!.broadcastTransaction(tx)
+                    } else {
+                        Log.w(LOG_TAG, "peergroup not available, not broadcasting transaction " + tx.hashAsString)
+                    }
+                }
+            }
+        } else {
+            Log.w(LOG_TAG, "service restart, although it was started as non-sticky")
+        }
+        broadcastBlockchainState();
+        return START_NOT_STICKY
+    }
+
+
+
+    override fun onDestroy() {
+        Log.d(LOG_TAG, ".onDestroy()")
+
+        SpvModuleApplication.scheduleStartBlockchainService(this)
+
+        unregisterReceiver(tickReceiver)
+
+        SpvModuleApplication.getWallet().removeChangeEventListener(walletEventListener)
+        SpvModuleApplication.getWallet().removeCoinsSentEventListener(walletEventListener)
+        SpvModuleApplication.getWallet().removeCoinsReceivedEventListener(walletEventListener)
+
+        unregisterReceiver(connectivityReceiver)
+
+        if (peerGroup != null) {
+            peerGroup!!.removeDisconnectedEventListener(peerConnectivityListener!!)
+            peerGroup!!.removeConnectedEventListener(peerConnectivityListener!!)
+            peerGroup!!.removeWallet(SpvModuleApplication.getWallet())
+            peerGroup!!.stop()
+
+            Log.i(LOG_TAG, "peergroup stopped")
+        }
+
+        peerConnectivityListener!!.stop()
+
+        delayHandler.removeCallbacksAndMessages(null)
+
+        try {
+            blockStore!!.close()
+        } catch (x: BlockStoreException) {
+            throw RuntimeException(x)
+        }
+
+        application!!.saveWallet()
+
+        if (wakeLock!!.isHeld) {
+            Log.d(LOG_TAG, "wakelock still held, releasing")
+            wakeLock!!.release()
+        }
+
+        if (resetBlockchainOnShutdown) {
+            Log.i(LOG_TAG, "removing blockchain")
+            blockChainFile!!.delete()
+        }
+
+        super.onDestroy()
+
+        Log.i(LOG_TAG, "service was up for ${(System.currentTimeMillis() - serviceCreatedAtInMs) / 1000 / 60} minutes")
+    }
+
+    override fun onTrimMemory(level: Int) {
+        Log.i(LOG_TAG, "onTrimMemory($level)")
+
+        if (level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND) {
+            Log.w(LOG_TAG, "low memory detected, stopping service")
+            stopSelf()
+        }
+    }
+
     private fun notifyTransaction(tx: Transaction) {
         val txos = HashMap<String, TransactionOutput?>()
         tx.inputs.forEach {txos[it.outpoint.toString()] = it.connectedOutput}
@@ -172,7 +419,9 @@ class SpvService : Service() {
     }
 
     var peerCount: Int = 0
-    private inner class PeerConnectivityListener internal constructor() : PeerConnectedEventListener, PeerDisconnectedEventListener, OnSharedPreferenceChangeListener {
+    private inner class PeerConnectivityListener internal constructor()
+        : PeerConnectedEventListener, PeerDisconnectedEventListener,
+            OnSharedPreferenceChangeListener {
         private val stopped = AtomicBoolean(false)
 
         init {
@@ -184,7 +433,7 @@ class SpvService : Service() {
 
             config!!.unregisterOnSharedPreferenceChangeListener(this)
 
-            nm!!.cancel(Constants.NOTIFICATION_ID_CONNECTED)
+            notificationManager!!.cancel(Constants.NOTIFICATION_ID_CONNECTED)
         }
 
         override fun onPeerConnected(peer: Peer, peerCount: Int) = onPeerChanged(peerCount)
@@ -214,7 +463,7 @@ class SpvService : Service() {
             val connectivityNotificationEnabled = config!!.connectivityNotificationEnabled
 
             if (!connectivityNotificationEnabled || peerCount == 0) {
-                nm!!.cancel(Constants.NOTIFICATION_ID_CONNECTED)
+                notificationManager!!.cancel(Constants.NOTIFICATION_ID_CONNECTED)
             } else {
                 val notification = Notification.Builder(this@SpvService)
                 notification.setSmallIcon(R.drawable.stat_sys_peers, if (peerCount > 4) 4 else peerCount)
@@ -236,7 +485,7 @@ class SpvService : Service() {
                         PreferenceActivity::class.java), 0))
                 notification.setWhen(System.currentTimeMillis())
                 notification.setOngoing(true)
-                nm!!.notify(Constants.NOTIFICATION_ID_CONNECTED, notification.build())
+                notificationManager!!.notify(Constants.NOTIFICATION_ID_CONNECTED, notification.build())
             }
 
             // send broadcast
@@ -387,249 +636,7 @@ class SpvService : Service() {
         }
     }
 
-    private val tickReceiver = object : BroadcastReceiver() {
-        private var lastChainHeight = 0
-        private val activityHistory = LinkedList<ActivityHistoryEntry>()
 
-        override fun onReceive(context: Context, intent: Intent) {
-            val chainHeight = blockChain!!.bestChainHeight
-
-            if (lastChainHeight > 0) {
-                val numBlocksDownloaded = chainHeight - lastChainHeight
-                val numTransactionsReceived = transactionsReceived.getAndSet(0)
-
-                // push history
-                activityHistory.add(0, ActivityHistoryEntry(numTransactionsReceived, numBlocksDownloaded))
-
-                // trim
-                while (activityHistory.size > MAX_HISTORY_SIZE)
-                    activityHistory.removeAt(activityHistory.size - 1)
-
-                // print
-                val builder = StringBuilder()
-                for (entry in activityHistory) {
-                    if (builder.isNotEmpty()) {
-                        builder.append(", ")
-                    }
-                    builder.append(entry)
-                }
-                Log.i(LOG_TAG, "History of transactions/blocks: " + builder)
-
-                // determine if block and transaction activity is idling
-                var isIdle = false
-                if (activityHistory.size >= MIN_COLLECT_HISTORY) {
-                    isIdle = true
-                    for (i in activityHistory.indices) {
-                        val entry = activityHistory[i]
-                        val blocksActive = entry.numBlocksDownloaded > 0 && i <= IDLE_BLOCK_TIMEOUT_MIN
-                        val transactionsActive = entry.numTransactionsReceived > 0 && i <= IDLE_TRANSACTION_TIMEOUT_MIN
-
-                        if (blocksActive || transactionsActive) {
-                            isIdle = false
-                            break
-                        }
-                    }
-                }
-
-                // if idling, shutdown service
-                if (isIdle) {
-                    Log.i(LOG_TAG, "idling detected, stopping service")
-                    stopSelf()
-                }
-            }
-
-            lastChainHeight = chainHeight
-        }
-    }
-
-    private val mBinder = object : Binder() {
-        val service: SpvService
-            get() = this@SpvService
-    }
-
-    override fun onBind(intent: Intent): IBinder? {
-        // TODO: nope. we don't use this. at least not from other apps.
-        return mBinder
-    }
-
-    override fun onUnbind(intent: Intent): Boolean {
-        Log.d(LOG_TAG, ".onUnbind()")
-        return super.onUnbind(intent)
-    }
-
-    override fun onCreate() {
-        serviceCreatedAt = System.currentTimeMillis()
-        Log.d(LOG_TAG, ".onCreate()")
-
-        super.onCreate()
-
-        nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-        val lockName = "$packageName blockchain sync"
-
-        val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
-        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, lockName)
-
-        application = getApplication() as SpvModuleApplication
-        config = application!!.configuration
-        val wallet = SpvModuleApplication.getWallet()
-
-        peerConnectivityListener = PeerConnectivityListener()
-
-        broadcastPeerState(0)
-
-        blockChainFile = File(getDir("blockstore", Context.MODE_PRIVATE), Constants.Files.BLOCKCHAIN_FILENAME)
-        val blockChainFileExists = blockChainFile!!.exists()
-
-        if (!blockChainFileExists) {
-            Log.i(LOG_TAG, "blockchain does not exist, resetting wallet")
-            wallet.reset()
-        }
-
-        try {
-            blockStore = SPVBlockStore(Constants.NETWORK_PARAMETERS, blockChainFile!!)
-            blockStore!!.chainHead // detect corruptions as early as possible
-
-            val earliestKeyCreationTime = wallet.earliestKeyCreationTime
-
-            if (!blockChainFileExists && earliestKeyCreationTime > 0) {
-                try {
-                    val start = System.currentTimeMillis()
-                    val checkpointsInputStream = assets.open(Constants.Files.CHECKPOINTS_FILENAME)
-                    CheckpointManager.checkpoint(Constants.NETWORK_PARAMETERS, checkpointsInputStream,
-                            blockStore!!, earliestKeyCreationTime)
-                    Log.i(LOG_TAG, "checkpoints loaded from '${Constants.Files.CHECKPOINTS_FILENAME}',"
-                            + " took ${System.currentTimeMillis() - start}ms, "
-                            + "earliestKeyCreationTime = '$earliestKeyCreationTime'")
-                } catch (x: IOException) {
-                    Log.e(LOG_TAG, "problem reading checkpoints, continuing without", x)
-                }
-
-            }
-        } catch (x: BlockStoreException) {
-            blockChainFile!!.delete()
-
-            val msg = "blockstore cannot be created"
-            Log.e(LOG_TAG, msg, x)
-            throw Error(msg, x)
-        }
-
-        try {
-            blockChain = BlockChain(Constants.NETWORK_PARAMETERS, wallet, blockStore!!)
-        } catch (x: BlockStoreException) {
-            throw Error("blockchain cannot be created", x)
-        }
-
-        val intentFilter = IntentFilter()
-        intentFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION)
-        intentFilter.addAction(Intent.ACTION_DEVICE_STORAGE_LOW)
-        intentFilter.addAction(Intent.ACTION_DEVICE_STORAGE_OK)
-        registerReceiver(connectivityReceiver, intentFilter) // implicitly start PeerGroup
-        wallet.addCoinsReceivedEventListener(Threading.SAME_THREAD, walletEventListener)
-        wallet.addCoinsSentEventListener(Threading.SAME_THREAD, walletEventListener)
-        wallet.addChangeEventListener(Threading.SAME_THREAD, walletEventListener)
-        wallet.addTransactionConfidenceEventListener(Threading.SAME_THREAD, walletEventListener)
-
-        registerReceiver(tickReceiver, IntentFilter(Intent.ACTION_TIME_TICK))
-    }
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        org.bitcoinj.core.Context.propagate(Constants.CONTEXT)
-        if (intent != null) {
-            Log.i(LOG_TAG, "service start command: $intent ${
-            if (intent.hasExtra(Intent.EXTRA_ALARM_COUNT))
-                " (alarm count: ${intent.getIntExtra(Intent.EXTRA_ALARM_COUNT, 0)})"
-            else
-                ""
-            }")
-
-            when (intent.action) {
-                ACTION_CANCEL_COINS_RECEIVED -> nm!!.cancel(Constants.NOTIFICATION_ID_COINS_RECEIVED)
-                ACTION_RESET_BLOCKCHAIN -> {
-                    Log.i(LOG_TAG, "will remove blockchain on service shutdown")
-
-                    resetBlockchainOnShutdown = true
-                    stopSelf()
-                }
-                ACTION_BROADCAST_TRANSACTION -> {
-                    val transactionByteArray = intent.getByteArrayExtra("TX")
-                    val tx = Transaction(Constants.NETWORK_PARAMETERS, transactionByteArray)
-                    Log.i(LOG_TAG, "onReceive: TX = " + tx)
-                    SpvModuleApplication.getWallet().maybeCommitTx(tx)
-                    if (peerGroup != null) {
-                        Log.i(LOG_TAG, "broadcasting transaction ${tx.hashAsString}")
-                        peerGroup!!.broadcastTransaction(tx)
-                    } else {
-                        Log.w(LOG_TAG, "peergroup not available, not broadcasting transaction " + tx.hashAsString)
-                    }
-                }
-            }
-        } else {
-            Log.w(LOG_TAG, "service restart, although it was started as non-sticky")
-        }
-        broadcastBlockchainState();
-        return START_NOT_STICKY
-    }
-
-    private val LOG_TAG: String? = this::class.java.canonicalName
-
-    override fun onDestroy() {
-        Log.d(LOG_TAG, ".onDestroy()")
-
-        SpvModuleApplication.scheduleStartBlockchainService(this)
-
-        unregisterReceiver(tickReceiver)
-
-        SpvModuleApplication.getWallet().removeChangeEventListener(walletEventListener)
-        SpvModuleApplication.getWallet().removeCoinsSentEventListener(walletEventListener)
-        SpvModuleApplication.getWallet().removeCoinsReceivedEventListener(walletEventListener)
-
-        unregisterReceiver(connectivityReceiver)
-
-        if (peerGroup != null) {
-            peerGroup!!.removeDisconnectedEventListener(peerConnectivityListener!!)
-            peerGroup!!.removeConnectedEventListener(peerConnectivityListener!!)
-            peerGroup!!.removeWallet(SpvModuleApplication.getWallet())
-            peerGroup!!.stop()
-
-            Log.i(LOG_TAG, "peergroup stopped")
-        }
-
-        peerConnectivityListener!!.stop()
-
-        delayHandler.removeCallbacksAndMessages(null)
-
-        try {
-            blockStore!!.close()
-        } catch (x: BlockStoreException) {
-            throw RuntimeException(x)
-        }
-
-        application!!.saveWallet()
-
-        if (wakeLock!!.isHeld) {
-            Log.d(LOG_TAG, "wakelock still held, releasing")
-            wakeLock!!.release()
-        }
-
-        if (resetBlockchainOnShutdown) {
-            Log.i(LOG_TAG, "removing blockchain")
-            blockChainFile!!.delete()
-        }
-
-        super.onDestroy()
-
-        Log.i(LOG_TAG, "service was up for ${(System.currentTimeMillis() - serviceCreatedAt) / 1000 / 60} minutes")
-    }
-
-    override fun onTrimMemory(level: Int) {
-        Log.i(LOG_TAG, "onTrimMemory($level)")
-
-        if (level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND) {
-            Log.w(LOG_TAG, "low memory detected, stopping service")
-            stopSelf()
-        }
-    }
 
     val blockchainState: BlockchainState
         get() {

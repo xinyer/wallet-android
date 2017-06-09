@@ -79,9 +79,10 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
                     // TODO: this is unsupported in bitcoinj-core:0.14.3
                     // wallet.clearTransactions(getBlockHeight(minTimestamp))
                     if(minTimestamp < wallet.lastBlockSeenTimeSecs
-                            && minTimestamp < System.currentTimeMillis() / 1000 - 600) {
+                            && minTimestamp < (System.currentTimeMillis() / 1000) - 600) {
                         // crude heuristics to avoid an unnecessary rescan, risking to miss a rescan.
-                        wallet.reset()
+                        Log.d(LOG_TAG, "minTimestamp = $minTimestamp, we reset the blockchain.")
+                        SpvModuleApplication.getApplication().resetBlockchain()
                     }
                     context.contentResolver.bulkInsert(
                             BlockchainContract.Address.CONTENT_URI(BuildConfig.APPLICATION_ID),

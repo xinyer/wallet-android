@@ -19,8 +19,9 @@ class AddressListFragment : ListFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
         val context = activity
-        val cr = context.contentResolver
-        val cursor = cr.query(BlockchainContract.Address.CONTENT_URI(activity.packageName), AddressesAdapter.fromColumns, null, null, null)
+        val contentResolver = context.contentResolver
+        val cursor = contentResolver.query(BlockchainContract.Address.CONTENT_URI(activity.packageName),
+                AddressesAdapter.fromColumns, null, null, null)
         val adapter = AddressesAdapter(context, cursor)
 
         /** Setting the list adapter for the ListFragment  */
@@ -29,7 +30,10 @@ class AddressListFragment : ListFragment() {
         return super.onCreateView(inflater, container, savedInstanceState)
     }
 
-    private class AddressesAdapter(context: Context, cursor: Cursor) : SimpleCursorAdapter(context, R.layout.address_row, cursor, AddressListFragment.AddressesAdapter.fromColumns, AddressListFragment.AddressesAdapter.toViews, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER) {
+    private class AddressesAdapter(context: Context, cursor: Cursor)
+        : SimpleCursorAdapter(context, R.layout.address_row, cursor,
+            AddressListFragment.AddressesAdapter.fromColumns, AddressListFragment.AddressesAdapter.toViews,
+            CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER) {
         private val layoutInflater: LayoutInflater = LayoutInflater.from(context)
         private val addressIndex: Int = cursor.getColumnIndexOrThrow(BlockchainContract.Address.ADDRESS_ID)
         private val creationDateIndex: Int = cursor.getColumnIndexOrThrow(BlockchainContract.Address.CREATION_DATE)

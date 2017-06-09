@@ -327,6 +327,10 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
 
         val ACTION_WALLET_REFERENCE_CHANGED = SpvModuleApplication::class.java.`package`.name + ".wallet_reference_changed"
 
+        fun getApplication(): SpvModuleApplication {
+            return INSTANCE!!
+        }
+
         fun getWallet(): Wallet {
             return INSTANCE!!.wallet!!
         }
