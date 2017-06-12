@@ -16,7 +16,7 @@ class MessageReceiver : Service() {
             return Service.START_NOT_STICKY
         }
 
-        Log.d(LOG_TAG, "onStartCommand: Intent is $intent")
+        //Log.d(LOG_TAG, "onStartCommand: Intent is $intent")
 
         val key = intent.getLongExtra("key", 0)
         intent.removeExtra("key") // no need to share the key with other packages that might leak it

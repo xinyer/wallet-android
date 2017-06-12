@@ -31,7 +31,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
     private val eventBus: Bus = MbwManager.getInstance(context).eventBus
 
     override fun onMessage(callingPackageName: String, intent: Intent) {
-        Log.d(TAG, "onMessage($callingPackageName, $intent)")
+        //Log.d(TAG, "onMessage($callingPackageName, $intent)")
         val walletManager = MbwManager.getInstance(context).getWalletManager(false)
         when (intent.action) {
             "com.mycelium.wallet.receivedTransactions" -> {
@@ -118,7 +118,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                                             TransactionEx.fromUnconfirmedTransaction(transactionBytes),
                                             connectedOutputs, utxoSet, false)
                                     if(account is Bip44Account) {
-                                        createNextAccount(account, walletManager);
+                                        createNextAccount(account, walletManager, false);
                                     }
                                 }
                                 else -> {
@@ -138,7 +138,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
 
                                     // But before that we might need to create the next account if it does not exist.
                                     if(account is Bip44Account) {
-                                        createNextAccount(account, walletManager);
+                                        createNextAccount(account, walletManager, false);
                                     }
                                 }
                             }
@@ -157,13 +157,13 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 val bestChainHeight = intent.getIntExtra("best_chain_height", 0)
                 val replaying = intent.getBooleanExtra("replaying", true)
                 val impediments = intent.getStringArrayExtra("impediment")
-                Log.d(TAG, """
+                /* Log.d(TAG, """
                 Blockchain state is
                 Best date:   ${Date(bestChainDate)}
                 Best height: $bestChainHeight
                 Replaying:   ${if (replaying) "yes" else "no"}
                 Impediments: [${TextUtils.join(",", impediments)}]
-                """.trimIndent())
+                """.trimIndent()) */
                 walletManager.activeAccounts
                         .filterIsInstance<AbstractAccount>()
                         .forEach { it.blockChainHeight = bestChainHeight }
@@ -174,13 +174,14 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
         }
     }
 
-    private fun createNextAccount(account: Bip44Account, walletManager: WalletManager) {
+    private fun createNextAccount(account: Bip44Account, walletManager: WalletManager,
+                                  archived: Boolean) {
         if(account.hasHadActivity()
                 && !walletManager.doesBip44AccountExists(account.accountIndex + 1)) {
+            val newAccountUUID = walletManager.createArchivedGapFiller(AesKeyCipher.defaultKeyCipher(),
+                    account.accountIndex + 1, archived)
             MbwManager.getInstance(context).getMetadataStorage()
-                    .storeAccountLabel(account.id, "Account " + account.accountIndex)
-            walletManager.createArchivedGapFiller(AesKeyCipher.defaultKeyCipher(),
-                    account.accountIndex + 1, false)
+                    .storeAccountLabel(newAccountUUID, "Account " + account.accountIndex + 1)
             walletManager.startSynchronization()
         }
     }

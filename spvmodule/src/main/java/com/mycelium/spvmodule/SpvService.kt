@@ -92,7 +92,7 @@ class SpvService : Service() {
             super.onTransactionConfidenceChanged(wallet, tx)
             if(BuildConfig.DEBUG) {
                 Log.d(this.javaClass.canonicalName, "onTransactionConfidenceChanged, notifyTransaction, "
-                        + "tx = " + tx.toString())
+                        + "tx = " + tx.hashAsString)
             }
             notifyTransaction(tx)
         }
@@ -113,7 +113,7 @@ class SpvService : Service() {
                 if (isReceived && !isReplayedTx) {
                     if(BuildConfig.DEBUG) {
                         Log.d(this.javaClass.canonicalName, "onCoinsReceived, notifyTransaction, "
-                                + "tx = " + tx.toString())
+                                + "tx = " + tx.hashAsString)
                     }
                     notifyTransaction(tx)
                 }
@@ -124,7 +124,7 @@ class SpvService : Service() {
             transactionsReceived.incrementAndGet()
             if(BuildConfig.DEBUG) {
                 Log.d(this.javaClass.canonicalName, "onCoinsSent, notifyTransaction, "
-                        + "tx = " + tx.toString())
+                        + "tx = " + tx.hashAsString)
             }
             notifyTransaction(tx)
         }

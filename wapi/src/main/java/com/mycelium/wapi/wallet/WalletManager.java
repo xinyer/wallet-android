@@ -1003,7 +1003,8 @@ public class WalletManager {
    /**
     * this is part of a bugfix for where the wallet skipped accounts in conflict with BIP44
     */
-   public UUID createArchivedGapFiller(KeyCipher cipher, Integer accountIndex, boolean archived) throws InvalidKeyCipher {
+   public UUID createArchivedGapFiller(KeyCipher cipher, Integer accountIndex, boolean archived)
+       throws InvalidKeyCipher {
       // Get the master seed
       Bip39.MasterSeed masterSeed = getMasterSeed(cipher);
 

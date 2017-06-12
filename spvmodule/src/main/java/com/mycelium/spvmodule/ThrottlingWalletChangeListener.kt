@@ -32,8 +32,12 @@ import org.bitcoinj.wallet.listeners.WalletReorganizeEventListener
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
-abstract class ThrottlingWalletChangeListener constructor(private val throttleMs: Long = ThrottlingWalletChangeListener.DEFAULT_THROTTLE_MS, private val coinsRelevant: Boolean = true, private val reorganizeRelevant: Boolean = true,
-                                                                        private val confidenceRelevant: Boolean = true) : WalletChangeEventListener, WalletCoinsSentEventListener, WalletCoinsReceivedEventListener, WalletReorganizeEventListener, TransactionConfidenceEventListener {
+abstract class ThrottlingWalletChangeListener constructor(private val throttleMs : Long = DEFAULT_THROTTLE_MS,
+                                                          private val coinsRelevant: Boolean = true,
+                                                          private val reorganizeRelevant: Boolean = true,
+                                                          private val confidenceRelevant: Boolean = true)
+    : WalletChangeEventListener, WalletCoinsSentEventListener, WalletCoinsReceivedEventListener,
+        WalletReorganizeEventListener, TransactionConfidenceEventListener {
     private val lastMessageTime = AtomicLong(0)
     private val handler = Handler()
     private val relevant = AtomicBoolean()
@@ -80,7 +84,6 @@ abstract class ThrottlingWalletChangeListener constructor(private val throttleMs
     }
 
     override fun onTransactionConfidenceChanged(wallet: Wallet, tx: Transaction) {
-        Log.d(this.javaClass.canonicalName, "onTransactionConfidenceChanged, notifyTransaction, tx = " + tx.toString())
         //We should probably update info about transaction here. Documentation says we should save the wallet here.
         if (confidenceRelevant)
             relevant.set(true)

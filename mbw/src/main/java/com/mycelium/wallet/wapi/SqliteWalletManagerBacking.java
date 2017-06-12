@@ -69,6 +69,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.UUID;
 
@@ -224,7 +225,6 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             // Create backing tables
             SqliteAccountBacking backing = _backings.get(context.getId());
             if (backing == null) {
-               createAccountBackingTables(context.getId(), _database);
                backing = new SqliteAccountBacking(context.getId(), _database);
                _backings.put(context.getId(), backing);
             }
@@ -311,7 +311,6 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             // Create backing tables
             SqliteAccountBacking backing = _backings.get(context.getId());
             if (backing == null) {
-               createAccountBackingTables(context.getId(), _database);
                backing = new SqliteAccountBacking(context.getId(), _database);
                _backings.put(context.getId(), backing);
             }
@@ -528,21 +527,6 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
       }
    }
 
-   private static void createAccountBackingTables(UUID id, SQLiteDatabase db) {
-      String tableSuffix = uuidToTableSuffix(id);
-      db.execSQL("CREATE TABLE IF NOT EXISTS " + getUtxoTableName(tableSuffix)
-            + " (outpoint BLOB PRIMARY KEY, height INTEGER, value INTEGER, isCoinbase INTEGER, script BLOB);");
-      db.execSQL("CREATE TABLE IF NOT EXISTS " + getPtxoTableName(tableSuffix)
-            + " (outpoint BLOB PRIMARY KEY, height INTEGER, value INTEGER, isCoinbase INTEGER, script BLOB);");
-      db.execSQL("CREATE TABLE IF NOT EXISTS " + getTxTableName(tableSuffix)
-            + " (id BLOB PRIMARY KEY, height INTEGER, time INTEGER, binary BLOB);");
-      db.execSQL("CREATE INDEX IF NOT EXISTS heightIndex ON " + getTxTableName(tableSuffix) + " (height);");
-      db.execSQL("CREATE TABLE IF NOT EXISTS " + getOutgoingTxTableName(tableSuffix)
-            + " (id BLOB PRIMARY KEY, raw BLOB);");
-      db.execSQL("CREATE TABLE IF NOT EXISTS " + getTxRefersPtxoTableName(tableSuffix)
-            + " (txid BLOB, input BLOB, PRIMARY KEY (txid, input) );");
-   }
-
    private static String uuidToTableSuffix(UUID uuid) {
       return HexUtils.toHex(uuidToBytes(uuid));
    }
@@ -590,20 +574,25 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          _id = id;
          _db = db;
          String tableSuffix = uuidToTableSuffix(id);
-         utxoTableName = getUtxoTableName(tableSuffix);
-         ptxoTableName = getPtxoTableName(tableSuffix);
-         txTableName = getTxTableName(tableSuffix);
-         outTxTableName = getOutgoingTxTableName(tableSuffix);
-         txRefersParentTxTableName = getTxRefersPtxoTableName(tableSuffix);
-         _insertOrReplaceUtxo = db.compileStatement("INSERT OR REPLACE INTO " + utxoTableName + " VALUES (?,?,?,?,?)");
+         utxoTableName = "txo";
+         ptxoTableName = "txo";
+         txTableName = "tx";
+         outTxTableName = "outtx";
+         txRefersParentTxTableName = "txtoptxo";
+
+         _insertOrReplaceUtxo = db.compileStatement("INSERT OR REPLACE INTO " + utxoTableName + " VALUES (?,?,?,?,?,?,?)");
          _deleteUtxo = db.compileStatement("DELETE FROM " + utxoTableName + " WHERE outpoint = ?");
-         _deleteAllUtxo = db.compileStatement("DELETE FROM " + utxoTableName);
-         _insertOrReplacePtxo = db.compileStatement("INSERT OR REPLACE INTO " + ptxoTableName + " VALUES (?,?,?,?,?)");
-         _insertOrReplaceTx = db.compileStatement("INSERT OR REPLACE INTO " + txTableName + " VALUES (?,?,?,?)");
+         _deleteAllUtxo = db.compileStatement("DELETE FROM " + utxoTableName + " WHERE transactionType = \'utxo\'");
+
+         _insertOrReplacePtxo = db.compileStatement("INSERT OR REPLACE INTO " + ptxoTableName + " VALUES (?,?,?,?,?,?, ?)");
+
+         _insertOrReplaceTx = db.compileStatement("INSERT OR REPLACE INTO " + txTableName + " VALUES (?,?,?,?,?)");
          _deleteTx = db.compileStatement("DELETE FROM " + txTableName + " WHERE id = ?");
-         _insertOrReplaceOutTx = db.compileStatement("INSERT OR REPLACE INTO " + outTxTableName + " VALUES (?,?)");
+
+         _insertOrReplaceOutTx = db.compileStatement("INSERT OR REPLACE INTO " + outTxTableName + " VALUES (?,?,?)");
          _deleteOutTx = db.compileStatement("DELETE FROM " + outTxTableName + " WHERE id = ?");
-         _insertTxRefersParentTx = db.compileStatement("INSERT OR REPLACE INTO " + txRefersParentTxTableName + " VALUES (?,?)");
+
+         _insertTxRefersParentTx = db.compileStatement("INSERT OR REPLACE INTO " + txRefersParentTxTableName + " VALUES (?,?,?)");
          _deleteTxRefersParentTx = db.compileStatement("DELETE FROM " + txRefersParentTxTableName + " WHERE txid = ?");
       }
 
@@ -646,6 +635,9 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             _insertOrReplaceUtxo.bindLong(3, output.value);
             _insertOrReplaceUtxo.bindLong(4, output.isCoinBase ? 1 : 0);
             _insertOrReplaceUtxo.bindBlob(5, output.script);
+            _insertOrReplaceUtxo.bindString(6, _id.toString());
+            _insertOrReplaceUtxo.bindString(7, "utxo");
+
             boolean result = _insertOrReplaceUtxo.executeInsert() != -1;
             setTransactionSuccessful();
             return result;
@@ -664,7 +656,7 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          try {
             SQLiteQueryWithBlobs blobQuery = new SQLiteQueryWithBlobs(_db);
             cursor = blobQuery.query(false, utxoTableName, new String[]{"outpoint", "height", "value", "isCoinbase",
-                  "script"}, null, null, null, null, null, null);
+                "script"}, "transactionType = 'utxo' AND accountID = ?", new String[] {_id.toString()}, null, null, null, null);
             while (cursor.moveToNext()) {
                TransactionOutputEx tex = new TransactionOutputEx(SQLiteQueryWithBlobs.outPointFromBytes(cursor
                      .getBlob(0)), cursor.getInt(1), cursor.getLong(2), cursor.getBlob(4), cursor.getInt(3) != 0);
@@ -685,7 +677,7 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             SQLiteQueryWithBlobs blobQuery = new SQLiteQueryWithBlobs(_db);
             blobQuery.bindBlob(1, SQLiteQueryWithBlobs.outPointToBytes(outPoint));
             cursor = blobQuery.query(false, utxoTableName, new String[]{"height", "value", "isCoinbase", "script"},
-                  "outpoint = ?", null, null, null, null, null);
+                "outpoint = ? AND transactionType = 'utxo' AND accountID = ?", new String[] {_id.toString()}, null, null, null, null);
             if (cursor.moveToNext()) {
                return new TransactionOutputEx(outPoint, cursor.getInt(0), cursor.getLong(1),
                      cursor.getBlob(3), cursor.getInt(2) != 0);
@@ -738,6 +730,8 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             _insertOrReplacePtxo.bindLong(3, output.value);
             _insertOrReplacePtxo.bindLong(4, output.isCoinBase ? 1 : 0);
             _insertOrReplacePtxo.bindBlob(5, output.script);
+            _insertOrReplacePtxo.bindString(6, _id.toString());
+            _insertOrReplacePtxo.bindString(7, "ptxo");
             boolean result = _insertOrReplacePtxo.executeInsert() >= -1;
             setTransactionSuccessful();
             return result;
@@ -757,6 +751,7 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             for (OutPoint output : refersOutputs) {
                _insertTxRefersParentTx.bindBlob(1, txId.getBytes());
                _insertTxRefersParentTx.bindBlob(2, SQLiteQueryWithBlobs.outPointToBytes(output));
+               _insertTxRefersParentTx.bindString(3, _id.toString());
                if(_insertTxRefersParentTx.executeInsert() == -1) {
                   result = false;
                }
@@ -794,7 +789,8 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          try {
             SQLiteQueryWithBlobs blobQuery = new SQLiteQueryWithBlobs(_db);
             blobQuery.bindBlob(1, SQLiteQueryWithBlobs.outPointToBytes(outPoint));
-            cursor = blobQuery.query(false, txRefersParentTxTableName, new String[]{"txid"}, "input = ?", null, null, null, null, null);
+            cursor = blobQuery.query(false, txRefersParentTxTableName, new String[]{"txid"},
+                "input = ? AND accountID = \'" + _id.toString() +"\'", null, null, null, null, null);
             while (cursor.moveToNext()) {
                list.add(new Sha256Hash(cursor.getBlob(0)));
             }
@@ -813,7 +809,7 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             SQLiteQueryWithBlobs blobQuery = new SQLiteQueryWithBlobs(_db);
             blobQuery.bindBlob(1, SQLiteQueryWithBlobs.outPointToBytes(outPoint));
             cursor = blobQuery.query(false, ptxoTableName, new String[]{"height", "value", "isCoinbase", "script"},
-                  "outpoint = ?", null, null, null, null, null);
+                  "outpoint = ? AND accountID = \'" + _id.toString() +"\'", null, null, null, null, null);
             if (cursor.moveToNext()) {
                return new TransactionOutputEx(outPoint, cursor.getInt(0), cursor.getLong(1),
                      cursor.getBlob(3), cursor.getInt(2) != 0);
@@ -828,13 +824,14 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
 
       @Override
       public boolean putTransaction(TransactionEx tx) {
+         Log.d(LOG_TAG, "testNelson, putTransaction, transaction ID = " + tx.txid);
          beginTransaction();
-         Log.d(LOG_TAG, "testNelson putTransaction id = " + tx.txid);
          try {
             _insertOrReplaceTx.bindBlob(1, tx.txid.getBytes());
             _insertOrReplaceTx.bindLong(2, tx.height == -1 ? Integer.MAX_VALUE : tx.height);
             _insertOrReplaceTx.bindLong(3, tx.time);
             _insertOrReplaceTx.bindBlob(4, tx.binary);
+            _insertOrReplaceTx.bindString(5, _id.toString());
             boolean result = _insertOrReplaceTx.executeInsert() != -1;
             if(result) {
                if (result = putReferencedOutputs(tx.binary)) {
@@ -855,7 +852,7 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          Cursor cursor = null;
          try {
             SQLiteQueryWithBlobs blobQuery = new SQLiteQueryWithBlobs(_db);
-            cursor = blobQuery.query(false, txTableName, new String[]{"time"}, "id = ?", null,
+            cursor = blobQuery.query(false, txTableName, new String[]{"time"}, "id = ? AND accountID = \'" + _id.toString() +"\'", null,
                 null, null, "time ASC", "1");
             //"SELECT time FROM tx ORDER BY time ASC LIMIT 1"
             if (cursor.moveToNext()) {
@@ -886,11 +883,11 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
       @Override
       public TransactionEx getTransaction(Sha256Hash hash) {
          Cursor cursor = null;
-         Log.d(LOG_TAG, "testNelson getTransaction id = " + hash);
+         Log.d(LOG_TAG, "testNelson, getTransaction, transaction ID = " + hash);
          try {
             SQLiteQueryWithBlobs blobQuery = new SQLiteQueryWithBlobs(_db);
             blobQuery.bindBlob(1, hash.getBytes());
-            cursor = blobQuery.query(false, txTableName, new String[]{"height", "time", "binary"}, "id = ?", null,
+            cursor = blobQuery.query(false, txTableName, new String[]{"height", "time", "binary"}, "id = ? AND accountID = \'" + _id.toString() +"\'", null,
                   null, null, null, null);
             if (cursor.moveToNext()) {
                int height = cursor.getInt(0);
@@ -994,6 +991,7 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          try {
             _insertOrReplaceOutTx.bindBlob(1, txid.getBytes());
             _insertOrReplaceOutTx.bindBlob(2, rawTransaction);
+            _insertOrReplaceOutTx.bindString(3, _id.toString());
             boolean result = _insertOrReplaceOutTx.executeInsert() != -1;
 
             putReferencedOutputs(rawTransaction);
@@ -1061,12 +1059,14 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          Cursor cursor = null;
          List<TransactionEx> list = new LinkedList<>();
          try {
-            cursor = _db.rawQuery("SELECT id, height, time, binary FROM " + txTableName
-                        + " ORDER BY height DESC LIMIT ? OFFSET ?",
+            cursor = _db.rawQuery("SELECT id, height, time, binary, accountID FROM " + txTableName
+                        + " WHERE accountID = \'" + _id.toString() + "\' ORDER BY height DESC LIMIT ? OFFSET ?",
                   new String[]{Integer.toString(limit), Integer.toString(offset)});
             while (cursor.moveToNext()) {
                TransactionEx tex = new TransactionEx(new Sha256Hash(cursor.getBlob(0)), cursor.getInt(1),
                      cursor.getInt(2), cursor.getBlob(3));
+               Log.d(LOG_TAG, "getTransactionHistory => accountID = " + cursor.getString(4)
+                   + ", tex = " + tex.toString());
                list.add(tex);
             }
             return list;
@@ -1135,24 +1135,38 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
 
    private class OpenHelper extends SQLiteOpenHelper {
       private static final String DATABASE_NAME = "walletbacking.db";
-      private static final int DATABASE_VERSION = 4;
+      private static final int DATABASE_VERSION = 5;
 
       OpenHelper(Context context) {
          super(context, DATABASE_NAME, null, DATABASE_VERSION);
-
-         // The backings tables should already exists, but try to recreate them anyhow, as the CREATE TABLE
-         // uses the "IF NOT EXISTS" switch
-         for (UUID account : getAccountIds(getWritableDatabase())) {
-            createAccountBackingTables(account, getWritableDatabase());
-         }
       }
 
       @Override
       public void onCreate(SQLiteDatabase db) {
-         db.execSQL("CREATE TABLE single (id TEXT PRIMARY KEY, address BLOB, addressstring TEXT, archived INTEGER, blockheight INTEGER);");
-         db.execSQL("CREATE TABLE bip44 (id TEXT PRIMARY KEY, accountIndex INTEGER, archived INTEGER, blockheight INTEGER, lastExternalIndexWithActivity INTEGER, lastInternalIndexWithActivity INTEGER, firstMonitoredInternalIndex INTEGER, lastDiscovery, accountType INTEGER, accountSubId INTEGER);");
-         db.execSQL("CREATE TABLE kv (k BLOB NOT NULL, v BLOB, checksum BLOB, subId INTEGER NOT NULL, PRIMARY KEY (k, subId) );");
+         db.execSQL("CREATE TABLE single (id TEXT PRIMARY KEY, address BLOB, addressstring TEXT, archived INTEGER, "
+             + "blockheight INTEGER);");
+         db.execSQL("CREATE TABLE bip44 (id TEXT PRIMARY KEY, accountIndex INTEGER, archived INTEGER, "
+             + "blockheight INTEGER, lastExternalIndexWithActivity INTEGER, lastInternalIndexWithActivity INTEGER, "
+             + "firstMonitoredInternalIndex INTEGER, lastDiscovery, accountType INTEGER, accountSubId INTEGER);");
+         db.execSQL("CREATE TABLE kv (k BLOB NOT NULL, v BLOB, checksum BLOB, subId INTEGER NOT NULL, "
+             + "PRIMARY KEY (k, subId) );");
          db.execSQL("CREATE TABLE addressTimestamp (address TEXT PRIMARY KEY, timestamp INTEGER DEFAULT 0);");
+
+         db.execSQL("CREATE TABLE txo (outpoint BLOB PRIMARY KEY, height INTEGER, value INTEGER, " +
+             "isCoinbase INTEGER, script BLOB, accountID TEXT, transactionType TEXT);");
+         db.execSQL("CREATE INDEX IF NOT EXISTS accountIDIndex ON txo (accountID);");
+         db.execSQL("CREATE INDEX IF NOT EXISTS transactionTypeIndex ON txo (transactionType);");
+
+         db.execSQL("CREATE TABLE tx  (id BLOB PRIMARY KEY, height INTEGER, time INTEGER, binary BLOB, accountID TEXT);");
+         db.execSQL("CREATE INDEX IF NOT EXISTS accountIDIndex ON tx (accountID);");
+         db.execSQL("CREATE INDEX IF NOT EXISTS heightIndex ON tx (height);");
+
+         db.execSQL("CREATE TABLE IF NOT EXISTS outtx (id BLOB PRIMARY KEY, raw BLOB, TEXT accountID);");
+         db.execSQL("CREATE INDEX IF NOT EXISTS accountIDIndex ON outtx (accountID);");
+
+         db.execSQL("CREATE TABLE IF NOT EXISTS txtoptxo (txid BLOB, input BLOB, TEXT accountID, PRIMARY KEY (txid, input) );");
+         db.execSQL("CREATE INDEX IF NOT EXISTS accountIDIndex ON  txtoptxo (accountID);");
+
       }
 
       @Override
@@ -1174,7 +1188,86 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             db.execSQL("ALTER TABLE bip44 ADD COLUMN accountSubId INTEGER DEFAULT 0");
          }
          if (oldVersion < 4) {
-            db.execSQL("CREATE TABLE IF NOT EXISTS addressTimestamp (address TEXT PRIMARY KEY, timestamp INTEGER DEFAULT 0);");
+            db.execSQL("CREATE TABLE IF NOT EXISTS addressTimestamp (address TEXT PRIMARY KEY, "
+                + "timestamp INTEGER DEFAULT 0);");
+         }
+         if (oldVersion < 5) {
+            //TODO in Progress Nelson
+            List<UUID> accountIDs = getAccountIds(db);
+            ListIterator<UUID> list = accountIDs.listIterator();
+            String selectStatement = "";
+            while (list.hasNext()) {
+               UUID accountID  = list.next();
+               String utxoTableName = getUtxoTableName(uuidToTableSuffix(accountID));
+               selectStatement += "SELECT '" + accountID.toString() + "' AS accountID, "
+                   + " 'utxo' AS transactionType, "
+                   + utxoTableName + ".* FROM "
+                   + utxoTableName;
+               if(list.hasNext()) {
+                  selectStatement += " UNION ";
+               }
+            }
+            list = accountIDs.listIterator();
+            if(list.hasNext()) {
+               selectStatement += " UNION ";
+            }
+            while (list.hasNext()) {
+               UUID accountID  = list.next();
+               String ptxoTableName = getPtxoTableName(uuidToTableSuffix(accountID));
+               selectStatement += "SELECT '" + accountID.toString() + "' AS accountID, "
+                   + " 'ptxo' AS transactionType, "
+                   + ptxoTableName + ".* FROM " + ptxoTableName;
+               if(list.hasNext()) {
+                  selectStatement += " UNION ";
+               }
+            }
+            db.execSQL("CREATE TABLE IF NOT EXISTS " + "txo"
+                + " AS " + selectStatement);
+            db.execSQL("CREATE INDEX IF NOT EXISTS accountIDIndex ON " + "txo" + " (accountID);");
+            db.execSQL("CREATE INDEX IF NOT EXISTS transactionTypeIndex ON txo (transactionType);");
+
+            selectStatement = "";
+            list = accountIDs.listIterator();
+            while (list.hasNext()) {
+               UUID accountID  = list.next();
+               String txTableName = getTxTableName(uuidToTableSuffix(accountID));
+               selectStatement += "SELECT '" + accountID.toString() + "' AS accountID, "
+                   + txTableName + ".* FROM " + txTableName;
+               if(list.hasNext()) {
+                  selectStatement += " UNION ";
+               }
+            }
+            db.execSQL("CREATE TABLE IF NOT EXISTS tx AS " + selectStatement);
+            db.execSQL("CREATE INDEX IF NOT EXISTS accountIDIndex ON " + "tx" + " (accountID);");
+
+            selectStatement = "";
+            list = accountIDs.listIterator();
+            while (list.hasNext()) {
+               UUID accountID  = list.next();
+               String tableName = getOutgoingTxTableName(uuidToTableSuffix(accountID));
+               selectStatement += "SELECT '" + accountID.toString() + "' AS accountID, "
+                   + tableName + ".* FROM " + tableName;
+               if(list.hasNext()) {
+                  selectStatement += " UNION ";
+               }
+            }
+            db.execSQL("CREATE TABLE IF NOT EXISTS outtx AS " + selectStatement);
+            db.execSQL("CREATE INDEX IF NOT EXISTS accountIDIndex ON outtx (accountID);");
+
+
+            selectStatement = "";
+            list = accountIDs.listIterator();
+            while (list.hasNext()) {
+               UUID accountID  = list.next();
+               String tableName = getTxRefersPtxoTableName(uuidToTableSuffix(accountID));
+               selectStatement += "SELECT '" + accountID.toString() + "' AS accountID, "
+                   + tableName + ".* FROM " + tableName;
+               if(list.hasNext()) {
+                  selectStatement += " UNION ";
+               }
+            }
+            db.execSQL("CREATE TABLE IF NOT EXISTS txtoptxo AS " + selectStatement);
+            db.execSQL("CREATE INDEX IF NOT EXISTS accountIDIndex ON txtoptxo (accountID);");
          }
       }
    }

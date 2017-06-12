@@ -142,9 +142,9 @@ class CommunicationManager private constructor(val context: Context) {
      * reinstalled using an untrusted signature
      */
     fun getPackageName(key: Long): String {
-        Log.d(LOG_TAG, "getPackageName($key)")
+        //Log.d(LOG_TAG, "getPackageName($key)")
         for (pn in trustedPackages.keys) {
-            Log.d(LOG_TAG, "checking package $pn")
+            //Log.d(LOG_TAG, "checking package $pn")
             if (trustedPackages[pn]!!.key == key) {
                 checkSignature(pn)
                 return pn
