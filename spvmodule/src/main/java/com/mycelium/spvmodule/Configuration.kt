@@ -9,10 +9,12 @@ class Configuration(private val prefs: SharedPreferences) {
 
     val trustedPeerHost: String?
         get() {
-            if (!prefs.contains(PREFS_KEY_TRUSTED_PEER)) {
+            // TODO: figure out how to give our users preference on using our full nodes.
+            // With the server constantly being at its capacity, this does not work as is.
+            /* if (!prefs.contains(PREFS_KEY_TRUSTED_PEER)) {
                 val nodeList = if (BuildConfig.APPLICATION_ID.contains(".test")) TRUSTED_FULL_NODES_TEST else TRUSTED_FULL_NODES_MAIN
                 prefs.edit().putString(PREFS_KEY_TRUSTED_PEER, nodeList[(Math.random() * nodeList.size).toInt()]).apply()
-            }
+            } */
             return Strings.emptyToNull(prefs.getString(PREFS_KEY_TRUSTED_PEER, "")!!.trim { it <= ' ' })
         }
 

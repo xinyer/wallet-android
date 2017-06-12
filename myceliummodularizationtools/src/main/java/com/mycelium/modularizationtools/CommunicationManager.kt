@@ -4,6 +4,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.database.Cursor
 import android.net.Uri
 import android.util.Base64
 import android.util.Log
@@ -101,14 +102,17 @@ class CommunicationManager private constructor(val context: Context) {
         var success = false
         val startTimeMillis = System.currentTimeMillis()
         val cr = context.contentResolver
+        var cursor : Cursor? = null;
         try {
             // reuse the key we already have. This avoids mismatches if both sides might initiate the communication.
             val key: Long = trustedPackages[packageName]?.key ?: Random().nextLong()
-            cr.query(Uri.parse("content://$packageName.PairingProvider"), null, key.toString(), null, null)
+            cursor = cr.query(Uri.parse("content://$packageName.PairingProvider"), null, key.toString(), null, null)
             pair(key, packageName)
             success = true
         } catch (e: SecurityException) {
             Log.e(LOG_TAG, "Couldn't pair with $packageName")
+        } finally {
+            cursor?.close()
         }
         Log.d(LOG_TAG, "It took ${System.currentTimeMillis()-startTimeMillis}ms to ${if(success) "" else "not "} pair with $packageName.")
         return success

@@ -90,6 +90,10 @@ class SpvService : Service() {
 
         override fun onTransactionConfidenceChanged(wallet: Wallet, tx: Transaction) {
             super.onTransactionConfidenceChanged(wallet, tx)
+            if(tx.confidence?.depthInBlocks?:0 > 7) {
+                // don't update on all transactions individually just because we found a new block
+                return
+            }
             if(BuildConfig.DEBUG) {
                 Log.d(this.javaClass.canonicalName, "onTransactionConfidenceChanged, notifyTransaction, "
                         + "tx = " + tx.hashAsString)

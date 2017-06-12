@@ -852,13 +852,14 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          Cursor cursor = null;
          try {
             SQLiteQueryWithBlobs blobQuery = new SQLiteQueryWithBlobs(_db);
-            cursor = blobQuery.query(false, txTableName, new String[]{"time"}, "id = ? AND accountID = \'" + _id.toString() +"\'", null,
-                null, null, "time ASC", "1");
-            //"SELECT time FROM tx ORDER BY time ASC LIMIT 1"
+            cursor = blobQuery.query(false, txTableName, new String[] {"time"}, "id = ? AND accountID = \'"
+                + _id.toString() + "\'", null, null, null, "time ASC", "1");
             if (cursor.moveToNext()) {
                return cursor.getInt(0);
             }
-            return 0;
+            return 0L;
+         } catch (SQLiteDoneException e) {
+            return 0L;
          } finally {
             if (cursor != null) {
                cursor.close();
