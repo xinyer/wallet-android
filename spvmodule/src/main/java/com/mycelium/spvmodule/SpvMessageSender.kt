@@ -1,16 +1,19 @@
 package com.mycelium.spvmodule
 
 import android.content.Intent
+import android.util.Log
 import com.mycelium.modularizationtools.CommunicationManager
 import org.bitcoinj.core.Transaction
 import org.bitcoinj.core.TransactionConfidence
 import org.bitcoinj.core.TransactionOutput
-import org.bitcoinj.core.UTXO
 import java.nio.ByteBuffer
 import java.util.*
+import kotlin.collections.ArrayList
 
 class SpvMessageSender {
     companion object {
+        private val LOG_TAG: String? = SpvMessageSender.javaClass.canonicalName
+
         fun sendTransactions(communicationManager: CommunicationManager,
                              transactionSet: Set<Transaction>,
                              unspentTransactionOutputSet: Set<TransactionOutput>,

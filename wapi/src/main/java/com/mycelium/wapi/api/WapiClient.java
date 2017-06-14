@@ -33,6 +33,11 @@ import com.squareup.okhttp.*;
 
 import java.io.IOException;
 import java.util.Locale;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 
 
@@ -131,7 +136,7 @@ public class WapiClient implements Wapi {
          // currently active server-endpoint
          HttpEndpoint serverEndpoint = _serverEndpoints.getCurrentEndpoint();
          try {
-            OkHttpClient client = serverEndpoint.getClient();
+            final OkHttpClient client = serverEndpoint.getClient();
             _logger.logInfo("Connecting to " + serverEndpoint.getBaseUrl() + " (" + _serverEndpoints.getCurrentEndpointIndex() + ")");
 
             client.setConnectTimeout(timeout, TimeUnit.MILLISECONDS);
@@ -141,14 +146,23 @@ public class WapiClient implements Wapi {
             Stopwatch callDuration = Stopwatch.createStarted();
             // build request
             final String toSend = getPostBody(request);
-            Request rq = new Request.Builder()
+            final Request rq = new Request.Builder()
                   .addHeader(MYCELIUM_VERSION_HEADER, versionCode)
                   .post(RequestBody.create(MediaType.parse("application/json"), toSend))
                   .url(serverEndpoint.getUri(WapiConst.WAPI_BASE_PATH, function).toString())
                   .build();
 
             // execute request
-            Response response = client.newCall(rq).execute();
+            FutureTask<Response> responseFutureTask = new FutureTask<Response>(new Callable<Response>() {
+               @Override
+               public Response call() throws Exception {
+                  return client.newCall(rq).execute();
+               }
+            });
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+            executor.execute(responseFutureTask);
+            Response response = responseFutureTask.get();
+            executor.shutdown();
             callDuration.stop();
             _logger.logInfo(String.format(Locale.ENGLISH, "Wapi %s finished (%dms)", function, callDuration.elapsed(TimeUnit.MILLISECONDS)));
 
@@ -169,6 +183,8 @@ public class WapiClient implements Wapi {
                _logger.logInfo("Resetting tor");
                ((FeedbackEndpoint) serverEndpoint).onError();
             }
+         } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
          }
          // Try the next server
          _serverEndpoints.switchToNextEndpoint();

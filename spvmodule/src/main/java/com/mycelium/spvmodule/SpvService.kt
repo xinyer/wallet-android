@@ -419,7 +419,8 @@ class SpvService : Service() {
         }
         cursor?.close()
         // send the new transaction and the *complete* utxo set of the wallet
-        SpvMessageSender.sendTransactions(CommunicationManager.getInstance(this), setOf(tx), SpvModuleApplication.getWallet().unspents.toSet())
+        SpvMessageSender.sendTransactions(CommunicationManager.getInstance(this), setOf(tx),
+                SpvModuleApplication.getWallet().unspents.toSet())
     }
 
     var peerCount: Int = 0

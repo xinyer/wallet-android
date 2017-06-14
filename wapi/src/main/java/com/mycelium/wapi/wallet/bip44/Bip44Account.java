@@ -208,7 +208,7 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
 
       if(!doesAddressExistAlready) {
         // Save address with timestamp in DB
-        long timestamp = 1477958400L; //Test with Nov/01/2016 IN SECONDS // Used to be System.currentTimeMillis();
+        long timestamp = 1479081600L; //Test // IN SECONDS // Used to be System.currentTimeMillis();
         int lastIndexWithActivity;
         if(isChangeChain) {
           lastIndexWithActivity = _context.getLastInternalIndexWithActivity();
