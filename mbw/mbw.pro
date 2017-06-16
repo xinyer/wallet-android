@@ -274,3 +274,8 @@
 -dontnote android.net.http.*
 -dontnote org.apache.commons.codec.**
 -dontnote org.apache.http.**
+
+-dontwarn java.lang.reflect.**
+-dontwarn org.jetbrains.annotations.**
+
+-dontnote **
