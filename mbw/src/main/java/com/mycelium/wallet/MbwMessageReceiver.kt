@@ -6,6 +6,9 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
+import android.os.Message
 import android.text.TextUtils
 import android.util.Log
 import com.mrd.bitlib.model.*
@@ -116,7 +119,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                                 UNKNOWN.value, PENDING.value -> {
                                     account.notifyNewTransactionDiscovered(
                                             TransactionEx.fromUnconfirmedTransaction(transactionBytes),
-                                            connectedOutputs, utxoSet, false)
+                                            connectedOutputs, utxoSet)
                                     if(account is Bip44Account) {
                                         createNextAccount(account, walletManager, false);
                                     }
@@ -131,7 +134,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                                             + " tEx = $tEx, time = $time")
                                     //We assume that we have the parent transaction in our own transactions so last parameter is true.
                                     //TODO Double check that there is no case where it uses wapi when it is not supposed to.
-                                    account.notifyNewTransactionDiscovered(tEx, connectedOutputs, utxoSet, true)
+                                    account.notifyNewTransactionDiscovered(tEx, connectedOutputs, utxoSet)
                                     // Need to launch synchronisation after we notified of a new transaction
                                     // discovered and updated the lookahead of address to observe when using SPV
                                     // module.
@@ -167,7 +170,11 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 walletManager.activeAccounts
                         .filterIsInstance<AbstractAccount>()
                         .forEach { it.blockChainHeight = bestChainHeight }
-                eventBus.post(SpvSyncChanged(Date(bestChainDate), bestChainHeight.toLong()))
+                // Defines a Handler object that's attached to the UI thread
+                val runnable : Runnable = Runnable {
+                    eventBus.post(SpvSyncChanged(Date(bestChainDate), bestChainHeight.toLong())) }
+                Handler(Looper.getMainLooper()).post(runnable)
+
             }
             null -> Log.w(TAG, "onMessage failed. No action defined.")
             else -> Log.e(TAG, "onMessage failed. Unknown action ${intent.action}")

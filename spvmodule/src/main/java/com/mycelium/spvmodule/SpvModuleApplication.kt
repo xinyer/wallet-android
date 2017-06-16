@@ -36,6 +36,7 @@ import java.io.OutputStream
 import java.util.concurrent.TimeUnit
 
 import org.bitcoinj.core.Context.*
+import java.util.concurrent.Executors
 
 class SpvModuleApplication : Application(), ModuleMessageReceiver {
     var configuration: Configuration? = null
@@ -264,10 +265,13 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     }
 
     fun startBlockchainService(cancelCoinsReceived: Boolean) {
-        if (cancelCoinsReceived)
-            startService(blockchainServiceCancelCoinsReceivedIntent)
-        else
-            startService(blockchainServiceIntent)
+        val executorService = Executors.newSingleThreadExecutor()
+        executorService.execute {
+            if (cancelCoinsReceived)
+                startService(blockchainServiceCancelCoinsReceivedIntent)
+            else
+                startService(blockchainServiceIntent)
+        }
     }
 
     fun stopBlockchainService() {
@@ -276,7 +280,11 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
 
     fun resetBlockchain() {
         // implicitly stops blockchain service
-        startService(blockchainServiceResetBlockchainIntent)
+        val executorService = Executors.newSingleThreadExecutor()
+        executorService.execute {
+            startService(blockchainServiceResetBlockchainIntent)
+        }
+
     }
 
     fun replaceWallet(newWallet: Wallet) {
@@ -303,7 +311,10 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     fun broadcastTransaction(tx: Transaction) {
         val intent = Intent(SpvService.ACTION_BROADCAST_TRANSACTION, null, this, SpvService::class.java)
         intent.putExtra(SpvService.ACTION_BROADCAST_TRANSACTION_HASH, tx.hash.bytes)
-        startService(intent)
+        val executorService = Executors.newSingleThreadExecutor()
+        executorService.execute {
+            startService(intent)
+        }
     }
 
     fun packageInfo(): PackageInfo {

@@ -1,5 +1,6 @@
 package com.mycelium.modularizationtools
 
+import android.app.IntentService
 import android.app.Service
 import android.content.Intent
 import android.os.Build
@@ -7,13 +8,29 @@ import android.os.IBinder
 import android.util.Log
 import com.mycelium.modularizationtools.Constants.Companion.TAG
 
-class MessageReceiver : Service() {
+class MessageReceiver : IntentService("MessageReceiverThread") {
+
     private val LOG_TAG: String? = this.javaClass.canonicalName
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    /**
+     * This method is invoked on the worker thread with a request to process.
+     * Only one Intent is processed at a time, but the processing happens on a
+     * worker thread that runs independently from other application logic.
+     * So, if this code takes a long time, it will hold up other requests to
+     * the same IntentService, but it will not hold up anything else.
+     * When all requests have been handled, the IntentService stops itself,
+     * so you should not call [.stopSelf].
+
+     * @param intent The value passed to [               ][android.content.Context.startService].
+     * *               This may be null if the service is being restarted after
+     * *               its process has gone away; see
+     * *               [android.app.Service.onStartCommand]
+     * *               for details.
+     */
+    override fun onHandleIntent(intent: Intent?) {
         if (null == intent || null == intent.action || !intent.hasExtra("key")) {
             Log.d(LOG_TAG, "onStartCommand failed: Intent was $intent")
-            return Service.START_NOT_STICKY
+            return
         }
 
         //Log.d(LOG_TAG, "onStartCommand: Intent is $intent")
@@ -26,7 +43,7 @@ class MessageReceiver : Service() {
             callerPackage = CommunicationManager.getInstance(this).getPackageName(key)
         } catch (e: SecurityException) {
             Log.e(LOG_TAG, "onStartCommand failed: ${e.message}")
-            return Service.START_NOT_STICKY
+            return
         }
         if(application !is ModuleMessageReceiver) {
             // TODO: The application should not be required to implement anything. This would probably be better solved with Annotations on the ModuleMessageReceiver class.
@@ -34,10 +51,7 @@ class MessageReceiver : Service() {
         }
         val moduleMessageReceiver = application as ModuleMessageReceiver
         moduleMessageReceiver.onMessage(callerPackage, intent)
-        return super.onStartCommand(intent, flags, startId)
     }
-
-    override fun onBind(intent: Intent): IBinder? = null
 }
 
 interface ModuleMessageReceiver {

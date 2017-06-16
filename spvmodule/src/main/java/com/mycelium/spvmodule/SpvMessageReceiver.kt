@@ -3,6 +3,8 @@ package com.mycelium.spvmodule
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 
 import com.google.common.collect.Lists
@@ -21,6 +23,7 @@ import org.bitcoinj.store.SPVBlockStore
 import java.io.File
 import java.nio.ByteBuffer
 import java.util.*
+import java.util.concurrent.Executors
 
 class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
     override fun onMessage(callingPackageName: String, intent: Intent) {
@@ -73,7 +76,6 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
                     }
                 }
                 if(addresses.size > 0) {
-                    // bulk insert now
                     wallet.addWatchedAddresses(addresses, minTimestamp)
 
                     // TODO: this is unsupported in bitcoinj-core:0.14.3
@@ -95,7 +97,11 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
             }
         }
         // start service to check for new transactions and maybe to broadcast a transaction
-        context.startService(clone)
+        val executorService = Executors.newSingleThreadExecutor()
+        executorService.execute {
+            context.startService(clone)
+        }
+
     }
 
     private val LOG_TAG: String? = this.javaClass.canonicalName
