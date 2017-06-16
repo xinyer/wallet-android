@@ -28,6 +28,7 @@ import java.util.concurrent.Executors
 class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
     override fun onMessage(callingPackageName: String, intent: Intent) {
         Log.d(LOG_TAG, "onStartCommand($callingPackageName, $intent)")
+        org.bitcoinj.core.Context.propagate(Constants.CONTEXT)
         val communicationManager = CommunicationManager.Companion.getInstance(context)
         val clone = intent.clone() as Intent
         clone.setClass(context, SpvService::class.java)
