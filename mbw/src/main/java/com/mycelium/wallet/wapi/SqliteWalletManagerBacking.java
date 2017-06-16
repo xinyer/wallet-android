@@ -1102,9 +1102,13 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
       }
 
       @Override
-      public Long getCreationTimeByAddress(Address address) {
+      public long getCreationTimeByAddress(Address address) {
          _getTimestampForAddress.bindString(1, address.toString());
-         return _getTimestampForAddress.simpleQueryForLong();
+         try {
+            return _getTimestampForAddress.simpleQueryForLong();
+         } catch (Exception ignore) {
+            return 0;
+         }
       }
 
       @Override
