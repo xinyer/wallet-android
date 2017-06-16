@@ -21,7 +21,7 @@ repositories {
 }
 
 dependencies {
-    compile project(':public:bitlib')
+    compile project(includePrefix +':bitlib')
     compile guavaArtifact
     testCompile "junit:junit:$junitVersion"
 }

@@ -173,8 +173,9 @@ public class InMemoryWalletManagerBacking implements WalletManagerBacking {
       }
 
       @Override
-      public Long getCreationTimeByAddress(Address address) {
-         return addressCreationTimestamps.get(address);
+      public long getCreationTimeByAddress(Address address) {
+         Long timestamp = addressCreationTimestamps.get(address);
+         return timestamp == null ? 0 : timestamp;
       }
 
       @Override
