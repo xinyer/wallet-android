@@ -84,9 +84,11 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                                     continue
                             connectedOutputs.put(input.outPoint, connectedOutput)
                             val address = connectedOutput.script.getAddress(network)
+
                             val optionalAccount = walletManager.getAccountByAddress(address)
                             if (optionalAccount.isPresent) {
-                                val account = walletManager.getAccount(optionalAccount.get())
+                                val account : Bip44Account = walletManager.getAccount(optionalAccount.get()) as Bip44Account
+                                account.storeAddressOldestActivityTime(address, updateAtTime / 1000)
                                 if (account.getTransaction(transaction.hash) == null) {
                                     // The transaction is new and relevant for the account.
                                     // We found spending from the account.
@@ -104,6 +106,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                             val optionalAccount = walletManager.getAccountByAddress(address)
                             if (optionalAccount.isPresent) {
                                 val account = walletManager.getAccount(optionalAccount.get())
+                                account.storeAddressOldestActivityTime(address, updateAtTime / 1000)
                                 if (account.getTransaction(transaction.hash) == null) {
                                     // The transaction is new and relevant for the account.
                                     // We found spending from the account.
@@ -130,8 +133,8 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                                     txBJ.updateTime = Date(updateAtTime);
                                     val time = (txBJ.updateTime.time / 1000L).toInt()
                                     val tEx = TransactionEx(txid, blockHeight, time, transactionBytes)
-                                    Log.d(TAG, "com.mycelium.wallet.receivedTransactions, onMessage:"
-                                            + " tEx = $tEx, time = $time")
+                                    //Log.d(TAG, "com.mycelium.wallet.receivedTransactions, onMessage:"
+                                     //       + " tEx = $tEx, time = $time")
                                     //We assume that we have the parent transaction in our own transactions so last parameter is true.
                                     //TODO Double check that there is no case where it uses wapi when it is not supposed to.
                                     account.notifyNewTransactionDiscovered(tEx, connectedOutputs, utxoSet)

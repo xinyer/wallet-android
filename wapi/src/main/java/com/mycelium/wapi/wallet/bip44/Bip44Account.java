@@ -37,6 +37,8 @@ import com.mycelium.wapi.wallet.KeyCipher.InvalidKeyCipher;
 import com.mycelium.wapi.wallet.WalletManager.Event;
 
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Bip44Account extends AbstractAccount implements ExportableAccount {
   private static final int EXTERNAL_FULL_ADDRESS_LOOK_AHEAD_LENGTH = 20;
@@ -182,7 +184,8 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
     int index;
     BiMap<Address, Integer> addressMap;
     if (isChangeChain) {
-      index = _context.getLastInternalIndexWithActivity();
+      //index = (_context.getLastInternalIndexWithActivity() != -1) ? _context.getLastInternalIndexWithActivity() : 0;
+      index = _context.getLastInternalIndexWithActivity() ;
       if (full_look_ahead) {
         index += INTERNAL_FULL_ADDRESS_LOOK_AHEAD_LENGTH;
       } else {
@@ -190,6 +193,7 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
       }
       addressMap = _internalAddresses;
     } else {
+      //index = (_context.getLastExternalIndexWithActivity() != -1) ? _context.getLastExternalIndexWithActivity() : 0;
       index = _context.getLastExternalIndexWithActivity();
       if (full_look_ahead) {
         index += EXTERNAL_FULL_ADDRESS_LOOK_AHEAD_LENGTH;
@@ -208,7 +212,8 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
 
       if(!doesAddressExistAlready) {
         // Save address with timestamp in DB
-        long timestamp = 1479081600L; //Test // IN SECONDS // Used to be System.currentTimeMillis();
+        //TODO put it back to 0
+        long timestamp = 1479081600L; //Test 1479081600L // IN SECONDS // Used to be System.currentTimeMillis();
         int lastIndexWithActivity;
         if(isChangeChain) {
           lastIndexWithActivity = _context.getLastInternalIndexWithActivity();
@@ -217,8 +222,9 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
         }
         if(lastIndexWithActivity != -1) {
           Address addressLastActivity = addressMap.inverse().get(lastIndexWithActivity);
-          timestamp = _bip44AccountBacking.getCreationTimeByAddress(addressLastActivity)
-              - (2 * 24 * 60 * 60); //Minus two days in seconds.
+          timestamp = getOldestActivityTimeByAddress(addressLastActivity);
+        } else {
+          timestamp = 1479081600L;
         }
         _bip44AccountBacking.storeAddressCreationTime(address, timestamp);
       } else if(_bip44AccountBacking.getCreationTimeByAddress(address) == 0L) {
@@ -502,14 +508,16 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
     for (int i = 0; i < t.outputs.length; i++) {
       TransactionOutput out = t.outputs[i];
       Address receivingAddress = out.script.getAddress(_network);
-      Integer externalIndex = _externalAddresses.get(receivingAddress);
-      if (externalIndex != null) {
-        updateLastExternalIndex(externalIndex);
-      } else {
-        updateLastInternalIndex(receivingAddress);
+      if(isMine(receivingAddress)) {
+        Integer externalIndex = _externalAddresses.get(receivingAddress);
+        if (externalIndex != null) {
+          updateLastExternalIndex(externalIndex);
+        } else {
+          updateLastInternalIndex(receivingAddress);
+        }
+        ensureAddressIndexes();
       }
     }
-    ensureAddressIndexes();
   }
 
   /**
@@ -529,6 +537,8 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
    */
   protected void updateLastInternalIndex(Address receivingAddress) {
     Integer internalIndex = _internalAddresses.get(receivingAddress);
+    Logger.getLogger(Bip44Account.class.getCanonicalName()).info("Account ID = " + getId() + ", updateLastInternalIndex, receivingAddress = " + receivingAddress
+        + ", internalIndex = " + internalIndex);
     if (internalIndex != null) {
       // Sends coins to an internal address, update internal max index
       // if necessary

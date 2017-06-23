@@ -16,6 +16,7 @@
 
 package com.mycelium.wapi.wallet;
 
+import com.mrd.bitlib.model.Address;
 import com.mrd.bitlib.model.OutPoint;
 import com.mrd.bitlib.util.Sha256Hash;
 import com.mycelium.wapi.model.TransactionEx;
@@ -74,4 +75,8 @@ public interface AccountBacking {
    Collection<Sha256Hash> getTransactionsReferencingOutPoint(OutPoint outPoint);
 
    boolean putTxRefersParentTransaction(Sha256Hash txId, List<OutPoint> refersOutputs);
+
+   boolean storeAddressOldestActivityTime(Address address, long unixTimeinSecs);
+
+   long getOldestActivityTimeByAddress(Address address);
 }

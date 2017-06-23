@@ -43,7 +43,6 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteStatement;
 import android.util.Log;
 
-import com.google.common.base.Preconditions;
 import com.mrd.bitlib.model.Address;
 import com.mrd.bitlib.model.OutPoint;
 import com.mrd.bitlib.model.Transaction;
@@ -93,7 +92,9 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
    private final SQLiteStatement _deleteSubId;
    private final SQLiteStatement _getMaxSubId;
    private final SQLiteStatement _insertOrReplaceAddressTimestamp;
+   private final SQLiteStatement _updateOldestActivityTimestamp;
    private final SQLiteStatement _getTimestampForAddress;
+   private final SQLiteStatement _getOldestActivityTimestampForAddress;
 
 
    SqliteWalletManagerBacking(Context context) {
@@ -110,8 +111,12 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
       _getMaxSubId = _database.compileStatement("SELECT max(subId) FROM kv");
       _deleteKeyValue = _database.compileStatement("DELETE FROM kv WHERE k = ?");
       _deleteSubId = _database.compileStatement("DELETE FROM kv WHERE subId = ?");
-      _insertOrReplaceAddressTimestamp = _database.compileStatement("INSERT OR REPLACE INTO addressTimestamp VALUES (?,?)");
+      _insertOrReplaceAddressTimestamp = _database.compileStatement("INSERT OR REPLACE INTO addressTimestamp VALUES (?,?,?)");
+      _updateOldestActivityTimestamp = _database.compileStatement("UPDATE addressTimestamp "
+          + "SET oldestactivitytimestamp = ? WHERE address = ? AND (oldestactivitytimestamp == 1479081600 OR ? < oldestactivitytimestamp)");
       _getTimestampForAddress = _database.compileStatement("SELECT timestamp FROM addressTimestamp WHERE address=?");
+      _getOldestActivityTimestampForAddress = _database.compileStatement(
+          "SELECT oldestactivitytimestamp FROM addressTimestamp WHERE address=?");
       _backings = new HashMap<>();
       for (UUID id : getAccountIds(_database)) {
          _backings.put(id, new SqliteAccountBacking(id, _database));
@@ -389,7 +394,6 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
       }
    }
 
-
    @Override
    public boolean deleteBip44AccountContext(UUID accountId) {
       synchronized (this) {
@@ -582,7 +586,8 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
 
          _insertOrReplaceUtxo = db.compileStatement("INSERT OR REPLACE INTO " + utxoTableName + " VALUES (?,?,?,?,?,?,?)");
          _deleteUtxo = db.compileStatement("DELETE FROM " + utxoTableName + " WHERE outpoint = ?");
-         _deleteAllUtxo = db.compileStatement("DELETE FROM " + utxoTableName + " WHERE transactionType = \'utxo\'");
+         _deleteAllUtxo = db.compileStatement("DELETE FROM " + utxoTableName + " WHERE transactionType = \'utxo\' "
+             + "AND accountID = ?");
 
          _insertOrReplacePtxo = db.compileStatement("INSERT OR REPLACE INTO " + ptxoTableName + " VALUES (?,?,?,?,?,?, ?)");
 
@@ -710,6 +715,7 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
       public boolean deleteAllUnspentOutput() {
          beginTransaction();
          try {
+            _deleteAllUtxo.bindString(1, _id.toString());
             boolean result = _deleteAllUtxo.executeUpdateDelete() >= 0;
             setTransactionSuccessful();
             return result;
@@ -1106,7 +1112,17 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          _getTimestampForAddress.bindString(1, address.toString());
          try {
             return _getTimestampForAddress.simpleQueryForLong();
-         } catch (Exception ignore) {
+         } catch (Exception e) {
+            return 0;
+         }
+      }
+
+      @Override
+      public long getOldestActivityTimeByAddress(Address address) {
+         _getOldestActivityTimestampForAddress.bindString(1, address.toString());
+         try {
+            return _getOldestActivityTimestampForAddress.simpleQueryForLong();
+         } catch (Exception e) {
             return 0;
          }
       }
@@ -1117,7 +1133,26 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          try {
             _insertOrReplaceAddressTimestamp.bindString(1, address.toString());
             _insertOrReplaceAddressTimestamp.bindLong(2, unixTimeSeconds);
+            _insertOrReplaceAddressTimestamp.bindLong(3, 1479081600L);
             boolean result = _insertOrReplaceAddressTimestamp.executeInsert() != -1;
+            setTransactionSuccessful();
+            return result;
+         } catch (SQLException e) {
+            logException(e);
+            return false;
+         } finally {
+            endTransaction();
+         }
+      }
+
+      @Override
+      public boolean storeAddressOldestActivityTime(Address address, long unixTimeSeconds) {
+         beginTransaction();
+         try {
+            _updateOldestActivityTimestamp.bindLong(1, unixTimeSeconds);
+            _updateOldestActivityTimestamp.bindString(2, address.toString());
+            _updateOldestActivityTimestamp.bindLong(3, unixTimeSeconds);
+            boolean result = _updateOldestActivityTimestamp.executeInsert() != -1;
             setTransactionSuccessful();
             return result;
          } catch (SQLException e) {
@@ -1136,7 +1171,7 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
 
    private class OpenHelper extends SQLiteOpenHelper {
       private static final String DATABASE_NAME = "walletbacking.db";
-      private static final int DATABASE_VERSION = 5;
+      private static final int DATABASE_VERSION = 6;
 
       OpenHelper(Context context) {
          super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -1151,7 +1186,8 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
              + "firstMonitoredInternalIndex INTEGER, lastDiscovery, accountType INTEGER, accountSubId INTEGER);");
          db.execSQL("CREATE TABLE kv (k BLOB NOT NULL, v BLOB, checksum BLOB, subId INTEGER NOT NULL, "
              + "PRIMARY KEY (k, subId) );");
-         db.execSQL("CREATE TABLE addressTimestamp (address TEXT PRIMARY KEY, timestamp INTEGER DEFAULT 0);");
+         db.execSQL("CREATE TABLE addressTimestamp (address TEXT PRIMARY KEY, timestamp INTEGER DEFAULT 0,"
+             + " oldestactivitytimestamp INTEGER DEFAULT 1479081600);");
 
          db.execSQL("CREATE TABLE txo (outpoint BLOB PRIMARY KEY, height INTEGER, value INTEGER, " +
              "isCoinbase INTEGER, script BLOB, accountID TEXT, transactionType TEXT);");
@@ -1269,6 +1305,9 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
             }
             db.execSQL("CREATE TABLE IF NOT EXISTS txtoptxo AS " + selectStatement);
             db.execSQL("CREATE INDEX IF NOT EXISTS accountIDIndex ON txtoptxo (accountID);");
+         }
+         if(oldVersion <6) {
+            db.execSQL("ALTER TABLE addressTimestamp ADD COLUMN oldestactivitytimestamp INTEGER DEFAULT 1479081600");
          }
       }
    }

@@ -362,7 +362,7 @@ class SpvService : Service() {
         }
 
         if (resetBlockchainOnShutdown) {
-            Log.i(LOG_TAG, "removing blockchain")
+            Log.i(LOG_TAG, "removing blockchain, reset blockchain on shutdown")
             blockChainFile!!.delete()
         }
 

@@ -37,6 +37,7 @@ public class InMemoryWalletManagerBacking implements WalletManagerBacking {
    private final Map<UUID, Bip44AccountContext> _bip44Contexts = new HashMap<>();
    private final Map<UUID, SingleAddressAccountContext> _singleAddressAccountContexts = new HashMap<>();
    private final Map<Address, Long> addressCreationTimestamps = new HashMap<>();
+   private final Map<Address, Long> addressOldestActivityTimestamps = new HashMap<>();
    private int maxSubId = 0;
 
 
@@ -178,9 +179,24 @@ public class InMemoryWalletManagerBacking implements WalletManagerBacking {
          return timestamp == null ? 0 : timestamp;
       }
 
+      /**
+       * @param address
+       * @return the timestamp of oldest activity received from this address.
+       */
+      @Override
+      public long getOldestActivityTimeByAddress(Address address) {
+         return 0;
+      }
+
       @Override
       public boolean storeAddressCreationTime(Address address, long unixTimeSeconds) {
          addressCreationTimestamps.put(address, unixTimeSeconds);
+         return true;
+      }
+
+      @Override
+      public boolean storeAddressOldestActivityTime(Address address, long unixTimeSeconds) {
+         addressOldestActivityTimestamps.put(address, unixTimeSeconds);
          return true;
       }
 

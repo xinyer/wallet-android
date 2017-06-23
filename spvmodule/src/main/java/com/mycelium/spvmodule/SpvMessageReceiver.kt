@@ -55,7 +55,7 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
                 for (addressTimeString in addressStrings) {
                     val addressTimeStrings = addressTimeString.split(";")
                     if (addressTimeStrings.size != 2) {
-                        Log.e(LOG_TAG, "Received $addressTimeString but expected address;timestamp")
+                        Log.e(LOG_TAG, "Received $addressTimeString but expected format address;timestamp")
                     }
                     val addressString = addressTimeStrings[0]
                     val timestamp = addressTimeStrings[1].toLong()
@@ -84,7 +84,8 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
                     if(minTimestamp < wallet.lastBlockSeenTimeSecs
                             && minTimestamp < (System.currentTimeMillis() / 1000) - 600) {
                         // crude heuristics to avoid an unnecessary rescan, risking to miss a rescan.
-                        Log.d(LOG_TAG, "minTimestamp = $minTimestamp, we reset the blockchain.")
+                        Log.d(LOG_TAG, "minTimestamp = $minTimestamp, wallet.lastBlockSeenTimeSecs ="
+                                + " ${wallet.lastBlockSeenTimeSecs},  we reset the blockchain.")
                         SpvModuleApplication.getApplication().resetBlockchain()
                     }
                     context.contentResolver.bulkInsert(

@@ -23,9 +23,17 @@ public interface Bip44AccountBacking extends AccountBacking {
   boolean updateAccountContext(Bip44AccountContext context);
 
   boolean storeAddressCreationTime(Address address, long timestamp);
+  boolean storeAddressOldestActivityTime(Address address, long unixTimeSeconds);
 
   /**
    * @return the earliest timestamp associated with the provided address or 0 if no transactions are found
    */
   long getCreationTimeByAddress(Address address);
+
+  /**
+   *
+   * @param address
+   * @return the timestamp of oldest activity received from this address.
+   */
+  long getOldestActivityTimeByAddress(Address address);
 }

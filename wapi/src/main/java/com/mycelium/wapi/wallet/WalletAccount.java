@@ -352,6 +352,10 @@ public interface WalletAccount {
     */
    String getAccountDefaultCurrency();
 
+   boolean storeAddressOldestActivityTime(Address address, long unixTimeinSecs);
+
+   long getOldestActivityTimeByAddress(Address address);
+
    /**
     * Class representing a receiver of funds
     */

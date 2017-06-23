@@ -810,4 +810,16 @@ public class CoinapultAccount extends SynchronizeAbleWalletAccount {
       return getCoinapultCurrency().name;
    }
 
+   @Override
+   public boolean storeAddressOldestActivityTime(Address address, long unixTimeinSecs) {
+      //TODO Need to implement this ?
+      return false;
+   }
+
+   @Override
+   public long getOldestActivityTimeByAddress(Address address) {
+      //TODO Need to implement this ?
+      return 0;
+   }
+
 }

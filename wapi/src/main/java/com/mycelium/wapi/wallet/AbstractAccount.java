@@ -1475,5 +1475,13 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
    public String getAccountDefaultCurrency() {
       return CurrencyValue.BTC;
    }
+
+   public boolean storeAddressOldestActivityTime(Address address, long unixTimeinSecs) {
+      return _backing.storeAddressOldestActivityTime(address, unixTimeinSecs);
+   }
+
+   public long getOldestActivityTimeByAddress(Address address) {
+      return _backing.getOldestActivityTimeByAddress(address);
+   }
 }
 
