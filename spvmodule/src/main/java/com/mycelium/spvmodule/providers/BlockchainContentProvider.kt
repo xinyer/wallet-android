@@ -77,7 +77,7 @@ class BlockchainContentProvider : ContentProvider() {
         }
         val db = dbHelper!!.writableDatabase
         val rowId = db.insert(getTableFromMatch(match), null, values)
-        if (rowId > 0) {
+        if (rowId >= 0) {
             val noteUri = ContentUris.withAppendedId(contentUri, rowId)
             notifyChange(noteUri)
             return noteUri
