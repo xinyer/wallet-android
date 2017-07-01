@@ -92,6 +92,7 @@ public class Hmac {
       return digest.digest();
    }
 
+   // TODO: 30.06.17 move to unit test
    /**
     * Run test vectors from RFC-4231
     * 
@@ -133,10 +134,6 @@ public class Hmac {
             .toBytes("fa73b0089d56a284efb0f0756c890be9b1b5dbdd8ee81a3655f83e33b2279d39bf3e848279a722c806b485a47e67c807b946a337bee8942674278859e13292fb");
       result_256 = Hmac.hmacSha256(key, data);
       result_512 = Hmac.hmacSha512(key, data);
-      if (!BitUtils.areEqual(result_256, expected_256) || !BitUtils.areEqual(result_512, expected_512)) {
-         return false;
-      }
-
-      return true;
+      return !(!BitUtils.areEqual(result_256, expected_256) || !BitUtils.areEqual(result_512, expected_512));
    }
 }

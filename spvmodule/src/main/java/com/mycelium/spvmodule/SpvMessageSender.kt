@@ -6,6 +6,7 @@ import com.mycelium.modularizationtools.CommunicationManager
 import org.bitcoinj.core.Transaction
 import org.bitcoinj.core.TransactionConfidence
 import org.bitcoinj.core.TransactionOutput
+import org.spongycastle.util.encoders.Hex
 import java.nio.ByteBuffer
 import java.util.*
 import kotlin.collections.ArrayList
@@ -20,6 +21,7 @@ class SpvMessageSender {
                              receivingPackage:String? = null) {
             val transactions = transactionSet.map {
                 val transactionBytes = it.bitcoinSerialize()
+                Log.d(LOG_TAG, "Sharing transaction $it with transaction bytes ${Hex.encode(transactionBytes)}")
                 val blockHeight = when (it.confidence.confidenceType) {
                     TransactionConfidence.ConfidenceType.BUILDING -> it.confidence.appearedAtChainHeight
                 // at the risk of finding Satoshi, values up to 5 are interpreted as type.
@@ -33,9 +35,13 @@ class SpvMessageSender {
             for(tx in transactionSet) {
                 for(txi in tx.inputs) {
                     txos[txi.outpoint.toString()] = txi.connectedOutput?.bitcoinSerialize() ?: continue
+                    Log.d(LOG_TAG, "Sharing connected output $txi with ${Hex.encode(txi!!.connectedOutput!!.bitcoinSerialize())}")
                 }
             }
-            val utxos = unspentTransactionOutputSet.associate { Pair(it.outPointFor.toString(), it.outPointFor.bitcoinSerialize()) }
+            val utxos = unspentTransactionOutputSet.associate {
+                Log.d(LOG_TAG, "Sharing utxo ${it.outPointFor} ${Hex.encode(it.outPointFor.bitcoinSerialize())}")
+                Pair(it.outPointFor.toString(), it.outPointFor.bitcoinSerialize())
+            }
             val utxoHM = HashMap<String, ByteArray>(utxos.size).apply { putAll(utxos) }
             // report back known transactions
             val intent = Intent()

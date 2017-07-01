@@ -387,7 +387,7 @@ class SpvService : Service() {
         val values = ContentValues()
         val cursor = contentResolver.query(BlockchainContract.Transaction.CONTENT_URI(packageName),
                 arrayOf(BlockchainContract.Transaction.TRANSACTION_ID),
-                BlockchainContract.Transaction.TRANSACTION_ID + "=?", arrayOf(tx.hashAsString),
+                "${BlockchainContract.Transaction.TRANSACTION_ID}='?'", arrayOf(tx.hashAsString),
                 null)
         val height:Int = if(tx.confidence == ConfidenceType.BUILDING) {
             tx.confidence.appearedAtChainHeight
