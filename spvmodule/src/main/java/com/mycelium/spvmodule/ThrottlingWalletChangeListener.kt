@@ -48,6 +48,10 @@ abstract class ThrottlingWalletChangeListener constructor(private val throttleMs
 
             val now = System.currentTimeMillis()
 
+            val runnable = Runnable {
+                lastMessageTime.set(System.currentTimeMillis())
+            }
+
             if (now - lastMessageTime.get() > throttleMs)
                 handler.post(runnable)
             else
@@ -55,18 +59,10 @@ abstract class ThrottlingWalletChangeListener constructor(private val throttleMs
         }
     }
 
-    private val runnable = Runnable {
-        lastMessageTime.set(System.currentTimeMillis())
-
-        onThrottledWalletChanged()
-    }
 
     fun removeCallbacks() {
         handler.removeCallbacksAndMessages(null)
     }
-
-    /** will be called back on UI thread  */
-    abstract fun onThrottledWalletChanged()
 
     override fun onCoinsReceived(wallet: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
         if (coinsRelevant)

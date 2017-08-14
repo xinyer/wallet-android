@@ -95,7 +95,9 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
                 // send back all known transactions. others will follow as we find them.
                 val transactionSet = wallet.getTransactions(false)
                 val utxos = wallet.unspents.toHashSet()
-                SpvMessageSender.sendTransactions(communicationManager, transactionSet, utxos, callingPackageName)
+                if(!transactionSet.isEmpty() || !utxos.isEmpty()) {
+                    SpvMessageSender.sendTransactions(communicationManager, transactionSet, utxos, callingPackageName)
+                }
             }
         }
         // start service to check for new transactions and maybe to broadcast a transaction
