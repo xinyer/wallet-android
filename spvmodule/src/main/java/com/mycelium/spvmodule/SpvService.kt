@@ -43,6 +43,7 @@ import org.bitcoinj.core.*
 import org.bitcoinj.core.TransactionConfidence.ConfidenceType
 import org.bitcoinj.core.listeners.AbstractPeerDataEventListener
 import org.bitcoinj.core.listeners.PeerConnectedEventListener
+import org.bitcoinj.core.listeners.PeerDataEventListener
 import org.bitcoinj.core.listeners.PeerDisconnectedEventListener
 import org.bitcoinj.net.discovery.MultiplexingDiscovery
 import org.bitcoinj.net.discovery.PeerDiscovery
@@ -514,7 +515,46 @@ class SpvService : Service() {
         }
     }
 
-    private val blockchainDownloadListener = object : AbstractPeerDataEventListener() {
+    private val blockchainDownloadListener = object : PeerDataEventListener {
+        /**
+         * Called when a download is started with the initial number of blocks to be downloaded.
+
+         * @param peer       the peer receiving the block
+         * *
+         * @param blocksLeft the number of blocks left to download
+         */
+        override fun onChainDownloadStarted(peer: Peer?, blocksLeft: Int) {
+            return
+        }
+
+        /**
+         *
+         * Called when a message is received by a peer, before the message is processed. The returned message is
+         * processed instead. Returning null will cause the message to be ignored by the Peer returning the same message
+         * object allows you to see the messages received but not change them. The result from one event listeners
+         * callback is passed as "m" to the next, forming a chain.
+
+         *
+         * Note that this will never be called if registered with any executor other than
+         * [org.bitcoinj.utils.Threading.SAME_THREAD]
+         */
+        override fun onPreMessageReceived(peer: Peer?, m: Message?): Message {
+            return m!!
+        }
+
+        /**
+         *
+         * Called when a peer receives a getdata message, usually in response to an "inv" being broadcast. Return as many
+         * items as possible which appear in the [GetDataMessage], or null if you're not interested in responding.
+
+         *
+         * Note that this will never be called if registered with any executor other than
+         * [org.bitcoinj.utils.Threading.SAME_THREAD]
+         */
+        override fun getData(peer: Peer?, m: GetDataMessage?): MutableList<Message>? {
+            return null
+        }
+
         private val lastMessageTime = AtomicLong(0)
 
         override fun onBlocksDownloaded(peer: Peer?, block: Block?, filteredBlock: FilteredBlock?, blocksLeft: Int) {
