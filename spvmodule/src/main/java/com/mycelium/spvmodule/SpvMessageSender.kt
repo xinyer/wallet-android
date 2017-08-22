@@ -21,7 +21,7 @@ class SpvMessageSender {
                              receivingPackage:String? = null) {
             val transactions = transactionSet.map {
                 val transactionBytes = it.bitcoinSerialize()
-                Log.d(LOG_TAG, "Sharing transaction $it with transaction bytes ${Hex.encode(transactionBytes)}")
+                //Log.d(LOG_TAG, "Sharing transaction $it with transaction bytes ${Hex.encode(transactionBytes)}")
                 val blockHeight = when (it.confidence.confidenceType) {
                     TransactionConfidence.ConfidenceType.BUILDING -> it.confidence.appearedAtChainHeight
                 // at the risk of finding Satoshi, values up to 5 are interpreted as type.
@@ -35,11 +35,11 @@ class SpvMessageSender {
             for(tx in transactionSet) {
                 for(txi in tx.inputs) {
                     txos[txi.outpoint.toString()] = txi.connectedOutput?.bitcoinSerialize() ?: continue
-                    Log.d(LOG_TAG, "Sharing connected output $txi with ${Hex.encode(txi!!.connectedOutput!!.bitcoinSerialize())}")
+                    //Log.d(LOG_TAG, "Sharing connected output $txi with ${Hex.encode(txi!!.connectedOutput!!.bitcoinSerialize())}")
                 }
             }
             val utxos = unspentTransactionOutputSet.associate {
-                Log.d(LOG_TAG, "Sharing utxo ${it.outPointFor} ${Hex.encode(it.outPointFor.bitcoinSerialize())}")
+                //Log.d(LOG_TAG, "Sharing utxo ${it.outPointFor} ${Hex.encode(it.outPointFor.bitcoinSerialize())}")
                 Pair(it.outPointFor.toString(), it.outPointFor.bitcoinSerialize())
             }
             val utxoHM = HashMap<String, ByteArray>(utxos.size).apply { putAll(utxos) }

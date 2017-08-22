@@ -18,10 +18,7 @@
 package com.mycelium.spvmodule
 
 import android.annotation.SuppressLint
-import android.app.Notification
-import android.app.NotificationManager
-import android.app.PendingIntent
-import android.app.Service
+import android.app.*
 import android.content.*
 import android.content.Context
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
@@ -29,12 +26,12 @@ import android.database.Cursor
 import android.net.ConnectivityManager
 import android.os.Binder
 import android.os.Handler
-import android.os.IBinder
 import android.os.PowerManager
 import android.os.PowerManager.WakeLock
 import android.support.v4.content.LocalBroadcastManager
 import android.text.format.DateUtils
 import android.util.Log
+import com.google.common.util.concurrent.SettableFuture
 import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.spvmodule.BlockchainState.Impediment
 
@@ -42,7 +39,6 @@ import com.mycelium.spvmodule.BlockchainState.Impediment
 import com.mycelium.spvmodule.providers.BlockchainContract
 import org.bitcoinj.core.*
 import org.bitcoinj.core.TransactionConfidence.ConfidenceType
-import org.bitcoinj.core.listeners.AbstractPeerDataEventListener
 import org.bitcoinj.core.listeners.PeerConnectedEventListener
 import org.bitcoinj.core.listeners.PeerDataEventListener
 import org.bitcoinj.core.listeners.PeerDisconnectedEventListener
@@ -63,8 +59,9 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.locks.ReentrantLock
 
-class SpvService : Service(), Loader.OnLoadCompleteListener<Cursor> {
+class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cursor> {
 
     private var application: SpvModuleApplication? = null
     private var config: Configuration? = null
@@ -93,7 +90,7 @@ class SpvService : Service(), Loader.OnLoadCompleteListener<Cursor> {
         override fun onWalletChanged(wallet: Wallet) {
             super.onWalletChanged(wallet)
             if(BuildConfig.DEBUG) {
-                //Log.d(this.javaClass.canonicalName, "onWalletChanged")
+                Log.d(this.javaClass.canonicalName, "onWalletChanged, ${wallet.lastBlockSeenHeight}")
             }
             notifyTransactions(wallet.getTransactions(true))
         }
@@ -197,8 +194,8 @@ class SpvService : Service(), Loader.OnLoadCompleteListener<Cursor> {
 
                 // if idling, shutdown service
                 if (isIdle) {
-                    Log.i(LOG_TAG, "idling detected, stopping service")
-                    stopSelf()
+                    Log.i(LOG_TAG, "Think that idling is detected, would have tried to service")
+                    //stopSelf()
                 }
             }
 
@@ -211,22 +208,11 @@ class SpvService : Service(), Loader.OnLoadCompleteListener<Cursor> {
             get() = this@SpvService
     }
 
-    override fun onBind(intent: Intent): IBinder? {
-        // TODO: nope. we don't use this. at least not from other apps.
-        return null
-    }
-
-    override fun onUnbind(intent: Intent): Boolean {
-        return false
-    }
-
     private val LOADER_ID_NETWORK: Int = 0
 
-    override fun onCreate() {
+    fun initialize() {
         serviceCreatedAtInMs = System.currentTimeMillis()
-        Log.d(LOG_TAG, ".onCreate()")
-
-        super.onCreate()
+        Log.d(LOG_TAG, "initialize()")
 
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -307,15 +293,36 @@ class SpvService : Service(), Loader.OnLoadCompleteListener<Cursor> {
         registerReceiver(tickReceiver, IntentFilter(Intent.ACTION_TIME_TICK))
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    private val future = SettableFuture.create<Long>()
+    private var reentrantLock = ReentrantLock(true)
+
+    /**
+     * This method is invoked on the worker thread with a request to process.
+     * Only one Intent is processed at a time, but the processing happens on a
+     * worker thread that runs independently from other application logic.
+     * So, if this code takes a long time, it will hold up other requests to
+     * the same IntentService, but it will not hold up anything else.
+     * When all requests have been handled, the IntentService stops itself,
+     * so you should not call [.stopSelf].
+     *
+     * @param intent The value passed to [               ][android.content.Context.startService].
+     * This may be null if the service is being restarted after
+     * its process has gone away; see
+     * [android.app.Service.onStartCommand]
+     * for details.
+     */
+    override fun onHandleIntent(intent: Intent?) {
         org.bitcoinj.core.Context.propagate(Constants.CONTEXT)
+        initialize()
         if (intent != null) {
-            Log.i(LOG_TAG, "service start command: $intent ${
-            if (intent.hasExtra(Intent.EXTRA_ALARM_COUNT))
-                " (alarm count: ${intent.getIntExtra(Intent.EXTRA_ALARM_COUNT, 0)})"
-            else
-                ""
-            }")
+            if(BuildConfig.DEBUG) {
+                Log.i(LOG_TAG, "onHandleIntent: $intent ${
+                if (intent.hasExtra(Intent.EXTRA_ALARM_COUNT))
+                    " (alarm count: ${intent.getIntExtra(Intent.EXTRA_ALARM_COUNT, 0)})"
+                else
+                    ""
+                }")
+            }
 
             when (intent.action) {
                 ACTION_CANCEL_COINS_RECEIVED -> notificationManager!!.cancel(Constants.NOTIFICATION_ID_COINS_RECEIVED)
@@ -323,7 +330,7 @@ class SpvService : Service(), Loader.OnLoadCompleteListener<Cursor> {
                     Log.i(LOG_TAG, "will remove blockchain on service shutdown")
 
                     resetBlockchainOnShutdown = true
-                    stopSelf()
+                    //stopSelf()
                 }
                 ACTION_BROADCAST_TRANSACTION -> {
                     val transactionByteArray = intent.getByteArrayExtra("TX")
@@ -342,7 +349,7 @@ class SpvService : Service(), Loader.OnLoadCompleteListener<Cursor> {
             Log.w(LOG_TAG, "service restart, although it was started as non-sticky")
         }
         broadcastBlockchainState();
-        return START_NOT_STICKY
+        future.get()
     }
 
 
@@ -356,6 +363,7 @@ class SpvService : Service(), Loader.OnLoadCompleteListener<Cursor> {
             cursorLoader.cancelLoad();
             cursorLoader.stopLoading();
         }
+        cursor?.close()
 
         SpvModuleApplication.scheduleStartBlockchainService(this)
 
@@ -408,7 +416,7 @@ class SpvService : Service(), Loader.OnLoadCompleteListener<Cursor> {
 
         if (level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND) {
             Log.w(LOG_TAG, "low memory detected, stopping service")
-            stopSelf()
+            //stopSelf()
         }
     }
 
@@ -421,7 +429,13 @@ class SpvService : Service(), Loader.OnLoadCompleteListener<Cursor> {
      * @param data the result of the load
      */
     override fun onLoadComplete(loader: Loader<Cursor>?, data: Cursor?) {
-        this.cursor = cursor
+        if(BuildConfig.DEBUG) {
+            Log.d(LOG_TAG, "onLoadComplete, Cursor is ${data?.count} size")
+        }
+        cursor = data
+        if(reentrantLock.isLocked) {
+            reentrantLock.unlock()
+        }
     }
 
     private val semaphore = Semaphore(1, true)
@@ -429,7 +443,8 @@ class SpvService : Service(), Loader.OnLoadCompleteListener<Cursor> {
     private fun notifyTransactions(transactions: Set<Transaction>) {
         semaphore.acquire()
         if (!transactions.isEmpty()) {
-            Log.d(LOG_TAG, "notifyTransactions, Start processing ${transactions.size} transactions.")
+            //Log.d(LOG_TAG, "notifyTransactions, Start processing ${transactions.size} transactions.")
+            /*
             val txos = HashMap<String, TransactionOutput?>()
             var i: Int = 0
             for (transaction: Transaction in transactions) {
@@ -444,11 +459,14 @@ class SpvService : Service(), Loader.OnLoadCompleteListener<Cursor> {
                 } else {
                     -1
                 }
+                cursorLoader.isStarted
                 if (cursor == null || cursor!!.count == 0) {
                     // insert
                     values.put(BlockchainContract.Transaction.TRANSACTION_ID, transaction.hashAsString)
                     values.put(BlockchainContract.Transaction.TRANSACTION, transaction.bitcoinSerialize())
                     values.put(BlockchainContract.Transaction.INCLUDED_IN_BLOCK, height)
+                    reentrantLock.lock()
+                    Log.d(LOG_TAG, "notifyTransactions, inserting transaction ${transaction.hashAsString}.")
                     contentResolver.insert(BlockchainContract.Transaction.CONTENT_URI(packageName), values)
                     for (txo in transaction.inputs) {
                         val txoValues = ContentValues()
@@ -464,20 +482,18 @@ class SpvService : Service(), Loader.OnLoadCompleteListener<Cursor> {
                     }
                     contentResolver.notifyChange(BlockchainContract.Transaction.CONTENT_URI(packageName), null)
 
-
                 } else {
                     // update
                     values.put(BlockchainContract.Transaction.INCLUDED_IN_BLOCK, height)
                     contentResolver.update(BlockchainContract.Transaction.CONTENT_URI(packageName), values, "_id=?",
                             arrayOf(transaction.hashAsString))
                     contentResolver.notifyChange(BlockchainContract.Transaction.CONTENT_URI(packageName), null)
-
                 }
-                cursor?.close()
                 Log.d(LOG_TAG, "notifyTransactions, processed transaction number $i")
                 i++
             }
-            Log.d(LOG_TAG, "notifyTransactions, finished processing $i transactions.")
+            */
+            //Log.d(LOG_TAG, "notifyTransactions, finished processing ${transactions.size} transactions.")
             // send the new transaction and the *complete* utxo set of the wallet
             val utxos = SpvModuleApplication.getWallet().unspents.toSet()
             if (!transactions.isEmpty() || !utxos.isEmpty()) {
@@ -564,7 +580,7 @@ class SpvService : Service(), Loader.OnLoadCompleteListener<Cursor> {
         }
     }
 
-    private val blockchainDownloadListener = object : PeerDataEventListener {
+    private val peerDataEventListener = object : PeerDataEventListener {
         /**
          * Called when a download is started with the initial number of blocks to be downloaded.
 
@@ -614,6 +630,9 @@ class SpvService : Service(), Loader.OnLoadCompleteListener<Cursor> {
                 delayHandler.post(runnable)
             } else {
                 delayHandler.postDelayed(runnable, BLOCKCHAIN_STATE_BROADCAST_THROTTLE_MS)
+            }
+            if(blocksLeft == 0) {
+                future.set(peer!!.bestHeight)
             }
         }
 
@@ -723,7 +742,7 @@ class SpvService : Service(), Loader.OnLoadCompleteListener<Cursor> {
 
                 // start peergroup
                 peerGroup!!.startAsync()
-                peerGroup!!.startBlockChainDownload(blockchainDownloadListener)
+                peerGroup!!.startBlockChainDownload(peerDataEventListener)
             } else if (!impediments.isEmpty() && peerGroup != null) {
                 Log.i(LOG_TAG, "stopping peergroup")
                 peerGroup!!.removeDisconnectedEventListener(peerConnectivityListener!!)
