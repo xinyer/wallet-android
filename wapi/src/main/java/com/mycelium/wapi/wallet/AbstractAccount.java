@@ -1397,7 +1397,7 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
             // Determine the parent address
             Address parentAddress;
             ScriptOutput parentScript = ScriptOutput.fromScriptBytes(parentOutput.script);
-            if (parentScript == null) {
+            if (parentScript == null || parentScript instanceof ScriptOutputStrange) {
                // Null address means we couldn't figure out the address, strange script
                parentAddress = Address.getNullAddress(_network);
             } else {
