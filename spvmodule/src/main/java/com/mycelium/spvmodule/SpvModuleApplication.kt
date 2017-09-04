@@ -310,7 +310,6 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         for (key in newWallet.importedKeys) {
             key.toAddress(TestNet3Params.get())
         }
-        newWallet.get
         Log.d(LOG_TAG, "replaceWallet, ${newWallet.importedKeys}")
         wallet = newWallet
         configuration!!.maybeIncrementBestChainHeightEver(newWallet.lastBlockSeenHeight)
