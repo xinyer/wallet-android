@@ -39,7 +39,6 @@ import com.mycelium.wapi.wallet.single.PublicPrivateKeyStore;
 import com.mycelium.wapi.wallet.single.SingleAddressAccount;
 import com.mycelium.wapi.wallet.single.SingleAddressAccountContext;
 
-import java.security.PrivilegedActionException;
 import java.util.*;
 
 import static com.google.common.base.Predicates.*;
@@ -851,7 +850,7 @@ public class WalletManager {
     * @throws InvalidKeyCipher if the cipher is invalid
     */
    public Bip39.MasterSeed getMasterSeed(KeyCipher cipher) throws InvalidKeyCipher {
-      byte[] binaryMasterSeed = _secureKeyValueStore.getEncryptedValue(MASTER_SEED_ID, cipher);
+      byte[] binaryMasterSeed = _secureKeyValueStore.getDecryptedValue(MASTER_SEED_ID, cipher);
       Optional<Bip39.MasterSeed> masterSeed = Bip39.MasterSeed.fromBytes(binaryMasterSeed, false);
       if (!masterSeed.isPresent()) {
          throw new RuntimeException();
