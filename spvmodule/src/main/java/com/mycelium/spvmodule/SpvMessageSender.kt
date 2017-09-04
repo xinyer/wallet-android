@@ -66,5 +66,19 @@ class SpvMessageSender {
                 }
             }
         }
+
+        fun requestPrivateKey(communicationManager: CommunicationManager) {
+            if(BuildConfig.DEBUG) {
+                Log.d(LOG_TAG, "requestPrivateKey")
+            }
+            val requestPrivateExtendedKeyCoinTypeIntent = Intent()
+            requestPrivateExtendedKeyCoinTypeIntent.action = "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW"
+            if (BuildConfig.APPLICATION_ID.contains(".test")) {
+                arrayOf("com.mycelium.devwallet_spore", "com.mycelium.testnetwallet")
+                        .forEach {communicationManager.send(it, requestPrivateExtendedKeyCoinTypeIntent)}
+            } else {
+                communicationManager.send("com.mycelium.wallet", requestPrivateExtendedKeyCoinTypeIntent)
+            }
+        }
     }
 }

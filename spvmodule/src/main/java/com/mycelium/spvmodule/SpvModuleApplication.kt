@@ -1,9 +1,6 @@
 package com.mycelium.spvmodule
 
-import android.app.ActivityManager
-import android.app.AlarmManager
-import android.app.Application
-import android.app.PendingIntent
+import android.app.*
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInfo
@@ -14,6 +11,7 @@ import android.support.v4.content.LocalBroadcastManager
 import android.text.format.DateUtils
 import android.util.Log
 import android.widget.Toast
+import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.modularizationtools.ModuleMessageReceiver
 import com.mycelium.spvmodule.Constants.Companion.TAG
 
@@ -36,6 +34,8 @@ import java.io.OutputStream
 import java.util.concurrent.TimeUnit
 
 import org.bitcoinj.core.Context.*
+import org.bitcoinj.params.TestNet2Params
+import org.bitcoinj.params.TestNet3Params
 import java.util.concurrent.Executors
 
 class SpvModuleApplication : Application(), ModuleMessageReceiver {
@@ -82,7 +82,6 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         blockchainServiceCancelCoinsReceivedIntent = Intent(SpvService.ACTION_CANCEL_COINS_RECEIVED, null, this,
                 SpvService::class.java)
         blockchainServiceResetBlockchainIntent = Intent(SpvService.ACTION_RESET_BLOCKCHAIN, null, this, SpvService::class.java)
-
         walletFile = getFileStreamPath(Constants.Files.WALLET_FILENAME_PROTOBUF)
 
         loadWalletFromProtobuf()
@@ -93,12 +92,14 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     }
 
     private fun afterLoadWallet() {
-        wallet!!.autosaveToFile(walletFile!!, 10, TimeUnit.SECONDS, WalletAutosaveEventListener())
+        if(wallet != null) {
+            wallet!!.autosaveToFile(walletFile!!, 10, TimeUnit.SECONDS, WalletAutosaveEventListener())
 
-        // clean up spam
-        wallet!!.cleanup()
+            // clean up spam
+            wallet!!.cleanup()
 
-        migrateBackup()
+            migrateBackup()
+        }
     }
 
     private class WalletAutosaveEventListener : WalletFiles.Listener {
@@ -158,9 +159,11 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
             if (wallet!!.params != Constants.NETWORK_PARAMETERS)
                 throw Error("bad wallet network parameters: " + wallet!!.params.id)
         } else {
-            wallet = Wallet(Constants.NETWORK_PARAMETERS)
-            backupWallet()
-            Log.i(LOG_TAG, "new wallet created")
+            //first creation of wallet.
+            //wallet = Wallet(Constants.NETWORK_PARAMETERS)
+            //backupWallet()
+            wallet = null
+            Log.i(LOG_TAG, "null wallet created")
         }
     }
 
@@ -284,18 +287,36 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         executorService.execute {
             startService(blockchainServiceResetBlockchainIntent)
         }
+    }
 
+    fun resetBlockchainWithExtendedKey(extendedKey: ByteArray, creationTimeSeconds : Long) {
+        Log.d(LOG_TAG, "resetBlockchainWithExtendedKey, extend key = $extendedKey, creationTimeSeconds = $creationTimeSeconds")
+        // implicitly stops blockchain service
+        val executorService = Executors.newSingleThreadExecutor()
+        executorService.execute {
+            blockchainServiceResetBlockchainIntent!!.putExtra("extendedKey", extendedKey)
+            blockchainServiceResetBlockchainIntent!!.putExtra("creationTimeSeconds", creationTimeSeconds)
+            stopBlockchainService()
+            Log.d(LOG_TAG, "resetBlockchainWithExtendedKey, startService : $blockchainServiceResetBlockchainIntent")
+            startService(blockchainServiceResetBlockchainIntent)
+        }
     }
 
     fun replaceWallet(newWallet: Wallet) {
-        resetBlockchain()
-        wallet!!.shutdownAutosaveAndWait()
-
+        if(wallet != null) {
+            resetBlockchain()
+            wallet!!.shutdownAutosaveAndWait()
+        }
+        for (key in newWallet.importedKeys) {
+            key.toAddress(TestNet3Params.get())
+        }
+        newWallet.get
+        Log.d(LOG_TAG, "replaceWallet, ${newWallet.importedKeys}")
         wallet = newWallet
         configuration!!.maybeIncrementBestChainHeightEver(newWallet.lastBlockSeenHeight)
         afterLoadWallet()
 
-        val broadcast = Intent(ACTION_WALLET_REFERENCE_CHANGED)
+        val broadcast = Intent(ACTION_WALLET_REFERENCE_CHANGED) //TODO Investigate utility of this.
         broadcast.`package` = packageName
         LocalBroadcastManager.getInstance(this).sendBroadcast(broadcast)
     }
@@ -342,8 +363,8 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
             return INSTANCE!!
         }
 
-        fun getWallet(): Wallet {
-            return INSTANCE!!.wallet!!
+        fun getWallet(): Wallet? {
+            return INSTANCE!!.wallet
         }
 
         fun packageInfoFromContext(context: Context): PackageInfo {

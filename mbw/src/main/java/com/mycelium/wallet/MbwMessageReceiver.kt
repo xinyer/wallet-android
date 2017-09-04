@@ -11,22 +11,26 @@ import android.os.Looper
 import android.os.Message
 import android.text.TextUtils
 import android.util.Log
+import com.mrd.bitlib.crypto.Bip39
 import com.mrd.bitlib.model.*
 import com.mrd.bitlib.model.NetworkParameters.NetworkType.*
+import com.mrd.bitlib.model.hdpath.HdKeyPath
 import com.mrd.bitlib.util.Sha256Hash
+import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.modularizationtools.ModuleMessageReceiver
 import com.mycelium.wallet.activity.modern.ModernMain
 import com.mycelium.wallet.event.SpvSyncChanged
 import com.mycelium.wallet.persistence.MetadataStorage
 import com.mycelium.wapi.model.TransactionEx
-import com.mycelium.wapi.wallet.AbstractAccount
-import com.mycelium.wapi.wallet.AesKeyCipher
-import com.mycelium.wapi.wallet.WalletAccount
-import com.mycelium.wapi.wallet.WalletManager
+import com.mycelium.wapi.wallet.*
 import com.mycelium.wapi.wallet.bip44.Bip44Account
 import com.squareup.otto.Bus
+import org.bitcoinj.core.NetworkParameters
 import org.bitcoinj.core.TransactionConfidence.ConfidenceType.*
 import org.bitcoinj.core.TransactionOutPoint
+import org.bitcoinj.crypto.ChildNumber
+import org.bitcoinj.crypto.DeterministicKey
+import org.bitcoinj.crypto.HDKeyDerivation
 import java.nio.ByteBuffer
 import java.util.*
 
@@ -34,7 +38,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
     private val eventBus: Bus = MbwManager.getInstance(context).eventBus
 
     override fun onMessage(callingPackageName: String, intent: Intent) {
-        //Log.d(TAG, "onMessage($callingPackageName, $intent)")
+        Log.d(TAG, "onMessage($callingPackageName, $intent)")
         val walletManager = MbwManager.getInstance(context).getWalletManager(false)
         when (intent.action) {
             "com.mycelium.wallet.receivedTransactions" -> {
@@ -81,7 +85,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
 
                         for (input in transaction.inputs) {
                             val connectedOutput = fundingOutputs[input.outPoint] ?: // skip this
-                                    continue
+                                     continue
                             connectedOutputs.put(input.outPoint, connectedOutput)
                             val address = connectedOutput.script.getAddress(network)
 
@@ -177,6 +181,41 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 val runnable : Runnable = Runnable {
                     eventBus.post(SpvSyncChanged(Date(bestChainDate), bestChainHeight.toLong())) }
                 Handler(Looper.getMainLooper()).post(runnable)
+
+            }
+            "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW" -> {
+                val _mbwManager = MbwManager.getInstance(context)
+                val masterSeed: Bip39.MasterSeed
+                try {
+                    masterSeed = _mbwManager.getWalletManager(false).getMasterSeed(AesKeyCipher.defaultKeyCipher())
+                } catch (invalidKeyCipher: KeyCipher.InvalidKeyCipher) {
+                    throw RuntimeException(invalidKeyCipher)
+                }
+
+                val masterDeterministicKey : DeterministicKey = HDKeyDerivation.createMasterPrivateKey(masterSeed.bip32Seed)
+                val bip44LevelDeterministicKey = HDKeyDerivation.deriveChildKey(masterDeterministicKey, ChildNumber(44, true))
+                val coinType = if (_mbwManager.network.isTestnet) {
+                    1 //Bitcoin Testnet https://github.com/satoshilabs/slips/blob/master/slip-0044.md
+                } else {
+                    0 //Bitcoin Mainnet https://github.com/satoshilabs/slips/blob/master/slip-0044.md
+                }
+                val cointypeLevelDeterministicKey =
+                        HDKeyDerivation.deriveChildKey(bip44LevelDeterministicKey, ChildNumber(coinType, true))
+                val networkParameters : NetworkParameters = if (_mbwManager.network.isTestnet) {
+                    NetworkParameters.fromID(NetworkParameters.ID_TESTNET)!!
+                } else {
+                    NetworkParameters.fromID(NetworkParameters.ID_MAINNET)!!
+                }
+                val byteArrayToTransmitToSPVModule = cointypeLevelDeterministicKey.serializePrivate(networkParameters)
+
+                val flavor = if (_mbwManager.getNetwork().isTestnet()) ".test" else ""
+                val service = Intent()
+                //TODO: harmonize names and capitalization. monitor addresses?
+                service.action = "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToSPV"
+                service.putExtra("PrivateExtendedKeyCoinType", byteArrayToTransmitToSPVModule)
+                service.putExtra("creationTimeSeconds", 1479081600L) //TODO Change value after test. Nelson
+                CommunicationManager.getInstance(context)
+                        .send("com.mycelium.spvmodule" + flavor, service)
 
             }
             null -> Log.w(TAG, "onMessage failed. No action defined.")

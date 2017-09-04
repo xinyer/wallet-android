@@ -224,7 +224,7 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
           Address addressLastActivity = addressMap.inverse().get(lastIndexWithActivity);
           timestamp = getOldestActivityTimeByAddress(addressLastActivity);
         } else {
-          timestamp = 1479081600L;
+          timestamp = 1479081600L; //TODO delete after test. Nelson
         }
         _bip44AccountBacking.storeAddressCreationTime(address, timestamp);
       } else if(_bip44AccountBacking.getCreationTimeByAddress(address) == 0L) {

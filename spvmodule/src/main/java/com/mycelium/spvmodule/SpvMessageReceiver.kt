@@ -26,8 +26,9 @@ import java.util.*
 import java.util.concurrent.Executors
 
 class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
+
     override fun onMessage(callingPackageName: String, intent: Intent) {
-        Log.d(LOG_TAG, "onStartCommand($callingPackageName, $intent)")
+        Log.d(LOG_TAG, "onMessage($callingPackageName, $intent)")
         org.bitcoinj.core.Context.propagate(Constants.CONTEXT)
         val communicationManager = CommunicationManager.Companion.getInstance(context)
         val clone = intent.clone() as Intent
@@ -44,14 +45,21 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
                 resultData.putExtra("broadcastTX", tx.hashAsString)
                 communicationManager.send(callingPackageName, resultData)
             }
+
             "com.mycelium.wallet.receiveTransactions" -> {
                 // parse call
-                val addressStrings = intent.getStringArrayExtra("ADDRESSES")
-                val addresses = Lists.newArrayListWithCapacity<Address>(addressStrings.size)
-                val contentValuesArray = Lists.newArrayList<ContentValues>()
-                var minTimestamp = Long.MAX_VALUE
+                //val addressStrings = intent.getStringArrayExtra("ADDRESSES")
+                //val addresses = Lists.newArrayListWithCapacity<Address>(addressStrings.size)
+                //val contentValuesArray = Lists.newArrayList<ContentValues>()
+                //var minTimestamp = Long.MAX_VALUE
                 // register addresses as ours
                 val wallet = SpvModuleApplication.getWallet()
+                if(wallet == null || wallet.keyChainGroupSize == 0) {
+                    // Ask for private Key
+                    SpvMessageSender.requestPrivateKey(communicationManager)
+                    return
+                }
+                /*
                 for (addressTimeString in addressStrings) {
                     val addressTimeStrings = addressTimeString.split(";")
                     if (addressTimeStrings.size != 2) {
@@ -75,7 +83,8 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
                         values.put(BlockchainContract.Address.SYNCED_TO_BLOCK, 0)
                         contentValuesArray.add(values)
                     }
-                }
+                } */
+                /*
                 if(addresses.size > 0) {
                     wallet.addWatchedAddresses(addresses, minTimestamp)
 
@@ -92,20 +101,28 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
                             BlockchainContract.Address.CONTENT_URI(BuildConfig.APPLICATION_ID),
                             contentValuesArray.toTypedArray())
                 }
+                */
                 // send back all known transactions. others will follow as we find them.
-                val transactionSet = wallet.getTransactions(false)
+                val transactionSet = wallet!!.getTransactions(false)
                 val utxos = wallet.unspents.toHashSet()
                 if(!transactionSet.isEmpty() || !utxos.isEmpty()) {
                     SpvMessageSender.sendTransactions(communicationManager, transactionSet, utxos, callingPackageName)
                 }
             }
+            "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToSPV" -> {
+                val privateExtendedKeyCoinType = intent.getByteArrayExtra("PrivateExtendedKeyCoinType")
+                val creationTimeSeconds = intent.getLongExtra("creationTimeSeconds", 0)
+                SpvModuleApplication.getApplication()
+                        .resetBlockchainWithExtendedKey(privateExtendedKeyCoinType, creationTimeSeconds)
+            }
         }
-        // start service to check for new transactions and maybe to broadcast a transaction
-        val executorService = Executors.newSingleThreadExecutor()
-        executorService.execute {
-            context.startService(clone)
+        if(intent.action != "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToSPV") {
+            // start service to check for new transactions and maybe to broadcast a transaction
+            val executorService = Executors.newSingleThreadExecutor()
+            executorService.execute {
+                context.startService(clone)
+            }
         }
-
     }
 
     private val LOG_TAG: String? = this.javaClass.canonicalName

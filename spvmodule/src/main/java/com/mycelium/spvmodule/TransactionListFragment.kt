@@ -88,6 +88,6 @@ class TransactionListFragment : ListFragment() {
 
     companion object {
         // TODO: 9/15/16 this is definitely no long term solution. Update on new block
-        private val lastBlockSeenHeight = SpvModuleApplication.getWallet().lastBlockSeenHeight
+        private val lastBlockSeenHeight = SpvModuleApplication.getWallet()!!.lastBlockSeenHeight
     }
 }
