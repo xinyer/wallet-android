@@ -116,7 +116,8 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
                         .resetBlockchainWithExtendedKey(privateExtendedKeyCoinType, creationTimeSeconds)
             }
         }
-        if(intent.action != "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToSPV") {
+        if(intent.action != "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToSPV" &&
+                SpvModuleApplication.getWallet() != null && SpvModuleApplication.getWallet()!!.keyChainGroupSize != 0) {
             // start service to check for new transactions and maybe to broadcast a transaction
             val executorService = Executors.newSingleThreadExecutor()
             executorService.execute {

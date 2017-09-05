@@ -215,7 +215,8 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 service.action = "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToSPV"
                 val bip39PassphraseList : ArrayList<String> = ArrayList(masterSeed.getBip39WordList())
                 Log.d(TAG, "onMessage, com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW, " +
-                        "masterSeed.bip39Passphrase = $bip39PassphraseList")
+                        "masterSeed.bip39Passphrase = $bip39PassphraseList, " +
+                        "masterSeed.bip32Seed = ${masterSeed.bip32Seed}")
                 service.putExtra("PrivateExtendedKeyCoinType", bip39PassphraseList)
                 service.putExtra("creationTimeSeconds", 1479081600L) //TODO Change value after test. Nelson
                 CommunicationManager.getInstance(context)

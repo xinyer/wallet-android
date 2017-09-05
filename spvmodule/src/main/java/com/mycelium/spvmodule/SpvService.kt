@@ -310,10 +310,13 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                         Wallet.fromSeed(
                                 NetworkParameters.fromID(NetworkParameters.ID_TESTNET),
                                 DeterministicSeed(extendedKey, null, "", creationTimeSeconds)))
+
                 Log.d(LOG_TAG, "initializeBlockchain, " +
                         "seed = ${SpvModuleApplication.getWallet()!!.keyChainSeed.mnemonicCode.toString()}, " +
+                        "seedBytes = ${SpvModuleApplication.getWallet()!!.keyChainSeed.seedBytes}" +
                         "creationTimeSeconds = $creationTimeSeconds")
                 SpvModuleApplication.getWallet()!!.reset()
+                SpvModuleApplication.getWallet()!!.freshReceiveAddress()
             } else if(BuildConfig.DEBUG) {
                 //Log.d(LOG_TAG, "initializeBlockchain, wallet already has key $key")
             }
@@ -729,20 +732,21 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
             val wallet = SpvModuleApplication.getWallet()
 
             if (impediments.isEmpty() && peerGroup == null) {
-                Log.d(LOG_TAG, "acquiring wakelock")
+                Log.d(LOG_TAG, "check(), acquiring wakelock")
                 wakeLock!!.acquire()
 
                 // consistency check
                 val walletLastBlockSeenHeight = wallet!!.lastBlockSeenHeight
                 val bestChainHeight = blockChain!!.bestChainHeight
                 if (walletLastBlockSeenHeight != -1 && walletLastBlockSeenHeight != bestChainHeight) {
-                    val message = "wallet/blockchain out of sync: $walletLastBlockSeenHeight/$bestChainHeight"
+                    val message = "check(), wallet/blockchain out of sync: $walletLastBlockSeenHeight/$bestChainHeight"
                     Log.e(LOG_TAG, message)
                 }
 
-                Log.i(LOG_TAG, "starting peergroup")
+                Log.i(LOG_TAG, "check(), starting peergroup")
                 peerGroup = PeerGroup(Constants.NETWORK_PARAMETERS, blockChain)
                 peerGroup!!.setDownloadTxDependencies(0) // recursive implementation causes StackOverflowError
+                Log.i(LOG_TAG, "check(), wallet.keyChainSeed.mnemonicCode = ${wallet.keyChainSeed.mnemonicCode.toString()}")
                 peerGroup!!.addWallet(wallet)
                 peerGroup!!.setUserAgent(Constants.USER_AGENT, application!!.packageInfo!!.versionName)
                 peerGroup!!.addConnectedEventListener(peerConnectivityListener)
@@ -768,7 +772,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                         var needsTrimPeersWorkaround = false
 
                         if (hasTrustedPeer) {
-                            Log.i(LOG_TAG, "trusted peer '$trustedPeerHost' ${if (connectTrustedPeerOnly) " only" else ""}")
+                            Log.i(LOG_TAG, "check(), trusted peer '$trustedPeerHost' ${if (connectTrustedPeerOnly) " only" else ""}")
 
                             val addr = InetSocketAddress(trustedPeerHost, Constants.NETWORK_PARAMETERS.port)
                             if (addr.address != null) {
@@ -797,14 +801,14 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                 peerGroup!!.startAsync()
                 peerGroup!!.startBlockChainDownload(peerDataEventListener)
             } else if (!impediments.isEmpty() && peerGroup != null) {
-                Log.i(LOG_TAG, "stopping peergroup")
+                Log.i(LOG_TAG, "check(), stopping peergroup")
                 peerGroup!!.removeDisconnectedEventListener(peerConnectivityListener!!)
                 peerGroup!!.removeConnectedEventListener(peerConnectivityListener!!)
                 peerGroup!!.removeWallet(wallet)
                 peerGroup!!.stopAsync()
                 peerGroup = null
 
-                Log.d(LOG_TAG, "releasing wakelock")
+                Log.d(LOG_TAG, "check(), releasing wakelock")
                 wakeLock!!.release()
             }
 
