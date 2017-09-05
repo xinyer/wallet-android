@@ -33,6 +33,7 @@ import org.bitcoinj.crypto.DeterministicKey
 import org.bitcoinj.crypto.HDKeyDerivation
 import java.nio.ByteBuffer
 import java.util.*
+import kotlin.collections.ArrayList
 
 class MbwMessageReceiver constructor(private val context: Context) : ModuleMessageReceiver {
     private val eventBus: Bus = MbwManager.getInstance(context).eventBus
@@ -191,7 +192,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 } catch (invalidKeyCipher: KeyCipher.InvalidKeyCipher) {
                     throw RuntimeException(invalidKeyCipher)
                 }
-
+/*
                 val masterDeterministicKey : DeterministicKey = HDKeyDerivation.createMasterPrivateKey(masterSeed.bip32Seed)
                 val bip44LevelDeterministicKey = HDKeyDerivation.deriveChildKey(masterDeterministicKey, ChildNumber(44, true))
                 val coinType = if (_mbwManager.network.isTestnet) {
@@ -207,12 +208,15 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                     NetworkParameters.fromID(NetworkParameters.ID_MAINNET)!!
                 }
                 val byteArrayToTransmitToSPVModule = cointypeLevelDeterministicKey.serializePrivate(networkParameters)
-
+*/
                 val flavor = if (_mbwManager.getNetwork().isTestnet()) ".test" else ""
                 val service = Intent()
                 //TODO: harmonize names and capitalization. monitor addresses?
                 service.action = "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToSPV"
-                service.putExtra("PrivateExtendedKeyCoinType", byteArrayToTransmitToSPVModule)
+                val bip39PassphraseList : ArrayList<String> = ArrayList(masterSeed.getBip39WordList())
+                Log.d(TAG, "onMessage, com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW, " +
+                        "masterSeed.bip39Passphrase = $bip39PassphraseList")
+                service.putExtra("PrivateExtendedKeyCoinType", bip39PassphraseList)
                 service.putExtra("creationTimeSeconds", 1479081600L) //TODO Change value after test. Nelson
                 CommunicationManager.getInstance(context)
                         .send("com.mycelium.spvmodule" + flavor, service)

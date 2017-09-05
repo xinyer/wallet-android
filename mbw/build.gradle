@@ -47,7 +47,7 @@ dependencies {
     compile('com.google.android.gms:play-services-gcm:9.0.2') {
         exclude module: 'support-v4'
     }
-    compile 'org.bitcoinj:bitcoinj-core:0.14.3'
+    compile 'org.bitcoinj:bitcoinj-core:0.14.4'
     compile 'org.ocpsoft.prettytime:prettytime:3.2.5.Final'
     compile 'de.cketti.library.changelog:ckchangelog:1.2.2'
     compile 'com.squareup.retrofit:retrofit:1.9.0'

@@ -110,7 +110,7 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
                 }
             }
             "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToSPV" -> {
-                val privateExtendedKeyCoinType = intent.getByteArrayExtra("PrivateExtendedKeyCoinType")
+                val privateExtendedKeyCoinType = intent.getStringArrayListExtra("PrivateExtendedKeyCoinType")
                 val creationTimeSeconds = intent.getLongExtra("creationTimeSeconds", 0)
                 SpvModuleApplication.getApplication()
                         .resetBlockchainWithExtendedKey(privateExtendedKeyCoinType, creationTimeSeconds)

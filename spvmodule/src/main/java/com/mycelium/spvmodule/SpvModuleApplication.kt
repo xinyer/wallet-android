@@ -34,6 +34,7 @@ import java.io.OutputStream
 import java.util.concurrent.TimeUnit
 
 import org.bitcoinj.core.Context.*
+import org.bitcoinj.crypto.ChildNumber
 import org.bitcoinj.params.TestNet2Params
 import org.bitcoinj.params.TestNet3Params
 import java.util.concurrent.Executors
@@ -289,7 +290,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         }
     }
 
-    fun resetBlockchainWithExtendedKey(extendedKey: ByteArray, creationTimeSeconds : Long) {
+    fun resetBlockchainWithExtendedKey(extendedKey: ArrayList<String>, creationTimeSeconds : Long) {
         Log.d(LOG_TAG, "resetBlockchainWithExtendedKey, extend key = $extendedKey, creationTimeSeconds = $creationTimeSeconds")
         // implicitly stops blockchain service
         val executorService = Executors.newSingleThreadExecutor()

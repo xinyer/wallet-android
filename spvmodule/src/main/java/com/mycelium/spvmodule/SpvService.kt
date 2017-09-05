@@ -49,6 +49,7 @@ import org.bitcoinj.store.BlockStore
 import org.bitcoinj.store.BlockStoreException
 import org.bitcoinj.store.SPVBlockStore
 import org.bitcoinj.utils.Threading
+import org.bitcoinj.wallet.DeterministicSeed
 import org.bitcoinj.wallet.Wallet
 import java.io.File
 import java.io.IOException
@@ -247,7 +248,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                     notificationManager!!.cancel(Constants.NOTIFICATION_ID_COINS_RECEIVED)
                 }
                 ACTION_RESET_BLOCKCHAIN -> {
-                    val extendedKey = intent.getByteArrayExtra("extendedKey")
+                    val extendedKey = intent.getStringArrayListExtra("extendedKey")
                     val creationTimeSeconds = intent.getLongExtra("creationTimeSeconds", 0)
                     Log.i(LOG_TAG, "will reset blockchain with extended key : $extendedKey")
                     initializeBlockchain(extendedKey, creationTimeSeconds)
@@ -280,7 +281,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         }
     }
 
-    fun initializeBlockchain(extendedKey: ByteArray?, creationTimeSeconds : Long) {
+    fun initializeBlockchain(extendedKey: ArrayList<String>?, creationTimeSeconds : Long) {
         serviceCreatedAtInMs = System.currentTimeMillis()
         Log.d(LOG_TAG, "initializeBlockchain() with extended key ${extendedKey.toString()}")
 
@@ -296,18 +297,25 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         if(extendedKey != null) {
             //int networkID =
             //TODO correct network parameters
-            val key = ECKey.fromPrivate(extendedKey)
+            /* val key = ECKey.fromPrivate(extendedKey)
             key.creationTimeSeconds = creationTimeSeconds
             val keyList : MutableList<ECKey> = mutableListOf()
-            keyList.add(key)
+            keyList.add(key) */
             if(SpvModuleApplication.getWallet() == null) {
-                SpvModuleApplication.getApplication().replaceWallet(
+                /*SpvModuleApplication.getApplication().replaceWallet(
                         Wallet.fromKeys(
                                 NetworkParameters.fromID(NetworkParameters.ID_TESTNET),
-                                keyList))
+                                keyList)) */
+                SpvModuleApplication.getApplication().replaceWallet(
+                        Wallet.fromSeed(
+                                NetworkParameters.fromID(NetworkParameters.ID_TESTNET),
+                                DeterministicSeed(extendedKey, null, "", creationTimeSeconds)))
+                Log.d(LOG_TAG, "initializeBlockchain, " +
+                        "seed = ${SpvModuleApplication.getWallet()!!.keyChainSeed.mnemonicCode.toString()}, " +
+                        "creationTimeSeconds = $creationTimeSeconds")
                 SpvModuleApplication.getWallet()!!.reset()
             } else if(BuildConfig.DEBUG) {
-                Log.d(LOG_TAG, "initializeBlockchain, wallet already has key $key")
+                //Log.d(LOG_TAG, "initializeBlockchain, wallet already has key $key")
             }
         }
         val wallet = SpvModuleApplication.getWallet()
