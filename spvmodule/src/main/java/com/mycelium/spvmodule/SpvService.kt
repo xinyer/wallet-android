@@ -63,7 +63,6 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantLock
 
 class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cursor> {
-
     private var application: SpvModuleApplication? = null
     private var config: Configuration? = null
 
@@ -87,26 +86,26 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
 
     private val walletEventListener = object
         : ThrottlingWalletChangeListener(APPWIDGET_THROTTLE_MS) {
-
-        override fun onWalletChanged(wallet: Wallet) {
-            super.onWalletChanged(wallet)
+        override fun onChanged(wallet: Wallet) {
             notifyTransactions(wallet.getTransactions(true))
         }
 
         override fun onTransactionConfidenceChanged(wallet: Wallet, tx: Transaction) {
-            super.onTransactionConfidenceChanged(wallet, tx)
             if(tx.confidence?.depthInBlocks?:0 > 7) {
                 // don't update on all transactions individually just because we found a new block
                 return
             }
+            super.onTransactionConfidenceChanged(wallet, tx)
         }
 
         override fun onCoinsReceived(wallet: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
             transactionsReceived.incrementAndGet()
+            super.onCoinsReceived(wallet, tx, prevBalance, newBalance)
         }
 
         override fun onCoinsSent(wallet: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
             transactionsReceived.incrementAndGet()
+            super.onCoinsSent(wallet, tx, prevBalance, newBalance)
         }
     }
 
@@ -464,9 +463,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         if (!transactions.isEmpty()) {
             // send the new transaction and the *complete* utxo set of the wallet
             val utxos = SpvModuleApplication.getWallet()!!.unspents.toSet()
-            if (!transactions.isEmpty() || !utxos.isEmpty()) {
-                SpvMessageSender.sendTransactions(CommunicationManager.getInstance(this), transactions, utxos)
-            }
+            SpvMessageSender.sendTransactions(CommunicationManager.getInstance(this), transactions, utxos)
         }
         semaphore.release()
     }

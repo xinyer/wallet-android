@@ -50,6 +50,7 @@ abstract class ThrottlingWalletChangeListener constructor(private val throttleMs
 
             val runnable = Runnable {
                 lastMessageTime.set(System.currentTimeMillis())
+                onChanged(wallet)
             }
 
             if (now - lastMessageTime.get() > throttleMs)
@@ -59,6 +60,7 @@ abstract class ThrottlingWalletChangeListener constructor(private val throttleMs
         }
     }
 
+    abstract fun onChanged(wallet: Wallet)
 
     override fun onCoinsReceived(wallet: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
         if (coinsRelevant) {
