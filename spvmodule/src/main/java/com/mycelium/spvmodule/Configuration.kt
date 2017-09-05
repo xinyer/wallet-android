@@ -28,9 +28,13 @@ class Configuration(private val prefs: SharedPreferences) {
         get() = prefs.getInt(PREFS_KEY_BEST_CHAIN_HEIGHT_EVER, 0)
 
     fun maybeIncrementBestChainHeightEver(bestChainHeightEver: Int) {
-        if (bestChainHeightEver > bestChainHeightEver) {
-            prefs.edit().putInt(PREFS_KEY_BEST_CHAIN_HEIGHT_EVER, bestChainHeightEver).apply()
+        if (bestChainHeightEver > this.bestChainHeightEver) {
+           incrementBestChainHeightEver(bestChainHeightEver)
         }
+    }
+
+    fun incrementBestChainHeightEver(bestChainHeightEver: Int) {
+        prefs.edit().putInt(PREFS_KEY_BEST_CHAIN_HEIGHT_EVER, bestChainHeightEver).apply()
     }
 
     fun registerOnSharedPreferenceChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener) {
