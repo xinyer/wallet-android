@@ -12,6 +12,7 @@ class Bip44DeterministicKeyChain(seed: DeterministicSeed?) : DeterministicKeyCha
 
     /** Override in subclasses to use a different account derivation path  */
     override fun getAccountPath(): ImmutableList<ChildNumber> {
-        return BIP44_ACCOUNT_ZERO_PATH
+        return ImmutableList.of(ChildNumber(44, true),
+                ChildNumber(1, true), ChildNumber(0, true));
     }
 }
