@@ -312,8 +312,8 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                                 DeterministicSeed(extendedKey, null, "", creationTimeSeconds)))
 
                 Log.d(LOG_TAG, "initializeBlockchain, " +
-                        "seed = ${SpvModuleApplication.getWallet()!!.keyChainSeed.mnemonicCode.toString()}, " +
-                        "seedBytes = ${SpvModuleApplication.getWallet()!!.keyChainSeed.seedBytes}" +
+                        "seedMnemonicCode = ${SpvModuleApplication.getWallet()!!.keyChainSeed.mnemonicCode.toString()}, " +
+                        "Seed = ${Arrays.toString(SpvModuleApplication.getWallet()!!.keyChainSeed.seedBytes)}, " +
                         "creationTimeSeconds = $creationTimeSeconds")
                 SpvModuleApplication.getWallet()!!.reset()
                 SpvModuleApplication.getWallet()!!.freshReceiveAddress()

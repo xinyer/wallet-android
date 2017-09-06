@@ -15,6 +15,7 @@ import com.mrd.bitlib.crypto.Bip39
 import com.mrd.bitlib.model.*
 import com.mrd.bitlib.model.NetworkParameters.NetworkType.*
 import com.mrd.bitlib.model.hdpath.HdKeyPath
+import com.mrd.bitlib.util.HexUtils
 import com.mrd.bitlib.util.Sha256Hash
 import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.modularizationtools.ModuleMessageReceiver
@@ -192,6 +193,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 } catch (invalidKeyCipher: KeyCipher.InvalidKeyCipher) {
                     throw RuntimeException(invalidKeyCipher)
                 }
+                //_mbwManager.getWalletManager(false).getBip44Account(0).allVisibleAddresses dsihdsohs
 /*
                 val masterDeterministicKey : DeterministicKey = HDKeyDerivation.createMasterPrivateKey(masterSeed.bip32Seed)
                 val bip44LevelDeterministicKey = HDKeyDerivation.deriveChildKey(masterDeterministicKey, ChildNumber(44, true))
@@ -216,7 +218,8 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 val bip39PassphraseList : ArrayList<String> = ArrayList(masterSeed.getBip39WordList())
                 Log.d(TAG, "onMessage, com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW, " +
                         "masterSeed.bip39Passphrase = $bip39PassphraseList, " +
-                        "masterSeed.bip32Seed = ${masterSeed.bip32Seed}")
+                        "masterSeed.bip32Seed = ${Arrays.toString(masterSeed.bip32Seed)}")
+                //HexUtils.toHex(masterSeed.bip32Seed)
                 service.putExtra("PrivateExtendedKeyCoinType", bip39PassphraseList)
                 service.putExtra("creationTimeSeconds", 1479081600L) //TODO Change value after test. Nelson
                 CommunicationManager.getInstance(context)
