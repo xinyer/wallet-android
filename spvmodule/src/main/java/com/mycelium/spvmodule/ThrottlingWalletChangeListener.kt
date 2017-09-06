@@ -50,6 +50,7 @@ abstract class ThrottlingWalletChangeListener constructor(private val throttleMs
 
             val runnable = Runnable {
                 lastMessageTime.set(System.currentTimeMillis())
+                onChanged(wallet)
             }
 
             if (now - lastMessageTime.get() > throttleMs)
@@ -59,30 +60,31 @@ abstract class ThrottlingWalletChangeListener constructor(private val throttleMs
         }
     }
 
-
-    fun removeCallbacks() {
-        handler.removeCallbacksAndMessages(null)
-    }
+    abstract fun onChanged(wallet: Wallet)
 
     override fun onCoinsReceived(wallet: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
-        if (coinsRelevant)
+        if (coinsRelevant) {
             relevant.set(true)
+        }
     }
 
     override fun onCoinsSent(wallet: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
-        if (coinsRelevant)
+        if (coinsRelevant) {
             relevant.set(true)
+        }
     }
 
     override fun onReorganize(wallet: Wallet) {
-        if (reorganizeRelevant)
+        if (reorganizeRelevant) {
             relevant.set(true)
+        }
     }
 
     override fun onTransactionConfidenceChanged(wallet: Wallet, tx: Transaction) {
         //We should probably update info about transaction here. Documentation says we should save the wallet here.
-        if (confidenceRelevant)
+        if (confidenceRelevant) {
             relevant.set(true)
+        }
     }
 
     companion object {

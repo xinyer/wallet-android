@@ -63,7 +63,6 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantLock
 
 class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cursor> {
-
     private var application: SpvModuleApplication? = null
     private var config: Configuration? = null
 
@@ -87,63 +86,26 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
 
     private val walletEventListener = object
         : ThrottlingWalletChangeListener(APPWIDGET_THROTTLE_MS) {
-
-        override fun onWalletChanged(wallet: Wallet) {
-            super.onWalletChanged(wallet)
-            if(BuildConfig.DEBUG) {
-                //Log.d(this.javaClass.canonicalName, "onWalletChanged, ${wallet.lastBlockSeenHeight}")
-            }
+        override fun onChanged(wallet: Wallet) {
             notifyTransactions(wallet.getTransactions(true))
         }
 
         override fun onTransactionConfidenceChanged(wallet: Wallet, tx: Transaction) {
-            super.onTransactionConfidenceChanged(wallet, tx)
             if(tx.confidence?.depthInBlocks?:0 > 7) {
                 // don't update on all transactions individually just because we found a new block
                 return
             }
-            /* We notify transactions in onWalletChanged.
-            if(BuildConfig.DEBUG) {
-                Log.d(this.javaClass.canonicalName, "onTransactionConfidenceChanged, notifyTransaction, "
-                        + "tx = " + tx.hashAsString)
-            }
-            notifyTransaction(tx) */
+            super.onTransactionConfidenceChanged(wallet, tx)
         }
 
         override fun onCoinsReceived(wallet: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
             transactionsReceived.incrementAndGet()
-
-            val bestChainHeight = blockChain!!.bestChainHeight
-
-            //val address = WalletUtils.getWalletAddressOfReceived(tx, wallet)
-            val amount = tx.getValue(wallet)
-            val confidenceType = tx.confidence.confidenceType
-
-            handler.post {
-                val isReceived = amount.signum() > 0
-                val replaying = bestChainHeight < config!!.bestChainHeightEver
-                val isReplayedTx = confidenceType == ConfidenceType.BUILDING && replaying
-                if (isReceived && !isReplayedTx) {
-                    /* We notify transactions in onWalletChanged.
-                    if(BuildConfig.DEBUG) {
-                        Log.d(this.javaClass.canonicalName, "onCoinsReceived, notifyTransaction, "
-                                + "tx = " + tx.hashAsString)
-                    }
-                    notifyTransaction(tx)
-                    */
-                }
-            }
+            super.onCoinsReceived(wallet, tx, prevBalance, newBalance)
         }
 
         override fun onCoinsSent(wallet: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
             transactionsReceived.incrementAndGet()
-            /* We notify transactions in onWalletChanged.
-            if(BuildConfig.DEBUG) {
-                Log.d(this.javaClass.canonicalName, "onCoinsSent, notifyTransaction, "
-                        + "tx = " + tx.hashAsString)
-            }
-            notifyTransaction(tx)
-            */
+            super.onCoinsSent(wallet, tx, prevBalance, newBalance)
         }
     }
 
@@ -499,67 +461,12 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
     private fun notifyTransactions(transactions: Set<Transaction>) {
         semaphore.acquire()
         if (!transactions.isEmpty()) {
-            //Log.d(LOG_TAG, "notifyTransactions, Start processing ${transactions.size} transactions.")
-            /*
-            val txos = HashMap<String, TransactionOutput?>()
-            var i: Int = 0
-            for (transaction: Transaction in transactions) {
-                transaction.inputs.forEach {
-                    txos[it.outpoint.toString()] = it.connectedOutput
-                }
-
-                val contentResolver = contentResolver
-                val values = ContentValues()
-                val height: Int = if (transaction.confidence == ConfidenceType.BUILDING) {
-                    transaction.confidence.appearedAtChainHeight
-                } else {
-                    -1
-                }
-                cursorLoader.isStarted
-                if (cursor == null || cursor!!.count == 0) {
-                    // insert
-                    values.put(BlockchainContract.Transaction.TRANSACTION_ID, transaction.hashAsString)
-                    values.put(BlockchainContract.Transaction.TRANSACTION, transaction.bitcoinSerialize())
-                    values.put(BlockchainContract.Transaction.INCLUDED_IN_BLOCK, height)
-                    reentrantLock.lock()
-                    Log.d(LOG_TAG, "notifyTransactions, inserting transaction ${transaction.hashAsString}.")
-                    contentResolver.insert(BlockchainContract.Transaction.CONTENT_URI(packageName), values)
-                    for (txo in transaction.inputs) {
-                        val txoValues = ContentValues()
-                        txoValues.put(BlockchainContract.TransactionOutput.TXO_ID, txo.outpoint.toString())
-                        txoValues.put(BlockchainContract.TransactionOutput.TXO, txo.scriptBytes)
-                        try {
-                            contentResolver.insert(BlockchainContract.TransactionOutput.CONTENT_URI(packageName), txoValues)
-
-                        } catch (e: RuntimeException) {
-                            // HACK: Until we actually make use of ContentProvider and more specifically txos via CP, this will do.
-                            Log.e(LOG_TAG, e.message)
-                        }
-                    }
-                    contentResolver.notifyChange(BlockchainContract.Transaction.CONTENT_URI(packageName), null)
-
-                } else {
-                    // update
-                    values.put(BlockchainContract.Transaction.INCLUDED_IN_BLOCK, height)
-                    contentResolver.update(BlockchainContract.Transaction.CONTENT_URI(packageName), values, "_id=?",
-                            arrayOf(transaction.hashAsString))
-                    contentResolver.notifyChange(BlockchainContract.Transaction.CONTENT_URI(packageName), null)
-                }
-                Log.d(LOG_TAG, "notifyTransactions, processed transaction number $i")
-                i++
-            }
-            */
-            //Log.d(LOG_TAG, "notifyTransactions, finished processing ${transactions.size} transactions.")
             // send the new transaction and the *complete* utxo set of the wallet
             val utxos = SpvModuleApplication.getWallet()!!.unspents.toSet()
-            if (!transactions.isEmpty() || !utxos.isEmpty()) {
-                SpvMessageSender.sendTransactions(CommunicationManager.getInstance(this), transactions, utxos)
-            }
+            SpvMessageSender.sendTransactions(CommunicationManager.getInstance(this), transactions, utxos)
         }
         semaphore.release()
     }
-
-
 
     var peerCount: Int = 0
     private inner class PeerConnectivityListener internal constructor()
