@@ -48,7 +48,7 @@ class SpvMessageSender {
             val intent = Intent()
             intent.action = "com.mycelium.wallet.receivedTransactions"
             intent.putExtra("TRANSACTIONS", transactions)
-            dumpTxos(txos)
+            //dumpTxos(txos)
             intent.putExtra("CONNECTED_OUTPUTS", txos)
             intent.putExtra("UTXOS", utxoHM)
             send(communicationManager, intent, receivingPackage)
@@ -57,7 +57,7 @@ class SpvMessageSender {
         private fun dumpTxos(txos: HashMap<String, ByteArray>) {
             txos.entries.forEach {
                 val hexString = it.value.joinToString(separator = "") { String.format("%02x", it) }
-                Log.d(LOG_TAG, it.key + ": " + hexString)
+                Log.d(LOG_TAG, "dumpTxos, ${it.key} : $hexString")
             }
         }
 
