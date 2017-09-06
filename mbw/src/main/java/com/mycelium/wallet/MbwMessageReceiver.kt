@@ -40,7 +40,9 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
     private val eventBus: Bus = MbwManager.getInstance(context).eventBus
 
     override fun onMessage(callingPackageName: String, intent: Intent) {
-        Log.d(TAG, "onMessage($callingPackageName, $intent)")
+        if(intent.action != "com.mycelium.wallet.blockchainState") {
+            Log.d(TAG, "onMessage($callingPackageName, $intent)")
+        }
         val walletManager = MbwManager.getInstance(context).getWalletManager(false)
         when (intent.action) {
             "com.mycelium.wallet.receivedTransactions" -> {
@@ -219,6 +221,11 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 Log.d(TAG, "onMessage, com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW, " +
                         "masterSeed.bip39Passphrase = $bip39PassphraseList, " +
                         "masterSeed.bip32Seed = ${Arrays.toString(masterSeed.bip32Seed)}")
+
+                for (address in _mbwManager.getWalletManager(false).addresses) {
+                    Log.d(TAG, "onMessage, com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW, " +
+                            "address = ${address.toString()}")
+                }
                 //HexUtils.toHex(masterSeed.bip32Seed)
                 service.putExtra("PrivateExtendedKeyCoinType", bip39PassphraseList)
                 service.putExtra("creationTimeSeconds", 1479081600L) //TODO Change value after test. Nelson

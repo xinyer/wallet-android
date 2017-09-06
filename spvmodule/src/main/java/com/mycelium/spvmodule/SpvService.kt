@@ -34,6 +34,7 @@ import android.util.Log
 import com.google.common.util.concurrent.SettableFuture
 import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.spvmodule.BlockchainState.Impediment
+import com.mycelium.spvmodule.bitcoinj.Bip44Wallet
 
 
 import com.mycelium.spvmodule.providers.BlockchainContract
@@ -268,17 +269,25 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                         Wallet.fromKeys(
                                 NetworkParameters.fromID(NetworkParameters.ID_TESTNET),
                                 keyList)) */
-                SpvModuleApplication.getApplication().replaceWallet(
-                        Wallet.fromSeed(
-                                NetworkParameters.fromID(NetworkParameters.ID_TESTNET),
-                                DeterministicSeed(extendedKey, null, "", creationTimeSeconds)))
+                val newWallet : Wallet = Bip44Wallet.fromSeed(
+                        NetworkParameters.fromID(NetworkParameters.ID_TESTNET)!!,
+                        DeterministicSeed(extendedKey, null, "", creationTimeSeconds))
+                SpvModuleApplication.getApplication().replaceWallet(newWallet)
 
                 Log.d(LOG_TAG, "initializeBlockchain, " +
                         "seedMnemonicCode = ${SpvModuleApplication.getWallet()!!.keyChainSeed.mnemonicCode.toString()}, " +
                         "Seed = ${Arrays.toString(SpvModuleApplication.getWallet()!!.keyChainSeed.seedBytes)}, " +
-                        "creationTimeSeconds = $creationTimeSeconds")
-                SpvModuleApplication.getWallet()!!.reset()
-                SpvModuleApplication.getWallet()!!.freshReceiveAddress()
+                        "creationTimeSeconds = $creationTimeSeconds, " +
+                        "freshReceiveAddress = ${SpvModuleApplication.getWallet()!!.freshReceiveAddress().toBase58()}")
+                SpvModuleApplication.getWallet()!!.clearTransactions(0)
+                val blockChainFile = File(applicationContext.getDir("blockstore", Context.MODE_PRIVATE),
+                        Constants.Files.BLOCKCHAIN_FILENAME)
+                if (!blockChainFile.exists()) {
+                    blockChainFile.delete()
+                }
+                for (address in SpvModuleApplication.getWallet()!!.watchedAddresses) {
+                    Log.d(LOG_TAG, "initializeBlockchain, address = ${address.toString()}")
+                }
             } else if(BuildConfig.DEBUG) {
                 //Log.d(LOG_TAG, "initializeBlockchain, wallet already has key $key")
             }
@@ -315,7 +324,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                 try {
                     val start = System.currentTimeMillis()
                     val checkpointsInputStream = assets.open(Constants.Files.CHECKPOINTS_FILENAME)
-                    earliestKeyCreationTime = earliestKeyCreationTime//1477958400L //Should be earliestKeyCreationTime, testing something.
+                    //earliestKeyCreationTime = 1477958400L //Should be earliestKeyCreationTime, testing something.
                     CheckpointManager.checkpoint(Constants.NETWORK_PARAMETERS, checkpointsInputStream,
                             blockStore!!, earliestKeyCreationTime)
                     Log.i(LOG_TAG, "checkpoints loaded from '${Constants.Files.CHECKPOINTS_FILENAME}',"
@@ -654,7 +663,12 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                 peerGroup = PeerGroup(Constants.NETWORK_PARAMETERS, blockChain)
                 peerGroup!!.setDownloadTxDependencies(0) // recursive implementation causes StackOverflowError
                 Log.i(LOG_TAG, "check(), wallet.keyChainSeed.mnemonicCode = ${wallet.keyChainSeed.mnemonicCode.toString()}")
+
+                /*
                 peerGroup!!.addWallet(wallet)
+                */
+
+
                 peerGroup!!.setUserAgent(Constants.USER_AGENT, application!!.packageInfo!!.versionName)
                 peerGroup!!.addConnectedEventListener(peerConnectivityListener)
                 peerGroup!!.addDisconnectedEventListener(peerConnectivityListener)
@@ -703,6 +717,9 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                         normalPeerDiscovery.shutdown()
                     }
                 })
+
+                //blockChain!!.addWallet(wallet)
+                //peerGroup!!.addWallet(wallet)
 
                 // start peergroup
                 peerGroup!!.startAsync()
