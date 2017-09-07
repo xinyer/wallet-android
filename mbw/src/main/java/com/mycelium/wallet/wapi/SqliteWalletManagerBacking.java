@@ -577,7 +577,6 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
       private SqliteAccountBacking(UUID id, SQLiteDatabase db) {
          _id = id;
          _db = db;
-         String tableSuffix = uuidToTableSuffix(id);
          utxoTableName = "txo";
          ptxoTableName = "txo";
          txTableName = "tx";
@@ -589,7 +588,7 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          _deleteAllUtxo = db.compileStatement("DELETE FROM " + utxoTableName + " WHERE transactionType = \'utxo\' "
              + "AND accountID = ?");
 
-         _insertOrReplacePtxo = db.compileStatement("INSERT OR REPLACE INTO " + ptxoTableName + " VALUES (?,?,?,?,?,?, ?)");
+         _insertOrReplacePtxo = db.compileStatement("INSERT OR REPLACE INTO " + ptxoTableName + " VALUES (?,?,?,?,?,?,?)");
 
          _insertOrReplaceTx = db.compileStatement("INSERT OR REPLACE INTO " + txTableName + " VALUES (?,?,?,?,?)");
          _deleteTx = db.compileStatement("DELETE FROM " + txTableName + " WHERE id = ?");

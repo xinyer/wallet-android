@@ -26,7 +26,6 @@ import java.util.*
 import java.util.concurrent.Executors
 
 class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
-
     override fun onMessage(callingPackageName: String, intent: Intent) {
         Log.d(LOG_TAG, "onMessage($callingPackageName, $intent)")
         org.bitcoinj.core.Context.propagate(Constants.CONTEXT)
@@ -103,7 +102,7 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
                 }
                 */
                 // send back all known transactions. others will follow as we find them.
-                val transactionSet = wallet!!.getTransactions(false)
+                val transactionSet = wallet.getTransactions(false)
                 val utxos = wallet.unspents.toHashSet()
                 if(!transactionSet.isEmpty() || !utxos.isEmpty()) {
                     SpvMessageSender.sendTransactions(communicationManager, transactionSet, utxos, callingPackageName)
