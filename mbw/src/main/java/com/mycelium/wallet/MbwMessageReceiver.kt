@@ -282,7 +282,9 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
 
             val buffer = ByteBuffer.wrap(bitcoinJConnectedOutputs[id])
             val value = buffer.long
-            val scriptBytes = ByteArray(buffer.capacity() - 8)
+            val length = buffer.get()
+            val scriptBytes = ByteArray(buffer.capacity() - 8 /*bytes per long*/ - 1)
+            assert(scriptBytes.size == 1 * length, { "this is really meant to crash once we start using longer scripts" })
             buffer.get(scriptBytes, 0, scriptBytes.size)
             val transactionOutput = TransactionOutput(value, ScriptOutput.fromScriptBytes(scriptBytes))
             connectedOutputs.put(outPoint, transactionOutput)
