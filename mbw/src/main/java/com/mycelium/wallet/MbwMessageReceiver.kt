@@ -24,7 +24,6 @@ import com.mycelium.wapi.wallet.bip44.Bip44Account
 import com.squareup.otto.Bus
 import org.bitcoinj.core.NetworkParameters
 import org.bitcoinj.core.TransactionConfidence.ConfidenceType.*
-import org.bitcoinj.core.VarInt
 import java.nio.ByteBuffer
 import java.util.*
 import kotlin.collections.ArrayList
@@ -125,13 +124,13 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                                             TransactionEx.fromUnconfirmedTransaction(transactionBytes),
                                             connectedOutputs, utxoSet)
                                     if(account is Bip44Account) {
-                                        createNextAccount(account, walletManager, false);
+                                        createNextAccount(account, walletManager, false)
                                     }
                                 }
                                 else -> {
                                     val txBJ = org.bitcoinj.core.Transaction(networkBJ, transactionBytes)
                                     val txid = Sha256Hash.fromString(txBJ.hash.toString())
-                                    txBJ.updateTime = Date(updateAtTime);
+                                    txBJ.updateTime = Date(updateAtTime)
                                     val time = (txBJ.updateTime.time / 1000L).toInt()
                                     val tEx = TransactionEx(txid, blockHeight, time, transactionBytes)
                                     //Log.d(TAG, "com.mycelium.wallet.receivedTransactions, onMessage:"
@@ -145,7 +144,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
 
                                     // But before that we might need to create the next account if it does not exist.
                                     if(account is Bip44Account) {
-                                        createNextAccount(account, walletManager, false);
+                                        createNextAccount(account, walletManager, false)
                                     }
                                 }
                             }
@@ -162,20 +161,13 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
             "com.mycelium.wallet.blockchainState" -> {
                 val bestChainDate = intent.getLongExtra("best_chain_date", 0L)
                 val bestChainHeight = intent.getIntExtra("best_chain_height", 0)
-                val replaying = intent.getBooleanExtra("replaying", true)
-                val impediments = intent.getStringArrayExtra("impediment")
-                /* Log.d(TAG, """
-                Blockchain state is
-                Best date:   ${Date(bestChainDate)}
-                Best height: $bestChainHeight
-                Replaying:   ${if (replaying) "yes" else "no"}
-                Impediments: [${TextUtils.join(",", impediments)}]
-                """.trimIndent()) */
+                // val replaying = intent.getBooleanExtra("replaying", true)
+                // val impediments = intent.getStringArrayExtra("impediment")
                 walletManager.activeAccounts
                         .filterIsInstance<AbstractAccount>()
                         .forEach { it.blockChainHeight = bestChainHeight }
                 // Defines a Handler object that's attached to the UI thread
-                val runnable : Runnable = Runnable {
+                val runnable = Runnable {
                     eventBus.post(SpvSyncChanged(Date(bestChainDate), bestChainHeight.toLong())) }
                 Handler(Looper.getMainLooper()).post(runnable)
 
@@ -206,18 +198,18 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 }
                 val byteArrayToTransmitToSPVModule = cointypeLevelDeterministicKey.serializePrivate(networkParameters)
 */
-                val flavor = if (_mbwManager.getNetwork().isTestnet()) ".test" else ""
+                val flavor = if (_mbwManager.network.isTestnet) ".test" else ""
                 val service = Intent()
                 //TODO: harmonize names and capitalization. monitor addresses?
                 service.action = "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToSPV"
-                val bip39PassphraseList : ArrayList<String> = ArrayList(masterSeed.getBip39WordList())
+                val bip39PassphraseList : ArrayList<String> = ArrayList(masterSeed.bip39WordList)
                 Log.d(TAG, "onMessage, com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW, " +
                         "masterSeed.bip39Passphrase = $bip39PassphraseList, " +
                         "masterSeed.bip32Seed = ${Arrays.toString(masterSeed.bip32Seed)}")
 
                 for (address in _mbwManager.getWalletManager(false).addresses) {
                     Log.d(TAG, "onMessage, com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW, " +
-                            "address = ${address.toString()}")
+                            "address = $address")
                 }
                 //HexUtils.toHex(masterSeed.bip32Seed)
                 service.putExtra("PrivateExtendedKeyCoinType", bip39PassphraseList)
@@ -237,7 +229,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 && !walletManager.doesBip44AccountExists(account.accountIndex + 1)) {
             val newAccountUUID = walletManager.createArchivedGapFiller(AesKeyCipher.defaultKeyCipher(),
                     account.accountIndex + 1, archived)
-            MbwManager.getInstance(context).getMetadataStorage()
+            MbwManager.getInstance(context).metadataStorage
                     .storeAccountLabel(newAccountUUID, "Account " + account.accountIndex + 1)
             walletManager.startSynchronization()
         }
@@ -250,11 +242,10 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
         builder.setSmallIcon(R.drawable.holo_dark_ic_action_new_usd_account)
         builder.setContentTitle(context.getString(R.string.app_name))
         var contentText = context.getString(R.string.receiving, satoshisReceived.toString() + "sat")
-        val accountString: String
-        if (affectedAccounts.size > 1) {
-            accountString = "various accounts"
+        val accountString: String = if (affectedAccounts.size > 1) {
+            "various accounts"
         } else {
-            accountString = mds.getLabelByAccount(affectedAccounts.toList()[0].id)
+            mds.getLabelByAccount(affectedAccounts.toList()[0].id)
         }
         contentText += " To $accountString"
         builder.setContentText(contentText)

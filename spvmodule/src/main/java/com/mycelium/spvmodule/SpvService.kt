@@ -24,7 +24,6 @@ import android.content.Context
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
 import android.database.Cursor
 import android.net.ConnectivityManager
-import android.os.Binder
 import android.os.Handler
 import android.os.PowerManager
 import android.os.PowerManager.WakeLock
@@ -39,7 +38,6 @@ import com.mycelium.spvmodule.bitcoinj.Bip44Wallet
 
 import com.mycelium.spvmodule.providers.BlockchainContract
 import org.bitcoinj.core.*
-import org.bitcoinj.core.TransactionConfidence.ConfidenceType
 import org.bitcoinj.core.listeners.PeerConnectedEventListener
 import org.bitcoinj.core.listeners.PeerDataEventListener
 import org.bitcoinj.core.listeners.PeerDisconnectedEventListener
@@ -167,14 +165,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         }
     }
 
-    private val mBinder = object : Binder() {
-        val service: SpvService
-            get() = this@SpvService
-    }
-
     private val LOADER_ID_NETWORK: Int = 0
-
-
 
     private val future = SettableFuture.create<Long>()
     private var reentrantLock = ReentrantLock(true)
@@ -236,11 +227,11 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                     initializeBlockchain(null, 0)
                 }
             }
-            broadcastBlockchainState();
+            broadcastBlockchainState()
             future.get()
         } else {
             Log.w(LOG_TAG, "service restart, although it was started as non-sticky")
-            broadcastBlockchainState();
+            broadcastBlockchainState()
         }
     }
 
@@ -287,7 +278,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                     blockChainFile.delete()
                 }
                 for (address in SpvModuleApplication.getWallet()!!.watchedAddresses) {
-                    Log.d(LOG_TAG, "initializeBlockchain, address = ${address.toString()}")
+                    Log.d(LOG_TAG, "initializeBlockchain, address = $address")
                 }
             } else if(BuildConfig.DEBUG) {
                 //Log.d(LOG_TAG, "initializeBlockchain, wallet already has key $key")
@@ -368,9 +359,9 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
 
         // Stop the cursor loader
         if (cursorLoader != null) {
-            cursorLoader!!.unregisterListener(this);
-            cursorLoader!!.cancelLoad();
-            cursorLoader!!.stopLoading();
+            cursorLoader!!.unregisterListener(this)
+            cursorLoader!!.cancelLoad()
+            cursorLoader!!.stopLoading()
         }
         cursor?.close()
 
@@ -574,9 +565,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
          * Note that this will never be called if registered with any executor other than
          * [org.bitcoinj.utils.Threading.SAME_THREAD]
          */
-        override fun onPreMessageReceived(peer: Peer?, m: Message?): Message {
-            return m!!
-        }
+        override fun onPreMessageReceived(peer: Peer?, m: Message?): Message = m!!
 
         /**
          *
@@ -587,9 +576,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
          * Note that this will never be called if registered with any executor other than
          * [org.bitcoinj.utils.Threading.SAME_THREAD]
          */
-        override fun getData(peer: Peer?, m: GetDataMessage?): MutableList<Message>? {
-            return null
-        }
+        override fun getData(peer: Peer?, m: GetDataMessage?): MutableList<Message>? = null
 
         private val lastMessageTime = AtomicLong(0)
 
@@ -620,25 +607,29 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         override fun onReceive(context: Context, intent: Intent) {
             val action = intent.action
 
-            if (ConnectivityManager.CONNECTIVITY_ACTION == action) {
-                val hasConnectivity = !intent.getBooleanExtra(ConnectivityManager.EXTRA_NO_CONNECTIVITY, false)
-                Log.i(LOG_TAG, "network is " + if (hasConnectivity) "up" else "down")
+            when (action) {
+                ConnectivityManager.CONNECTIVITY_ACTION -> {
+                    val hasConnectivity = !intent.getBooleanExtra(ConnectivityManager.EXTRA_NO_CONNECTIVITY, false)
+                    Log.i(LOG_TAG, "network is " + if (hasConnectivity) "up" else "down")
 
-                if (hasConnectivity)
-                    impediments.remove(Impediment.NETWORK)
-                else
-                    impediments.add(Impediment.NETWORK)
-                check()
-            } else if (Intent.ACTION_DEVICE_STORAGE_LOW == action) {
-                Log.i(LOG_TAG, "device storage low")
+                    if (hasConnectivity)
+                        impediments.remove(Impediment.NETWORK)
+                    else
+                        impediments.add(Impediment.NETWORK)
+                    check()
+                }
+                Intent.ACTION_DEVICE_STORAGE_LOW -> {
+                    Log.i(LOG_TAG, "device storage low")
 
-                impediments.add(Impediment.STORAGE)
-                check()
-            } else if (Intent.ACTION_DEVICE_STORAGE_OK == action) {
-                Log.i(LOG_TAG, "device storage ok")
+                    impediments.add(Impediment.STORAGE)
+                    check()
+                }
+                Intent.ACTION_DEVICE_STORAGE_OK -> {
+                    Log.i(LOG_TAG, "device storage ok")
 
-                impediments.remove(Impediment.STORAGE)
-                check()
+                    impediments.remove(Impediment.STORAGE)
+                    check()
+                }
             }
         }
 
@@ -740,14 +731,12 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
     }
 
     private class ActivityHistoryEntry(val numTransactionsReceived: Int, val numBlocksDownloaded: Int) {
-        override fun toString(): String {
-            return "$numTransactionsReceived / $numBlocksDownloaded"
-        }
+        override fun toString(): String = "$numTransactionsReceived / $numBlocksDownloaded"
     }
 
 
 
-    val blockchainState: BlockchainState
+    private val blockchainState: BlockchainState
         get() {
             val chainHead = blockChain!!.chainHead
             val bestChainDate = chainHead.header.time
@@ -756,35 +745,6 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
 
             return BlockchainState(bestChainDate, bestChainHeight, replaying, impediments)
         }
-
-    val connectedPeers: List<Peer>?
-        get() {
-            if (peerGroup != null)
-                return peerGroup!!.connectedPeers
-            else
-                return null
-        }
-
-    fun getRecentBlocks(maxBlocks: Int): List<StoredBlock> {
-        val blocks = ArrayList<StoredBlock>(maxBlocks)
-
-        try {
-            var block: StoredBlock? = blockChain!!.chainHead
-
-            while (block != null) {
-                blocks.add(block)
-
-                if (blocks.size >= maxBlocks) {
-                    break
-                }
-
-                block = block.getPrev(blockStore!!)
-            }
-        } catch (ignore: BlockStoreException) {
-        }
-
-        return blocks
-    }
 
     private fun broadcastPeerState(numPeers: Int) {
         val broadcast = Intent(ACTION_PEER_STATE)
@@ -805,11 +765,6 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         securedMulticastIntent.action = "com.mycelium.wallet.blockchainState"
         blockchainState.putExtras(securedMulticastIntent)
         SpvMessageSender.send(CommunicationManager.getInstance(this), securedMulticastIntent)
-    }
-
-    private fun send(receivingPackage: String, intent: Intent) {
-        val communicationManager = CommunicationManager.getInstance(this)
-        communicationManager.send(receivingPackage, intent)
     }
 
     companion object {

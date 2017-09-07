@@ -11,9 +11,7 @@ import android.support.v4.content.LocalBroadcastManager
 import android.text.format.DateUtils
 import android.util.Log
 import android.widget.Toast
-import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.modularizationtools.ModuleMessageReceiver
-import com.mycelium.spvmodule.Constants.Companion.TAG
 
 import org.bitcoinj.core.Transaction
 import org.bitcoinj.core.VerificationException
@@ -34,9 +32,6 @@ import java.io.OutputStream
 import java.util.concurrent.TimeUnit
 
 import org.bitcoinj.core.Context.*
-import org.bitcoinj.crypto.ChildNumber
-import org.bitcoinj.params.TestNet2Params
-import org.bitcoinj.params.TestNet3Params
 import java.util.concurrent.Executors
 
 class SpvModuleApplication : Application(), ModuleMessageReceiver {
