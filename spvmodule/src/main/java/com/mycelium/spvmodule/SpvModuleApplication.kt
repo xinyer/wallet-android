@@ -11,6 +11,13 @@ import android.support.v4.content.LocalBroadcastManager
 import android.text.format.DateUtils
 import android.util.Log
 import android.widget.Toast
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.LoggerContext
+import ch.qos.logback.classic.android.LogcatAppender
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.rolling.RollingFileAppender
+import ch.qos.logback.core.rolling.TimeBasedRollingPolicy
 import com.mycelium.modularizationtools.ModuleMessageReceiver
 
 import org.bitcoinj.core.Transaction
@@ -32,6 +39,8 @@ import java.io.OutputStream
 import java.util.concurrent.TimeUnit
 
 import org.bitcoinj.core.Context.*
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.concurrent.Executors
 
 class SpvModuleApplication : Application(), ModuleMessageReceiver {
@@ -85,6 +94,50 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         afterLoadWallet()
 
         cleanupFiles()
+    }
+
+    private fun initLogging() {
+        val logDir = getDir("log", Context.MODE_PRIVATE)
+        val logFile = File(logDir, "wallet.log")
+
+        val context = LoggerFactory.getILoggerFactory() as LoggerContext
+
+        val filePattern = PatternLayoutEncoder()
+        filePattern.context = context
+        filePattern.pattern = "%d{HH:mm:ss,UTC} [%thread] %logger{0} - %msg%n"
+        filePattern.start()
+
+        val fileAppender = RollingFileAppender<ILoggingEvent>()
+        fileAppender.context = context
+        fileAppender.file = logFile.absolutePath
+
+        val rollingPolicy = TimeBasedRollingPolicy<ILoggingEvent>()
+        rollingPolicy.context = context
+        rollingPolicy.setParent(fileAppender)
+        rollingPolicy.fileNamePattern = logDir.absolutePath + "/wallet.%d{yyyy-MM-dd,UTC}.log.gz"
+        rollingPolicy.maxHistory = 7
+        rollingPolicy.start()
+
+        val logcatTagPattern = PatternLayoutEncoder()
+        logcatTagPattern.setContext(context)
+        logcatTagPattern.pattern = "%logger{0}"
+        logcatTagPattern.start()
+
+        val logcatPattern = PatternLayoutEncoder()
+        logcatPattern.setContext(context)
+        logcatPattern.pattern = "[%thread] %msg%n"
+        logcatPattern.start()
+
+        val logcatAppender = LogcatAppender()
+        logcatAppender.context = context
+        logcatAppender.tagEncoder = logcatTagPattern
+        logcatAppender.encoder = logcatPattern
+        logcatAppender.start()
+
+        val log = context.getLogger(Logger.ROOT_LOGGER_NAME)
+        log.addAppender(fileAppender)
+        log.addAppender(logcatAppender)
+        log.level = Level.INFO
     }
 
     private fun afterLoadWallet() {
