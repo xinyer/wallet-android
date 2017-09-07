@@ -18,6 +18,7 @@ package com.mycelium.wapi.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.mrd.bitlib.model.OutPoint;
+import com.mrd.bitlib.util.HexUtils;
 
 import java.io.Serializable;
 
@@ -47,10 +48,8 @@ public class TransactionOutputEx implements Serializable {
 
    @Override
    public String toString() {
-      StringBuilder sb = new StringBuilder();
-      sb.append("outPoint:").append(outPoint).append(" height:").append(height).append(" value: ").append(value)
-            .append(" isCoinbase: ").append(isCoinBase).append(" scriptLength: ").append(script.length);
-      return sb.toString();
+      return "outPoint:" + outPoint + " height:" + height + " value: " + value +
+              " isCoinbase: " + isCoinBase + " script: " + HexUtils.toHex(script);
    }
 
    @Override
