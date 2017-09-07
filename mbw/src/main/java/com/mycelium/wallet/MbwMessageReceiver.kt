@@ -72,7 +72,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 val networkBJ = org.bitcoinj.core.NetworkParameters.fromPmtProtocolID(protocolId)
                 var satoshisReceived = 0L
                 val mds = MbwManager.getInstance(context).metadataStorage
-                val affectedAccounts = ArrayList<WalletAccount>()
+                val affectedAccounts = HashSet<WalletAccount>()
                 try {
                     for (confTransactionBytes in transactionsBytes) {
                         val transactionBytesBuffer = ByteBuffer.wrap(confTransactionBytes)
@@ -251,7 +251,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
     }
 
     private fun notifySatoshisReceived(satoshisReceived: Long, mds: MetadataStorage,
-                                       affectedAccounts: List<WalletAccount>) {
+                                       affectedAccounts: Collection<WalletAccount>) {
         val builder = Notification.Builder(context)
         // TODO: bitcoin icon
         builder.setSmallIcon(R.drawable.holo_dark_ic_action_new_usd_account)
@@ -261,7 +261,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
         if (affectedAccounts.size > 1) {
             accountString = "various accounts"
         } else {
-            accountString = mds.getLabelByAccount(affectedAccounts[0].id)
+            accountString = mds.getLabelByAccount(affectedAccounts.toList()[0].id)
         }
         contentText += " To $accountString"
         builder.setContentText(contentText)
