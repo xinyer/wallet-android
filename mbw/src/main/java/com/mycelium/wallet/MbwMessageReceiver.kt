@@ -8,14 +8,10 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
-import android.os.Message
-import android.text.TextUtils
 import android.util.Log
 import com.mrd.bitlib.crypto.Bip39
 import com.mrd.bitlib.model.*
 import com.mrd.bitlib.model.NetworkParameters.NetworkType.*
-import com.mrd.bitlib.model.hdpath.HdKeyPath
-import com.mrd.bitlib.util.HexUtils
 import com.mrd.bitlib.util.Sha256Hash
 import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.modularizationtools.ModuleMessageReceiver
@@ -28,10 +24,7 @@ import com.mycelium.wapi.wallet.bip44.Bip44Account
 import com.squareup.otto.Bus
 import org.bitcoinj.core.NetworkParameters
 import org.bitcoinj.core.TransactionConfidence.ConfidenceType.*
-import org.bitcoinj.core.TransactionOutPoint
-import org.bitcoinj.crypto.ChildNumber
-import org.bitcoinj.crypto.DeterministicKey
-import org.bitcoinj.crypto.HDKeyDerivation
+import org.bitcoinj.core.VarInt
 import java.nio.ByteBuffer
 import java.util.*
 import kotlin.collections.ArrayList
@@ -46,9 +39,17 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
         val walletManager = MbwManager.getInstance(context).getWalletManager(false)
         when (intent.action) {
             "com.mycelium.wallet.receivedTransactions" -> {
+                val network = MbwEnvironment.verifyEnvironment(context).network
+                val protocolId = when (network.networkType) {
+                    PRODNET -> "main"
+                    REGTEST -> "regtest"
+                    TESTNET -> "test"
+                    else -> ""
+                }
+                val networkBJ = org.bitcoinj.core.NetworkParameters.fromPmtProtocolID(protocolId)
                 val transactionsBytes = intent.getSerializableExtra("TRANSACTIONS") as Array<ByteArray>
                 val fundingOutputs = bitcoinJ2Bitlib(intent.getSerializableExtra("CONNECTED_OUTPUTS")
-                        as Map<String, ByteArray>) //Funding outputs
+                        as Map<String, ByteArray>, networkBJ!!) //Funding outputs
 
                 // Unspent Transaction Output (UTXO)
                 val utxoSet = (intent.getSerializableExtra("UTXOS") as Map<String, ByteArray>).keys.map {
@@ -62,14 +63,6 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                     Log.d(TAG, "onMessage: received an empty transaction notification")
                     return
                 }
-                val network = MbwEnvironment.verifyEnvironment(context).network
-                val protocolId = when (network.networkType) {
-                    PRODNET -> "main"
-                    REGTEST -> "regtest"
-                    TESTNET -> "test"
-                    else -> ""
-                }
-                val networkBJ = org.bitcoinj.core.NetworkParameters.fromPmtProtocolID(protocolId)
                 var satoshisReceived = 0L
                 val mds = MbwManager.getInstance(context).metadataStorage
                 val affectedAccounts = HashSet<WalletAccount>()
@@ -272,20 +265,16 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
         nm.notify(TRANSACTION_NOTIFICATION_ID, builder.build())
     }
 
-    private fun bitcoinJ2Bitlib(bitcoinJConnectedOutputs: Map<String, ByteArray>): Map<OutPoint, TransactionOutput> {
+    private fun bitcoinJ2Bitlib(bitcoinJConnectedOutputs: Map<String, ByteArray>, networkBJ: NetworkParameters): Map<OutPoint, TransactionOutput> {
         val connectedOutputs = HashMap<OutPoint, TransactionOutput>(bitcoinJConnectedOutputs.size)
         for (id in bitcoinJConnectedOutputs.keys) {
             val parts = id.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
             val hash = Sha256Hash.fromString(parts[0])
             val index = Integer.parseInt(parts[1])
             val outPoint = OutPoint(hash, index)
-
-            val buffer = ByteBuffer.wrap(bitcoinJConnectedOutputs[id])
-            val value = buffer.long
-            val length = buffer.get()
-            val scriptBytes = ByteArray(buffer.capacity() - 8 /*bytes per long*/ - 1)
-            assert(scriptBytes.size == 1 * length, { "this is really meant to crash once we start using longer scripts" })
-            buffer.get(scriptBytes, 0, scriptBytes.size)
+            val bitcoinJTransactionOutput = org.bitcoinj.core.TransactionOutput(networkBJ, null, bitcoinJConnectedOutputs[id], 0)
+            val value = bitcoinJTransactionOutput.value.longValue()
+            val scriptBytes = bitcoinJTransactionOutput.scriptBytes
             val transactionOutput = TransactionOutput(value, ScriptOutput.fromScriptBytes(scriptBytes))
             connectedOutputs.put(outPoint, transactionOutput)
         }
