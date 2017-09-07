@@ -290,6 +290,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         }
     }
 
+    @Synchronized
     fun resetBlockchainWithExtendedKey(extendedKey: ArrayList<String>, creationTimeSeconds : Long) {
         Log.d(LOG_TAG, "resetBlockchainWithExtendedKey, extend key = $extendedKey, creationTimeSeconds = $creationTimeSeconds")
         // implicitly stops blockchain service
