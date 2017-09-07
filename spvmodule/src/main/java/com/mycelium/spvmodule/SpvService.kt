@@ -244,6 +244,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         }
     }
 
+    @Synchronized // TODO: why are we getting here twice in parallel???
     fun initializeBlockchain(extendedKey: ArrayList<String>?, creationTimeSeconds : Long) {
         serviceCreatedAtInMs = System.currentTimeMillis()
         Log.d(LOG_TAG, "initializeBlockchain() with extended key ${extendedKey.toString()}")
@@ -318,7 +319,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
             blockStore = SPVBlockStore(Constants.NETWORK_PARAMETERS, blockChainFile!!)
             blockStore!!.chainHead // detect corruptions as early as possible
 
-            var earliestKeyCreationTime = wallet!!.earliestKeyCreationTime
+            val earliestKeyCreationTime = wallet!!.earliestKeyCreationTime
 
             if (!blockChainFileExists && earliestKeyCreationTime > 0) {
                 try {
@@ -361,8 +362,6 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
 
         registerReceiver(tickReceiver, IntentFilter(Intent.ACTION_TIME_TICK))
     }
-
-
 
     override fun onDestroy() {
         Log.d(LOG_TAG, ".onDestroy()")
