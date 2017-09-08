@@ -306,7 +306,10 @@ public class NoticeFragment extends Fragment {
 
    @Subscribe
    public void balanceChanged(BalanceChanged event) {
-      recheckNotice();
+      WalletAccount selectedAccount = _mbwManager.getSelectedAccount();
+      if(selectedAccount!= null && event.account.equals(selectedAccount.getId())) {
+         recheckNotice();
+      }
    }
 
    @Subscribe

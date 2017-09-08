@@ -72,9 +72,9 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
    protected Balance _cachedBalance;
 
    private EventHandler _eventHandler;
-   private AccountBacking _backing;
+   private final AccountBacking _backing;
 
-   private final Set<AddressesChangeListener> addressesChangeListeners = new HashSet<AddressesChangeListener>();
+   private final Set<AddressesChangeListener> addressesChangeListeners = new HashSet<>();
 
    protected AbstractAccount(AccountBacking backing, NetworkParameters network, Wapi wapi) {
       _network = network;
@@ -148,7 +148,7 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
     * addresses
     *
     * @param output the output to investigate
-    * @return true iff the putput was sent from one of our own addresses
+    * @return true iff the output was sent from one of our own addresses
     */
    protected boolean isMine(TransactionOutputEx output) {
       ScriptOutput script = ScriptOutput.fromScriptBytes(output.script);
@@ -283,7 +283,7 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
       }
 
       // if we removed some UTXO because of an sync, it means that there are transactions
-      // we dont yet know about. Run a discover for all addresses related to the UTXOs we removed
+      // we don't yet know about. Run a discover for all addresses related to the UTXOs we removed
       if (addressesToDiscover.size() > 0) {
          try {
             doDiscoveryForAddresses(Lists.newArrayList(addressesToDiscover));
@@ -293,7 +293,6 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
       return newUtxos;
    }
 
-   @SuppressWarnings("NewApi")
    protected WapiResponse<GetTransactionsResponse> getTransactionsBatched(Collection<Sha256Hash> txids) throws WapiException {
       if (txids.size() > MAX_TRANSACTIONS_TO_HANDLE_SIMULTANEOUSLY) {
          final ArrayDeque<Sha256Hash> queue = new ArrayDeque<>(txids);
@@ -334,7 +333,6 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
    }
 
    @Override
-   @edu.umd.cs.findbugs.annotations.SuppressFBWarnings("WMI_WRONG_MAP_ITERATOR")
    public void notifyNewTransactionDiscovered(TransactionEx transactionEx,
                                               Map<OutPoint, TransactionOutput> connectedOutputs,
                                               Set<OutPoint> utxoSet) {
@@ -345,13 +343,17 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
          _backing.putParentTransactionOutput(txoEx);
       }
       try {
-         TransactionOutput[] outputs = Transaction.fromBytes(transactionEx.binary).outputs;
-        _backing.deleteAllUnspentOutput();
+         Transaction transaction = Transaction.fromBytes(transactionEx.binary);
+         TransactionInput[] inputs = transaction.inputs;
+         for(TransactionInput input : inputs) {
+            _backing.deleteUnspentOutput(input.outPoint);
+         }
+         TransactionOutput[] outputs = transaction.outputs;
          for(int i=0; i < outputs.length; i++) {
             TransactionOutput output = outputs[i];
             OutPoint outPoint = new OutPoint(transactionEx.txid, i);
             if(utxoSet.contains(outPoint)) {
-               _backing.putUnspentOutput(new TransactionOutputEx(outPoint, 0, output.value,
+               _backing.putUnspentOutput(new TransactionOutputEx(outPoint, -1, output.value,
                    output.script.getScriptBytes(), output.script.isCoinBase()));
             }
          }
@@ -1010,7 +1012,7 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
             utxosToSpend.add(utxo);
             utxos.remove(utxo);
             //makeText(this, "Found a UTXO", LENGTH_SHORT).show();
-            // we ideally use just one UTXO even if more than one is owers. This leaves room to add further children at the same depth to pay for parents
+            // we ideally use just one UTXO even if more than one is ours. This leaves room to add further children at the same depth to pay for parents
             break;
          }
       }
@@ -1294,7 +1296,7 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
    }
 
    // local cache for received risk assessments for unconfirmed transactions - does not get persisted in the db
-   private HashMap<Sha256Hash, ConfirmationRiskProfileLocal> riskAssessmentForUnconfirmedTx = new HashMap<>();
+   private final HashMap<Sha256Hash, ConfirmationRiskProfileLocal> riskAssessmentForUnconfirmedTx = new HashMap<>();
 
    protected abstract boolean isSynchronizing();
 
@@ -1316,7 +1318,7 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
 
    public class PrivateKeyRing extends PublicKeyRing implements IPublicKeyRing, IPrivateKeyRing {
 
-      KeyCipher _cipher;
+      final KeyCipher _cipher;
 
       public PrivateKeyRing(KeyCipher cipher) {
          _cipher = cipher;
@@ -1476,8 +1478,8 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
       return CurrencyValue.BTC;
    }
 
-   public boolean storeAddressOldestActivityTime(Address address, long unixTimeinSecs) {
-      return _backing.storeAddressOldestActivityTime(address, unixTimeinSecs);
+   public boolean storeAddressOldestActivityTime(Address address, long unixTimeInSecs) {
+      return _backing.storeAddressOldestActivityTime(address, unixTimeInSecs);
    }
 
    public long getOldestActivityTimeByAddress(Address address) {

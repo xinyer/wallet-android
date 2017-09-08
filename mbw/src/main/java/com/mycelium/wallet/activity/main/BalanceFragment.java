@@ -278,12 +278,14 @@ public class BalanceFragment extends Fragment {
     */
    @Subscribe
    public void balanceChanged(BalanceChanged event) {
-      updateUi();
+      WalletAccount selectedAccount = _mbwManager.getSelectedAccount();
+      if(selectedAccount != null && event.account.equals(selectedAccount.getId())) {
+           updateUi();
+       }
    }
 
    @Subscribe
    public void accountChanged(AccountChanged event) {
       updateUi();
    }
-
 }
