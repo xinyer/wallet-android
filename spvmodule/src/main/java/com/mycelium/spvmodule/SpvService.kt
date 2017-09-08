@@ -30,10 +30,10 @@ import android.os.PowerManager.WakeLock
 import android.support.v4.content.LocalBroadcastManager
 import android.text.format.DateUtils
 import android.util.Log
+import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.SettableFuture
 import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.spvmodule.BlockchainState.Impediment
-import com.mycelium.spvmodule.bitcoinj.Bip44Wallet
 
 
 import com.mycelium.spvmodule.providers.BlockchainContract
@@ -41,6 +41,7 @@ import org.bitcoinj.core.*
 import org.bitcoinj.core.listeners.PeerConnectedEventListener
 import org.bitcoinj.core.listeners.PeerDataEventListener
 import org.bitcoinj.core.listeners.PeerDisconnectedEventListener
+import org.bitcoinj.crypto.ChildNumber
 import org.bitcoinj.net.discovery.MultiplexingDiscovery
 import org.bitcoinj.net.discovery.PeerDiscovery
 import org.bitcoinj.net.discovery.PeerDiscoveryException
@@ -261,9 +262,12 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                         Wallet.fromKeys(
                                 NetworkParameters.fromID(NetworkParameters.ID_TESTNET),
                                 keyList)) */
-                val newWallet : Wallet = Bip44Wallet.fromSeed(
+
+                val newWallet : Wallet = Wallet.fromSeed(
                         NetworkParameters.fromID(NetworkParameters.ID_TESTNET)!!,
-                        DeterministicSeed(extendedKey, null, "", creationTimeSeconds))
+                        DeterministicSeed(extendedKey, null, "", creationTimeSeconds),
+                        ImmutableList.of(ChildNumber(44, true), ChildNumber(1, true), ChildNumber(0, true)))
+
                 SpvModuleApplication.getApplication().replaceWallet(newWallet)
 
                 Log.d(LOG_TAG, "initializeBlockchain, " +
