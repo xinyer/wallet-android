@@ -1,7 +1,7 @@
 apply from: 'tools.gradle'
 
 buildscript {
-    ext.kotlin_version = '1.1.4-3'
+    ext.kotlin_version = '1.1.1'
     apply from: 'ext_settings.gradle'
     repositories {
         jcenter()
