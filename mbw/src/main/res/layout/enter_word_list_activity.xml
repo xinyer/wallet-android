@@ -77,6 +77,13 @@
                     android:enabled="false"
                     android:text="@string/delete_last_entered_word"/>
 
+            <Button
+                android:id="@+id/btnDebugUseDummy"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Use Dummy Wallet"
+                android:visibility="gone" />
+
 
         </LinearLayout>
 

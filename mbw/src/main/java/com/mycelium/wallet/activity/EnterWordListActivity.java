@@ -40,12 +40,14 @@ import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.*;
 import com.mrd.bitlib.crypto.Bip39;
+import com.mycelium.wallet.BuildConfig;
 import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.R;
 import com.mycelium.wallet.event.SeedFromWordsCreated;
@@ -56,6 +58,7 @@ import com.squareup.otto.Bus;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -65,7 +68,6 @@ public class EnterWordListActivity extends ActionBarActivity implements WordAuto
    public static final String PASSWORD = "password";
 
    private boolean _seedOnly;
-
 
    public static void callMe(Activity activity, int requestCode) {
       Intent intent = new Intent(activity, EnterWordListActivity.class);
@@ -107,6 +109,20 @@ public class EnterWordListActivity extends ActionBarActivity implements WordAuto
       keyboard.setListener(_wordAutoCompleter);
       currentWordNum = 1;
       _seedOnly = getIntent().getBooleanExtra(ONLY_SEED, false);
+      if(BuildConfig.DEBUG) {
+         View btnDebugUseDummy = findViewById(R.id.btnDebugUseDummy);
+         btnDebugUseDummy.setVisibility(View.VISIBLE);
+         btnDebugUseDummy.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+               enteredWords.clear();
+               Collections.addAll(enteredWords, "erode bridge organ you often teach desert thrive spike pottery sight sport".split(" "));
+               enterWordInfo.setText(enteredWords.toString());
+               checkIfDone();
+               askForPassphrase();
+            }
+         });
+      }
 
       if (savedInstanceState == null) {
          //only ask if we are not recreating the activity, because of rotation for example
