@@ -4,8 +4,9 @@ apply plugin: 'kotlin-android'
 def localMavenRepo = 'file://' + new File(System.getProperty('user.home'), '.m2/repository').absolutePath
 
 repositories {
+    mavenLocal()
+   //maven { url localMavenRepo }
     jcenter()
-    maven { url localMavenRepo }
 }
 
 android {

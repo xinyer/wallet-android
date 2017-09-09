@@ -1,6 +1,7 @@
 apply plugin: 'java'
 
 repositories {
+    mavenLocal()
     jcenter()
 }
 
@@ -16,7 +17,7 @@ dependencies {
     compile 'com.madgag.spongycastle:pkix:1.51.0.0'
     compile 'com.madgag.spongycastle:pg:1.51.0.0'
 
-    compile 'org.bitcoinj:bitcoinj-core:0.14.5'
+    compile 'org.bitcoinj:bitcoinj-core:0.15-SNAPSHOT'
 
     testCompile "junit:junit:$junitVersion"
 }
