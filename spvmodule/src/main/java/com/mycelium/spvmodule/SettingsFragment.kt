@@ -17,7 +17,7 @@
 
 package com.mycelium.spvmodule
 
-import android.app.Activity
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
@@ -28,7 +28,6 @@ import android.preference.Preference
 import android.preference.Preference.OnPreferenceChangeListener
 import android.preference.PreferenceFragment
 import android.util.Log
-import com.mycelium.spvmodule.Constants.Companion.TAG
 
 import java.net.InetAddress
 
@@ -44,12 +43,12 @@ class SettingsFragment : PreferenceFragment(), OnPreferenceChangeListener {
     private var trustedPeerPreference: Preference? = null
     private var trustedPeerOnlyPreference: Preference? = null
 
-    override fun onAttach(activity: Activity) {
-        super.onAttach(activity)
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
 
-        this.application = activity.application as SpvModuleApplication
+        this.application = SpvModuleApplication.getApplication()
         this.config = application!!.configuration
-        this.pm = activity.packageManager
+        this.pm = context.packageManager
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

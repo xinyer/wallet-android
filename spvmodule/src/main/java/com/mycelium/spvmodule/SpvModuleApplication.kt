@@ -152,15 +152,13 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     }
 
     private class WalletAutosaveEventListener : WalletFiles.Listener {
-        override fun onBeforeAutoSave(file: File) {
-        }
+        override fun onBeforeAutoSave(file: File) = Unit
 
-        override fun onAfterAutoSave(file: File) {
-            // make wallets world accessible in test mode
-            //if (Constants.TEST) {
-            //   Io.chmod(file, 0777);
-            //}
-        }
+        override fun onAfterAutoSave(file: File) = // make wallets world accessible in test mode
+                //if (Constants.TEST) {
+                //   Io.chmod(file, 0777);
+                //}
+                Unit
     }
 
     private fun loadWalletFromProtobuf() {
@@ -249,13 +247,10 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         }
     }
 
-    fun saveWallet() {
-        try {
-            protobufSerializeWallet(wallet!!)
-        } catch (x: IOException) {
-            throw RuntimeException(x)
-        }
-
+    fun saveWallet() = try {
+        protobufSerializeWallet(wallet!!)
+    } catch (x: IOException) {
+        throw RuntimeException(x)
     }
 
     @Throws(IOException::class)
@@ -384,34 +379,25 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         }
     }
 
-    fun packageInfo(): PackageInfo {
-        return packageInfo!!
-    }
+    fun packageInfo(): PackageInfo = packageInfo!!
 
-    fun httpUserAgent(): String {
-        return httpUserAgent(packageInfo().versionName)
-    }
+    fun httpUserAgent(): String = httpUserAgent(packageInfo().versionName)
 
-    fun maxConnectedPeers(): Int {
-        return if (activityManager!!.memoryClass <= Constants.MEMORY_CLASS_LOWEND) {
-            4
-        } else {
-            6
-        }
-    }
+    fun maxConnectedPeers(): Int =
+            if (activityManager!!.memoryClass <= Constants.MEMORY_CLASS_LOWEND) {
+                4
+            } else {
+                6
+            }
 
     companion object {
         private var INSTANCE: SpvModuleApplication? = null
 
         val ACTION_WALLET_REFERENCE_CHANGED = SpvModuleApplication::class.java.`package`.name + ".wallet_reference_changed"
 
-        fun getApplication(): SpvModuleApplication {
-            return INSTANCE!!
-        }
+        fun getApplication(): SpvModuleApplication = INSTANCE!!
 
-        fun getWallet(): Wallet? {
-            return INSTANCE!!.wallet
-        }
+        fun getWallet(): Wallet? = INSTANCE!!.wallet
 
         fun packageInfoFromContext(context: Context): PackageInfo {
             try {
@@ -452,6 +438,14 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
             // workaround for no inexact set() before KitKat
             val now = System.currentTimeMillis()
             alarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, now + alarmInterval, AlarmManager.INTERVAL_DAY, alarmIntent)
+        }
+
+        fun getMbwModuleName(): String {
+            when (BuildConfig.APPLICATION_ID) {
+                "com.mycelium.spvmodule_testrelease" -> return "com.mycelium.testnetwallet_spore"
+                "com.mycelium.spvmodule.test" -> return "com.mycelium.devwallet_spore"
+                else -> throw RuntimeException("No mbw module defined for BuildConfig " + BuildConfig.APPLICATION_ID)
+            }
         }
     }
 }

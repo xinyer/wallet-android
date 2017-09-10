@@ -13,12 +13,12 @@ if (System.getenv()['MYCELIUM_BUILD_SYSTEM'] == 'server') {
     getLogger().warn('MYCELIUM_BUILD_SYSTEM==server - disabling Android projects ')
 } else {
     include 'myceliummodularizationtools'
-    include 'sporeui'
+    // include 'sporeui'
     include 'spvmodulecontract'
     include 'spvmodule'
     //include 'spvmoduledash'
-    include 'bitcoinaccountmodulecontract'
-    include 'bitcoinaccountmodule'
+    // include 'bitcoinaccountmodulecontract'
+    // include 'bitcoinaccountmodule'
     include 'mbw'
     include 'libs:zxing-android'
     include 'trezor'

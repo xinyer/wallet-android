@@ -125,8 +125,12 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled !project.hasProperty('skipProguard')
-            proguardFile 'mbw.pro'
+            minifyEnabled false
+            // minifyEnabled !project.hasProperty('skipProguard')
+            proguardFiles {
+                getDefaultProguardFile('proguard-android.txt')
+                'mbw.pro'
+            }
             applicationVariants.all { variant ->
                 variant.outputs.each { output ->
                     def file = output.outputFile
@@ -180,7 +184,7 @@ android {
             targetSdkVersion 23
             minSdkVersion 19
 
-            applicationId 'com.mycelium.testnetwallet'
+            applicationId 'com.mycelium.testnetwallet_spore'
             versionName = defaultConfig.versionName + '-TESTNET'
             signingConfig signingConfigs.btctestnet
         }

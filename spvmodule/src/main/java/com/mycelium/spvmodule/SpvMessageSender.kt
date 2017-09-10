@@ -51,7 +51,7 @@ class SpvMessageSender {
             //dumpTxos(txos)
             intent.putExtra("CONNECTED_OUTPUTS", txos)
             intent.putExtra("UTXOS", utxoHM)
-            send(communicationManager, intent, receivingPackage)
+            send(communicationManager, intent)
         }
 
         private fun dumpTxos(txos: HashMap<String, ByteArray>) {
@@ -61,19 +61,8 @@ class SpvMessageSender {
             }
         }
 
-        fun send(communicationManager: CommunicationManager, intent: Intent, receivingPackage: String? = null) {
-            // TODO: This should share the information with whoever is using the package, in a more consumer agnostic way.
-            // CommunicationManager.getInstance(this).getPairedPackages( ;) )
-            if(receivingPackage != null) {
-                communicationManager.send(receivingPackage, intent)
-            } else {
-                if (BuildConfig.APPLICATION_ID.contains(".test")) {
-                    arrayOf("com.mycelium.devwallet_spore", "com.mycelium.testnetwallet")
-                            .forEach {communicationManager.send(it, intent)}
-                } else {
-                    communicationManager.send("com.mycelium.wallet", intent)
-                }
-            }
+        fun send(communicationManager: CommunicationManager, intent: Intent) {
+            communicationManager.send(SpvModuleApplication.getMbwModuleName(), intent)
         }
 
         fun requestPrivateKey(communicationManager: CommunicationManager) {
@@ -82,12 +71,7 @@ class SpvMessageSender {
             }
             val requestPrivateExtendedKeyCoinTypeIntent = Intent()
             requestPrivateExtendedKeyCoinTypeIntent.action = "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW"
-            if (BuildConfig.APPLICATION_ID.contains(".test")) {
-                arrayOf("com.mycelium.devwallet_spore", "com.mycelium.testnetwallet")
-                        .forEach {communicationManager.send(it, requestPrivateExtendedKeyCoinTypeIntent)}
-            } else {
-                communicationManager.send("com.mycelium.wallet", requestPrivateExtendedKeyCoinTypeIntent)
-            }
+            send(communicationManager, requestPrivateExtendedKeyCoinTypeIntent)
         }
     }
 }

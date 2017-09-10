@@ -47,11 +47,11 @@ import com.google.common.base.Preconditions;
 import com.mrd.bitlib.model.Transaction;
 import com.mrd.bitlib.util.Sha256Hash;
 import com.mycelium.modularizationtools.CommunicationManager;
-import com.mycelium.wallet.BuildConfig;
 import com.mycelium.wallet.Constants;
 import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.R;
 import com.mycelium.wallet.Utils;
+import com.mycelium.wallet.WalletApplication;
 import com.mycelium.wallet.event.SyncFailed;
 import com.mycelium.wallet.event.SyncStopped;
 import com.mycelium.wapi.model.TransactionEx;
@@ -125,10 +125,9 @@ public class BroadcastTransactionActivity extends Activity {
             // TODO: 12/1/16 move this distinction to AbstractAccount or so.
             if(_mbwManager.useSpvModule()) {
                Intent intent = new Intent("com.mycelium.wallet.broadcastTransaction");
-               String flavor = _mbwManager.getNetwork().isTestnet() ? ".test" : "";
                intent.putExtra("TX", _transaction.toBytes());
                CommunicationManager communicationManager = CommunicationManager.Companion.getInstance(BroadcastTransactionActivity.this);
-               communicationManager.send("com.mycelium.spvmodule" + flavor, intent);
+               communicationManager.send(WalletApplication.getSpvModuleName(), intent);
                return WalletAccount.BroadcastResult.SUCCESS;
             } else {
                return _account.broadcastTransaction(_transaction);

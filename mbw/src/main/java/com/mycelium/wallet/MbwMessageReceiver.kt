@@ -31,6 +31,7 @@ import kotlin.collections.ArrayList
 class MbwMessageReceiver constructor(private val context: Context) : ModuleMessageReceiver {
     private val eventBus: Bus = MbwManager.getInstance(context).eventBus
 
+    @Suppress("UNCHECKED_CAST")
     override fun onMessage(callingPackageName: String, intent: Intent) {
         if(intent.action != "com.mycelium.wallet.blockchainState") {
             Log.d(TAG, "onMessage($callingPackageName, $intent)")
@@ -198,7 +199,6 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 }
                 val byteArrayToTransmitToSPVModule = cointypeLevelDeterministicKey.serializePrivate(networkParameters)
 */
-                val flavor = if (_mbwManager.network.isTestnet) ".test" else ""
                 val service = Intent()
                 //TODO: harmonize names and capitalization. monitor addresses?
                 service.action = "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToSPV"
@@ -213,9 +213,8 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 }
                 //HexUtils.toHex(masterSeed.bip32Seed)
                 service.putExtra("PrivateExtendedKeyCoinType", bip39PassphraseList)
-                service.putExtra("creationTimeSeconds", 1479081600L) //TODO Change value after test. Nelson
-                CommunicationManager.getInstance(context)
-                        .send("com.mycelium.spvmodule" + flavor, service)
+                service.putExtra("creationTimeSeconds", 1504664986L) //TODO Change value after test. Nelson
+                CommunicationManager.getInstance(context).send(WalletApplication.getSpvModuleName(), service)
 
             }
             null -> Log.w(TAG, "onMessage failed. No action defined.")

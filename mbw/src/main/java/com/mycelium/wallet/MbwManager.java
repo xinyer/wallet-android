@@ -295,8 +295,7 @@ public class MbwManager implements WalletManager.TransactionFetcher {
     */
    private void checkAndRePairModules() {
       CommunicationManager communicationManager = CommunicationManager.Companion.getInstance(_applicationContext);
-      String flavor = _environment.getNetwork().isTestnet() ? ".test" : "";
-      _useSpvModule = communicationManager.requestPair("com.mycelium.spvmodule" + flavor);
+      _useSpvModule = communicationManager.requestPair(WalletApplication.getSpvModuleName());
    }
 
    public boolean useSpvModule() {
@@ -1307,7 +1306,6 @@ public class MbwManager implements WalletManager.TransactionFetcher {
 
    @Override
    public void getTransactions(Set<WalletManager.AddressWithCreationTime> addresses) {
-      String flavor = _environment.getNetwork().isTestnet() ? ".test" : "";
       Intent service = new Intent();
       //TODO: harmonize names and capitalization. monitor addresses?
       service.setAction("com.mycelium.wallet.receiveTransactions");
@@ -1328,6 +1326,6 @@ public class MbwManager implements WalletManager.TransactionFetcher {
          }
 */
       CommunicationManager.Companion.getInstance(_applicationContext)
-          .send("com.mycelium.spvmodule" + flavor, service);
+          .send(WalletApplication.getSpvModuleName(), service);
    }
 }

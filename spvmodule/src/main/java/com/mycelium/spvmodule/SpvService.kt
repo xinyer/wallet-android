@@ -273,7 +273,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                 Log.d(LOG_TAG, "initializeBlockchain, " +
                         "seedMnemonicCode = ${SpvModuleApplication.getWallet()!!.keyChainSeed.mnemonicCode.toString()}, " +
                         "Seed = ${Arrays.toString(SpvModuleApplication.getWallet()!!.keyChainSeed.seedBytes)}, " +
-                        "creationTimeSeconds = $creationTimeSeconds, " +
+                        "creationTime = ${Date(creationTimeSeconds * DateUtils.SECOND_IN_MILLIS)}, " +
                         "freshReceiveAddress = ${SpvModuleApplication.getWallet()!!.freshReceiveAddress().toBase58()}")
                 SpvModuleApplication.getWallet()!!.clearTransactions(0)
                 val blockChainFile = File(applicationContext.getDir("blockstore", Context.MODE_PRIVATE),
