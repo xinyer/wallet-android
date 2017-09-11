@@ -159,25 +159,21 @@ android {
             buildToolsVersion androidSdkBuildVersion
             minSdkVersion 21
 
-            // if we are not on master, include the branchname in appId
-            def appId = 'com.mycelium.devwallet';
+            // if we are not on master, include the branchname in versionName
             def branch = getGitBranch()
 
             if (branch != "" && branch != "master") {
-                appId = appId + "_spore" // pinning the name to "spore" as multi-module communication depends on package names
                 versionName = defaultConfig.versionName + "-DEV_" + branch
             }
 
-            applicationId appId
+            applicationId 'com.mycelium.devwallet_spore'
             signingConfig signingConfigs.debug
         }
         devprod {
             buildToolsVersion androidSdkBuildVersion
             minSdkVersion 21
 
-            def appId = 'com.mycelium.devprodwallet';
-
-            applicationId appId
+            applicationId 'com.mycelium.devprodwallet'
             signingConfig signingConfigs.debug
         }
         btctestnet {
