@@ -440,12 +440,10 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
             alarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, now + alarmInterval, AlarmManager.INTERVAL_DAY, alarmIntent)
         }
 
-        fun getMbwModuleName(): String {
-            when (BuildConfig.APPLICATION_ID) {
-                "com.mycelium.spvmodule_testrelease" -> return "com.mycelium.testnetwallet_spore"
-                "com.mycelium.spvmodule.test" -> return "com.mycelium.devwallet_spore"
-                else -> throw RuntimeException("No mbw module defined for BuildConfig " + BuildConfig.APPLICATION_ID)
-            }
+        fun getMbwModuleName(): String = when (BuildConfig.APPLICATION_ID) {
+            "com.mycelium.spvmodule_testrelease" -> "com.mycelium.testnetwallet_spore"
+            "com.mycelium.spvmodule.test" -> "com.mycelium.devwallet_spore"
+            else -> throw RuntimeException("No mbw module defined for BuildConfig " + BuildConfig.APPLICATION_ID)
         }
     }
 }
