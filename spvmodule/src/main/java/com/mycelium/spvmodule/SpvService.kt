@@ -208,8 +208,8 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                     Log.i(LOG_TAG, "will reset blockchain with extended key : $extendedKey")
                     initializeBlockchain(extendedKey, creationTimeSeconds)
                     future.set(0)
-                    //resetBlockchainOnShutdown = true
-                    //stopSelf()
+                    resetBlockchainOnShutdown = true
+                    stopSelf()
                 }
                 ACTION_BROADCAST_TRANSACTION -> {
                     initializeBlockchain(null, 0)
