@@ -56,7 +56,7 @@ interface Constants {
             /**
              * Filename of the block checkpoints file.
              */
-            val CHECKPOINTS_FILENAME = "checkpoints-risky$_FILENAME_NETWORK_SUFFIX.txt"
+            val CHECKPOINTS_FILENAME = "checkpoints$_FILENAME_NETWORK_SUFFIX.txt"
         }
     }
 
