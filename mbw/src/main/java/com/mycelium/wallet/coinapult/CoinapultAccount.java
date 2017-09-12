@@ -577,8 +577,7 @@ public class CoinapultAccount extends SynchronizeAbleWalletAccount {
    }
 
    @Override
-   public void notifyNewTransactionDiscovered(TransactionEx transactionEx, Map<OutPoint,
-       TransactionOutput> connectedOutputs, Set<OutPoint> utxoSet) {
+   public void notifyNewTransactionDiscovered(TransactionEx transactionEx, Map<OutPoint, TransactionOutput> connectedOutputs, Set<OutPoint> utxoSet, boolean fetchMissingOutputs) {
       // not supported for coinapult accounts - ignore it
    }
 

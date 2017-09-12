@@ -70,8 +70,7 @@ public interface WalletAccount {
     */
    boolean synchronize(SyncMode mode);
 
-   void notifyNewTransactionDiscovered(TransactionEx transactionEx, Map<OutPoint,
-       TransactionOutput> connectedOutputs, Set<OutPoint> utxoSet);
+   void notifyNewTransactionDiscovered(TransactionEx transactionEx, Map<OutPoint, TransactionOutput> connectedOutputs, Set<OutPoint> utxoSet, boolean fetchMissingOutputs);
 
    /**
     * Get the unique ID of this account

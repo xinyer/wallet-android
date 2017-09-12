@@ -335,7 +335,7 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
    @Override
    public void notifyNewTransactionDiscovered(TransactionEx transactionEx,
                                               Map<OutPoint, TransactionOutput> connectedOutputs,
-                                              Set<OutPoint> utxoSet) {
+                                              Set<OutPoint> utxoSet, boolean fetchMissingOutputs) {
       for(OutPoint outPoint: connectedOutputs.keySet()) {
          TransactionOutput ctxo = connectedOutputs.get(outPoint);
          TransactionOutputEx txoEx = new TransactionOutputEx(outPoint, 0, ctxo.value,
@@ -357,7 +357,7 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
                    output.script.getScriptBytes(), output.script.isCoinBase()));
             }
          }
-         handleNewExternalTransactionsInt(Lists.newArrayList(new TransactionExApi(transactionEx)));
+         handleNewExternalTransactionsInt(Lists.newArrayList(new TransactionExApi(transactionEx)), fetchMissingOutputs);
       } catch (WapiException | TransactionParsingException e) {
          throw new RuntimeException(e);
       }
@@ -367,20 +367,20 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
 
    protected void handleNewExternalTransactions(Collection<TransactionExApi> transactions) throws WapiException {
       if (transactions.size() <= MAX_TRANSACTIONS_TO_HANDLE_SIMULTANEOUSLY) {
-         handleNewExternalTransactionsInt(transactions);
+         handleNewExternalTransactionsInt(transactions, true);
       } else {
          // We have quite a list of transactions to handle, do it in batches
          ArrayList<TransactionExApi> all = new ArrayList<>(transactions);
          for (int i = 0; i < all.size(); i += MAX_TRANSACTIONS_TO_HANDLE_SIMULTANEOUSLY) {
             int endIndex = Math.min(all.size(), i + MAX_TRANSACTIONS_TO_HANDLE_SIMULTANEOUSLY);
             Collection<TransactionExApi> sub = all.subList(i, endIndex);
-            handleNewExternalTransactionsInt(sub);
+            handleNewExternalTransactionsInt(sub, true);
          }
       }
    }
 
-   private void handleNewExternalTransactionsInt(Collection<TransactionExApi> transactions)
-       throws WapiException {
+   private void handleNewExternalTransactionsInt(Collection<TransactionExApi> transactions,
+                                                 boolean fetchMissingOutputs) throws WapiException {
       // Transform and put into two arrays with matching indexes
       ArrayList<TransactionEx> texArray = new ArrayList<>(transactions.size());
       ArrayList<Transaction> txArray = new ArrayList<>(transactions.size());
@@ -395,7 +395,9 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
       }
 
       // Grab and handle parent transactions
-      fetchStoreAndValidateParentOutputs(txArray);
+      if(fetchMissingOutputs) {
+         fetchStoreAndValidateParentOutputs(txArray);
+      }
 
       // Store transaction locally
       for (int i = 0; i < txArray.size(); i++) {

@@ -123,7 +123,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                                 UNKNOWN.value, PENDING.value -> {
                                     account.notifyNewTransactionDiscovered(
                                             TransactionEx.fromUnconfirmedTransaction(transactionBytes),
-                                            connectedOutputs, utxoSet)
+                                            connectedOutputs, utxoSet, false)
                                     if(account is Bip44Account) {
                                         createNextAccount(account, walletManager, false)
                                     }
@@ -138,7 +138,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                                      //       + " tEx = $tEx, time = $time")
                                     //We assume that we have the parent transaction in our own transactions so last parameter is true.
                                     //TODO Double check that there is no case where it uses wapi when it is not supposed to.
-                                    account.notifyNewTransactionDiscovered(tEx, connectedOutputs, utxoSet)
+                                    account.notifyNewTransactionDiscovered(tEx, connectedOutputs, utxoSet, true)
                                     // Need to launch synchronisation after we notified of a new transaction
                                     // discovered and updated the lookahead of address to observe when using SPV
                                     // module.
