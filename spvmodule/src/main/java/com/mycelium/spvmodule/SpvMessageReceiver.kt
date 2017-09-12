@@ -1,28 +1,17 @@
 package com.mycelium.spvmodule
 
-import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 
-import com.google.common.collect.Lists
 import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.modularizationtools.ModuleMessageReceiver
-import com.mycelium.spvmodule.Constants.Companion.TAG
-import com.mycelium.spvmodule.providers.BlockchainContract
 
-import org.bitcoinj.core.Address
 import org.bitcoinj.core.Transaction
-import org.bitcoinj.core.TransactionConfidence
-import org.bitcoinj.core.TransactionConfidence.ConfidenceType.*
-import org.bitcoinj.core.TransactionOutput
 import org.bitcoinj.store.BlockStoreException
 import org.bitcoinj.store.SPVBlockStore
+import org.bitcoinj.utils.ContextPropagatingThreadFactory
 import java.io.File
-import java.nio.ByteBuffer
-import java.util.*
 import java.util.concurrent.Executors
 
 class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
@@ -118,7 +107,7 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
         if(intent.action != "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToSPV" &&
                 SpvModuleApplication.getWallet() != null && SpvModuleApplication.getWallet()!!.keyChainGroupSize != 0) {
             // start service to check for new transactions and maybe to broadcast a transaction
-            val executorService = Executors.newSingleThreadExecutor()
+            val executorService = Executors.newSingleThreadExecutor(ContextPropagatingThreadFactory("SpvMessageReceiverThreadFactory"))
             executorService.execute {
                 context.startService(clone)
             }
@@ -127,7 +116,7 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
 
     private val LOG_TAG: String? = this.javaClass.canonicalName
 
-    private fun  getBlockHeight(minTimestamp: Long): Int {
+    private fun getBlockHeight(minTimestamp: Long): Int {
         val blockChainFile = File(context.getDir("blockstore", Context.MODE_PRIVATE), Constants.Files.BLOCKCHAIN_FILENAME)
         if (!blockChainFile.exists()) {
             Log.e(LOG_TAG, "blockchain file not found!?!?")

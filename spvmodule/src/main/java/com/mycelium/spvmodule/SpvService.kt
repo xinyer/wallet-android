@@ -158,7 +158,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                 // if idling, shutdown service
                 if (isIdle) {
                     Log.i(LOG_TAG, "Think that idling is detected, would have tried to service")
-                    //stopSelf()
+                    stopSelf()
                 }
             }
 
