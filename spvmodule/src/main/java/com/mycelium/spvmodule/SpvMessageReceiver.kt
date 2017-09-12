@@ -76,7 +76,7 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
                 if(addresses.size > 0) {
                     wallet.addWatchedAddresses(addresses, minTimestamp)
 
-                    // TODO: this is unsupported in bitcoinj-core:0.14.3
+                    // TODO: this is unsupported in bitcoinj-core:0.15
                     // wallet.clearTransactions(getBlockHeight(minTimestamp))
                     if(minTimestamp < wallet.lastBlockSeenTimeSecs
                             && minTimestamp < (System.currentTimeMillis() / 1000) - 600) {
@@ -115,24 +115,4 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
     }
 
     private val LOG_TAG: String? = this.javaClass.canonicalName
-
-    private fun getBlockHeight(minTimestamp: Long): Int {
-        val blockChainFile = File(context.getDir("blockstore", Context.MODE_PRIVATE), Constants.Files.BLOCKCHAIN_FILENAME)
-        if (!blockChainFile.exists()) {
-            Log.e(LOG_TAG, "blockchain file not found!?!?")
-            return -1
-        }
-        try {
-            val blockStore = SPVBlockStore(Constants.NETWORK_PARAMETERS, blockChainFile)
-            var block = blockStore.chainHead // detect corruptions as early as possible
-            while(block.header.timeSeconds > minTimestamp - 4 * 60 * 60) { // block timestamps may be off by 4h. be safe.
-                block = block.getPrev(blockStore)
-            }
-            return block.height
-        } catch (x: BlockStoreException) {
-            val msg = "blockstore cannot be created"
-            Log.e(LOG_TAG, msg, x)
-            throw Error(msg, x)
-        }
-    }
 }

@@ -190,10 +190,8 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
                 if (walletStream != null) {
                     try {
                         walletStream.close()
-                    } catch (x: IOException) {
-                        // swallow
+                    } catch (ignore: IOException) {
                     }
-
                 }
             }
 
@@ -203,8 +201,9 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
                 wallet = restoreWalletFromBackup()
             }
 
-            if (wallet!!.params != Constants.NETWORK_PARAMETERS)
-                throw Error("bad wallet network parameters: " + wallet!!.params.id)
+            if (wallet!!.params != Constants.NETWORK_PARAMETERS) {
+                throw Error("bad wallet network parameters: ${wallet!!.params.id}")
+            }
         } else {
             //first creation of wallet.
             //wallet = Wallet(Constants.NETWORK_PARAMETERS)
