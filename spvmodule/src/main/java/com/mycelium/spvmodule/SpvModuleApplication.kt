@@ -206,10 +206,9 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
             }
         } else {
             //first creation of wallet.
-            //wallet = Wallet(Constants.NETWORK_PARAMETERS)
-            //backupWallet()
-            wallet = null
-            Log.i(LOG_TAG, "null wallet created")
+            wallet = Wallet(Constants.NETWORK_PARAMETERS)
+            backupWallet()
+            Log.i(LOG_TAG, "new wallet created")
         }
     }
 
