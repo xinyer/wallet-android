@@ -61,10 +61,11 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     override fun onMessage(callingPackageName: String, intent: Intent) = spvMessageReceiver.onMessage(callingPackageName, intent)
 
     override fun onCreate() {
-        if (INSTANCE != null && INSTANCE !== this) {
-            Log.w(LOG_TAG, "Application was instanciated more than once?")
+        INSTANCE = if (INSTANCE != null && INSTANCE !== this) {
+            throw Error("Application was instanciated more than once?")
+        } else {
+            this
         }
-        INSTANCE = this
 
         LinuxSecureRandom() // init proper random number generator
 
