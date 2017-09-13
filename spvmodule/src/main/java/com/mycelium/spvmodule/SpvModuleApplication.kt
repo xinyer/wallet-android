@@ -206,10 +206,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
                 throw Error("bad wallet network parameters: ${wallet!!.params.id}")
             }
         } else {
-            //first creation of wallet.
-            wallet = Wallet(Constants.NETWORK_PARAMETERS)
-            backupWallet()
-            Log.i(LOG_TAG, "new wallet created")
+            wallet = null
         }
     }
 
