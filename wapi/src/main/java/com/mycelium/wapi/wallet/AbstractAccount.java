@@ -353,8 +353,8 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
             TransactionOutput output = outputs[i];
             OutPoint outPoint = new OutPoint(transactionEx.txid, i);
             if(utxoSet.contains(outPoint)) {
-               _backing.putUnspentOutput(new TransactionOutputEx(outPoint, -1, output.value,
-                   output.script.getScriptBytes(), output.script.isCoinBase()));
+               _backing.putUnspentOutput(new TransactionOutputEx(outPoint, transactionEx.height,
+                   output.value, output.script.getScriptBytes(), output.script.isCoinBase()));
             }
          }
          handleNewExternalTransactionsInt(Lists.newArrayList(new TransactionExApi(transactionEx)), fetchMissingOutputs);
