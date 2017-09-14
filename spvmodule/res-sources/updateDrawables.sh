@@ -22,3 +22,6 @@ render stat_sys_peers_2.png stat_sys_peers_2.png ss[@] sNs[@]
 render stat_sys_peers_3.png stat_sys_peers_3.png ss[@] sNs[@]
 render stat_sys_peers_4.png stat_sys_peers_4.png ss[@] sNs[@]
 
+ss=(48 72 96 144 192)
+sNs=(mdpi hdpi xhdpi xxhdpi xxxhdpi)
+render logo.png ic_launcher.png ss[@] sNs[@]
