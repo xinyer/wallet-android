@@ -8,6 +8,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.os.Handler
+import android.os.Looper
 import android.os.StrictMode
 import android.preference.PreferenceManager
 import android.support.v4.content.LocalBroadcastManager
@@ -27,7 +29,6 @@ import org.bitcoinj.wallet.Wallet
 import org.bitcoinj.wallet.WalletFiles
 import org.bitcoinj.wallet.WalletProtobufSerializer
 import java.io.*
-import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 class SpvModuleApplication : Application(), ModuleMessageReceiver {
@@ -251,8 +252,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     }
 
     fun startBlockchainService(cancelCoinsReceived: Boolean) {
-        val executorService = Executors.newSingleThreadExecutor()
-        executorService.execute {
+        Handler(Looper.getMainLooper()).post {
             if (cancelCoinsReceived)
                 startService(blockchainServiceCancelCoinsReceivedIntent)
             else
@@ -265,9 +265,8 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     }
 
     fun resetBlockchain() {
-        // implicitly stops blockchain service
-        val executorService = Executors.newSingleThreadExecutor()
-        executorService.execute {
+        Handler(Looper.getMainLooper()).post {
+            // implicitly stops blockchain service
             startService(blockchainServiceResetBlockchainIntent)
         }
     }
@@ -276,8 +275,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     fun resetBlockchainWithExtendedKey(extendedKey: ArrayList<String>, creationTimeSeconds: Long) {
         Log.d(LOG_TAG, "resetBlockchainWithExtendedKey, extend key = $extendedKey, creationTimeSeconds = $creationTimeSeconds")
         // implicitly stops blockchain service
-        val executorService = Executors.newSingleThreadExecutor()
-        executorService.execute {
+        Handler(Looper.getMainLooper()).post {
             blockchainServiceResetBlockchainIntent!!.putExtra("extendedKey", extendedKey)
             blockchainServiceResetBlockchainIntent!!.putExtra("creationTimeSeconds", creationTimeSeconds)
             stopBlockchainService()
@@ -312,8 +310,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     fun broadcastTransaction(tx: Transaction) {
         val intent = Intent(SpvService.ACTION_BROADCAST_TRANSACTION, null, this, SpvService::class.java)
         intent.putExtra(SpvService.ACTION_BROADCAST_TRANSACTION_HASH, tx.hash.bytes)
-        val executorService = Executors.newSingleThreadExecutor()
-        executorService.execute {
+        Handler(Looper.getMainLooper()).post {
             startService(intent)
         }
     }

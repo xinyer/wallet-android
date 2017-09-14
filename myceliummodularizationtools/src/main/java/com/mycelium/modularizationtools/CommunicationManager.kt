@@ -6,10 +6,11 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.database.Cursor
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.util.Base64
 import android.util.Log
 import com.google.gson.GsonBuilder
-import com.mycelium.modularizationtools.Constants.Companion.TAG
 import java.io.File
 import java.io.InputStreamReader
 import java.io.OutputStream
@@ -205,10 +206,13 @@ class CommunicationManager private constructor(val context: Context) {
             Log.w(LOG_TAG, "Can't send to not trusted package $receivingPackage")
             return
         }
-        val serviceIntent = intent.clone() as Intent
-        serviceIntent.putExtra("key", getKey(receivingPackage))
-        serviceIntent.component = ComponentName(receivingPackage, MessageReceiver::class.qualifiedName)
-        context.startService(serviceIntent)
+
+        Handler(Looper.getMainLooper()).post {
+            val serviceIntent = intent.clone() as Intent
+            serviceIntent.putExtra("key", getKey(receivingPackage))
+            serviceIntent.component = ComponentName(receivingPackage, MessageReceiver::class.qualifiedName)
+            context.startService(serviceIntent)
+        }
     }
 }
 
