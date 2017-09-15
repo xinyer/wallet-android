@@ -134,11 +134,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                                     txBJ.updateTime = Date(updateAtTime)
                                     val time = (txBJ.updateTime.time / 1000L).toInt()
                                     val tEx = TransactionEx(txid, blockHeight, time, transactionBytes)
-                                    //Log.d(TAG, "com.mycelium.wallet.receivedTransactions, onMessage:"
-                                     //       + " tEx = $tEx, time = $time")
-                                    //We assume that we have the parent transaction in our own transactions so last parameter is true.
-                                    //TODO Double check that there is no case where it uses wapi when it is not supposed to.
-                                    account.notifyNewTransactionDiscovered(tEx, connectedOutputs, utxoSet, true)
+                                    account.notifyNewTransactionDiscovered(tEx, connectedOutputs, utxoSet, false)
                                     // Need to launch synchronisation after we notified of a new transaction
                                     // discovered and updated the lookahead of address to observe when using SPV
                                     // module.
