@@ -584,9 +584,8 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          txRefersParentTxTableName = "txtoptxo";
 
          _insertOrReplaceUtxo = db.compileStatement("INSERT OR REPLACE INTO " + utxoTableName + " VALUES (?,?,?,?,?,?,?)");
-         _deleteUtxo = db.compileStatement("DELETE FROM " + utxoTableName + " WHERE outpoint = ?");
-         _deleteAllUtxo = db.compileStatement("DELETE FROM " + utxoTableName + " WHERE transactionType = \'utxo\' "
-             + "AND accountID = ?");
+         _deleteUtxo = db.compileStatement("UPDATE " + utxoTableName + " SET transactionType = \'hackUnknown\' WHERE outpoint = ? and transactionType = \'utxo\'");
+         _deleteAllUtxo = db.compileStatement("UPDATE " + utxoTableName + " SET transactionType = \'hackUnknown\' WHERE transactionType = \'utxo\' AND accountID = ?");
 
          _insertOrReplacePtxo = db.compileStatement("INSERT OR REPLACE INTO " + ptxoTableName + " VALUES (?,?,?,?,?,?,?)");
 
