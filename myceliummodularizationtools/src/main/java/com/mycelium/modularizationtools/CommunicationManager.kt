@@ -61,7 +61,6 @@ class CommunicationManager private constructor(val context: Context) {
             val gson = GsonBuilder().create()
             val trustedPackagesArray = gson.fromJson(readerUser, emptyArray<PackageMetaData>().javaClass) ?: emptyArray<PackageMetaData>()
             for (pmd in trustedPackagesArray) {
-                Log.d(LOG_TAG, "${pmd.name} uses key ${pmd.key}.")
                 val packageMetaData = trustedPackages[pmd.name]
                 if (packageMetaData != null) {
                     packageMetaData.key = pmd.key
@@ -147,9 +146,7 @@ class CommunicationManager private constructor(val context: Context) {
      * reinstalled using an untrusted signature
      */
     fun getPackageName(key: Long): String {
-        //Log.d(LOG_TAG, "getPackageName($key)")
         for (pn in trustedPackages.keys) {
-            //Log.d(LOG_TAG, "checking package $pn")
             if (trustedPackages[pn]!!.key == key) {
                 checkSignature(pn)
                 return pn
@@ -162,6 +159,7 @@ class CommunicationManager private constructor(val context: Context) {
 
     private fun getSigningPubKeyHash(packageName: String): String {
         try {
+            // Lint warns here about an exploit and we think this one is handled correctly but we are hesitant to suppress the warning for sake of future awareness.
             val signatures = context.packageManager.getPackageInfo(packageName, PackageManager.GET_SIGNATURES).signatures
             var signingPubKeyHash: String? = null
             // A package can have more than one signature. Check them all.

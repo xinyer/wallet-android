@@ -289,7 +289,6 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
             resetBlockchain()
             wallet!!.shutdownAutosaveAndWait()
         }
-        Log.d(LOG_TAG, "replaceWallet, ${newWallet.keyChainSeed.mnemonicCode.toString()}")
         wallet = newWallet
         configuration!!.maybeIncrementBestChainHeightEver(newWallet.lastBlockSeenHeight)
         afterLoadWallet()

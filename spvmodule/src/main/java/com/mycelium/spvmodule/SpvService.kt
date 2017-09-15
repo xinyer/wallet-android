@@ -268,8 +268,6 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         application = getApplication() as SpvModuleApplication
         config = application!!.configuration
         if(extendedKey != null) {
-            //int networkID =
-            //TODO correct network parameters
             /* val key = ECKey.fromPrivate(extendedKey)
             key.creationTimeSeconds = creationTimeSeconds
             val keyList : MutableList<ECKey> = mutableListOf()
@@ -279,17 +277,14 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                         Wallet.fromKeys(
                                 NetworkParameters.fromID(NetworkParameters.ID_TESTNET),
                                 keyList)) */
-
                 val newWallet : Wallet = Wallet.fromSeed(
-                        NetworkParameters.fromID(NetworkParameters.ID_TESTNET)!!,
+                        Constants.NETWORK_PARAMETERS,
                         DeterministicSeed(extendedKey, null, "", creationTimeSeconds),
                         ImmutableList.of(ChildNumber(44, true), ChildNumber(1, true), ChildNumber(0, true)))
 
                 SpvModuleApplication.getApplication().replaceWallet(newWallet)
 
                 Log.d(LOG_TAG, "initializeBlockchain, " +
-                        "seedMnemonicCode = ${SpvModuleApplication.getWallet()!!.keyChainSeed.mnemonicCode.toString()}, " +
-                        "Seed = ${Arrays.toString(SpvModuleApplication.getWallet()!!.keyChainSeed.seedBytes)}, " +
                         "creationTime = ${Date(creationTimeSeconds * DateUtils.SECOND_IN_MILLIS)}, " +
                         "freshReceiveAddress = ${SpvModuleApplication.getWallet()!!.freshReceiveAddress().toBase58()}")
                 SpvModuleApplication.getWallet()!!.clearTransactions(0)
@@ -673,7 +668,6 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                 Log.i(LOG_TAG, "check(), starting peergroup")
                 peerGroup = PeerGroup(Constants.NETWORK_PARAMETERS, blockChain)
                 peerGroup!!.setDownloadTxDependencies(0) // recursive implementation causes StackOverflowError
-                Log.i(LOG_TAG, "check(), wallet.keyChainSeed.mnemonicCode = ${wallet.keyChainSeed.mnemonicCode.toString()}")
 
                 /*
                 peerGroup!!.addWallet(wallet)

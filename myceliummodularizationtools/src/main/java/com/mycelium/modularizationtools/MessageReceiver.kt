@@ -9,7 +9,6 @@ import android.util.Log
 import com.mycelium.modularizationtools.Constants.Companion.TAG
 
 class MessageReceiver : IntentService("MessageReceiverThread") {
-
     private val LOG_TAG: String? = this.javaClass.canonicalName
 
     /**
@@ -29,7 +28,7 @@ class MessageReceiver : IntentService("MessageReceiverThread") {
      */
     override fun onHandleIntent(intent: Intent?) {
         if (null == intent || null == intent.action || !intent.hasExtra("key")) {
-            Log.d(LOG_TAG, "onStartCommand failed: Intent was $intent")
+            Log.e(LOG_TAG, "onStartCommand failed: Intent was $intent")
             return
         }
 
