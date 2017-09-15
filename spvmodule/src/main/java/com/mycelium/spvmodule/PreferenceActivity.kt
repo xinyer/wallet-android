@@ -17,47 +17,23 @@
 
 package com.mycelium.spvmodule
 
-import android.content.Intent
+import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.os.Bundle
-import android.preference.PreferenceActivity
-import android.view.MenuItem
+import android.support.v7.app.AppCompatActivity
+import android.view.ViewGroup.LayoutParams
+import android.widget.ScrollView
 
-import java.util.HashSet
-
-class PreferenceActivity : PreferenceActivity() {
+class PreferenceActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        //startService(Intent(this, SpvService::class.java))
-    }
-
-    override fun onBuildHeaders(target: List<PreferenceActivity.Header>) {
-        loadHeadersFromResource(R.xml.preference_headers, target)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            android.R.id.home -> {
-                finish()
-                return true
-            }
-        }
-
-        return super.onOptionsItemSelected(item)
-    }
-
-    override fun isValidFragment(fragmentName: String): Boolean {
-        return VALID_FRAGMENT_NAMES.contains(fragmentName)
-    }
-
-    companion object {
-        private val VALID_FRAGMENT_NAMES = HashSet<String>()
-
-        init {
-            VALID_FRAGMENT_NAMES.addAll(arrayOf(
-                    SettingsFragment::class,
-                    AboutFragment::class,
-                    AddressListFragment::class,
-                    TransactionListFragment::class).map {it.java.name})
+        val sw = ScrollView(this)
+        sw.id = 171415
+        setContentView(sw, LayoutParams(MATCH_PARENT, MATCH_PARENT))
+        if( savedInstanceState == null) {
+            val settingsFragment = SettingsFragment()
+            val ft = supportFragmentManager.beginTransaction()
+            ft.add(sw.id, settingsFragment)
+            ft.commit()
         }
     }
 }

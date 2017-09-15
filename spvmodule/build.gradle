@@ -1,8 +1,6 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
-def localMavenRepo = 'file://' + new File(System.getProperty('user.home'), '.m2/repository').absolutePath
-
 repositories {
     mavenLocal()
    //maven { url localMavenRepo }
@@ -81,6 +79,7 @@ dependencies {
     testCompile "junit:junit:$junitVersion"
     compile "com.android.support:appcompat-v7:$androidSupportVersion"
     compile "com.android.support:support-v4:$androidSupportVersion"
+    compile "com.android.support:preference-v7:$androidSupportVersion"
     compile 'com.android.support:multidex:1.0.1'
     compile 'org.bitcoinj:bitcoinj-core:0.15-SNAPSHOT'
 

@@ -23,15 +23,13 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Process
-import android.preference.EditTextPreference
-import android.preference.Preference
-import android.preference.Preference.OnPreferenceChangeListener
-import android.preference.PreferenceFragment
+import android.support.v7.preference.Preference
+import android.support.v7.preference.PreferenceFragmentCompat
 import android.util.Log
 
 import java.net.InetAddress
 
-class SettingsFragment : PreferenceFragment(), OnPreferenceChangeListener {
+class SettingsFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChangeListener {
     private var application: SpvModuleApplication? = null
     private var config: Configuration? = null
     private var pm: PackageManager? = null
@@ -51,9 +49,7 @@ class SettingsFragment : PreferenceFragment(), OnPreferenceChangeListener {
         this.pm = context.packageManager
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
+    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         addPreferencesFromResource(R.xml.preference_settings)
 
         backgroundThread = HandlerThread("backgroundThread", Process.THREAD_PRIORITY_BACKGROUND)
@@ -61,7 +57,6 @@ class SettingsFragment : PreferenceFragment(), OnPreferenceChangeListener {
         backgroundHandler = Handler(backgroundThread!!.looper)
 
         trustedPeerPreference = findPreference(Configuration.PREFS_KEY_TRUSTED_PEER)
-        (trustedPeerPreference as EditTextPreference).editText.setSingleLine()
         trustedPeerPreference!!.onPreferenceChangeListener = this
 
         trustedPeerOnlyPreference = findPreference(Configuration.PREFS_KEY_TRUSTED_PEER_ONLY)
@@ -82,7 +77,7 @@ class SettingsFragment : PreferenceFragment(), OnPreferenceChangeListener {
         super.onDestroy()
     }
 
-    override fun onPreferenceChange(preference: Preference, newValue: Any): Boolean {
+    override fun onPreferenceChange(preference: Preference?, newValue: Any?): Boolean {
         // delay action because preference isn't persisted until after this method returns
         handler.post {
             if (preference == trustedPeerPreference) {
@@ -92,11 +87,8 @@ class SettingsFragment : PreferenceFragment(), OnPreferenceChangeListener {
                 application!!.stopBlockchainService()
             }
         }
-
         return true
     }
-
-    private val LOG_TAG: String? = this.javaClass.canonicalName
 
     private fun updateTrustedPeer() {
         val trustedPeer = config!!.trustedPeerHost
@@ -119,5 +111,8 @@ class SettingsFragment : PreferenceFragment(), OnPreferenceChangeListener {
                 }
             }.resolve(trustedPeer)
         }
+    }
+    companion object {
+        val LOG_TAG = "SettingsFragment"
     }
 }
