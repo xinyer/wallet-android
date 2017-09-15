@@ -21,6 +21,9 @@ class Configuration(private val prefs: SharedPreferences) {
     val trustedPeerOnly: Boolean
         get() = prefs.getBoolean(PREFS_KEY_TRUSTED_PEER_ONLY, true)
 
+    val broadcastUsingWapi: Boolean
+        get() = prefs.getBoolean(PREFS_KEY_BROADCAST_USING_WAPI, true)
+
     val lastUsedAgo: Long
         get() = System.currentTimeMillis() - prefs.getLong(PREFS_KEY_LAST_USED, 0)
 
@@ -56,6 +59,7 @@ class Configuration(private val prefs: SharedPreferences) {
         val PREFS_KEY_CONNECTIVITY_NOTIFICATION = "connectivity_notification"
         val PREFS_KEY_TRUSTED_PEER = "trusted_peer"
         val PREFS_KEY_TRUSTED_PEER_ONLY = "trusted_peer_only"
+        val PREFS_KEY_BROADCAST_USING_WAPI = "broadcast_using_wapi"
         val PREFS_KEY_DATA_USAGE = "data_usage"
 
         private val PREFS_KEY_LAST_USED = "last_used"

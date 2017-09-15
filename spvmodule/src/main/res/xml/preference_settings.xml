@@ -14,6 +14,11 @@
 		android:key="trusted_peer_only"
 		android:summary="@string/preferences_trusted_peer_only_summary"
 		android:title="@string/preferences_trusted_peer_only_title" />
+	<CheckBoxPreference
+		android:defaultValue="true"
+		android:key="broadcast_using_wapi"
+		android:summary="@string/preferences_broadcast_using_wapi_summary"
+		android:title="@string/preferences_broadcast_using_wapi_title" />
 	<Preference
 		android:key="data_usage"
 		android:summary="@string/preferences_data_usage_summary"

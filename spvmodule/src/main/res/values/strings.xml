@@ -82,4 +82,6 @@
     <string name="missing_transaction_id">missing transaction id</string>
     <string name="unconfirmed">unconfirmed</string>
     <string name="missing_account">missing account</string>
+    <string name="preferences_broadcast_using_wapi_summary">Use blockexplorer.com API for broadcasts</string>
+    <string name="preferences_broadcast_using_wapi_title">Broadcast using blockexplorer.com</string>
 </resources>

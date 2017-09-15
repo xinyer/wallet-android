@@ -8,11 +8,12 @@ import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.modularizationtools.ModuleMessageReceiver
 
 import org.bitcoinj.core.Transaction
-import org.bitcoinj.store.BlockStoreException
-import org.bitcoinj.store.SPVBlockStore
 import org.bitcoinj.utils.ContextPropagatingThreadFactory
-import java.io.File
 import java.util.concurrent.Executors
+import org.json.JSONObject
+import java.io.DataOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
 
 class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
     override fun onMessage(callingPackageName: String, intent: Intent) {
@@ -23,15 +24,20 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
         clone.setClass(context, SpvService::class.java)
         when (intent.action) {
             "com.mycelium.wallet.broadcastTransaction" -> {
-                clone.action = SpvService.ACTION_BROADCAST_TRANSACTION
+                val config = SpvModuleApplication.getApplication().configuration!!
                 val txBytes = intent.getByteArrayExtra("TX")
-                val tx = Transaction(Constants.NETWORK_PARAMETERS, txBytes)
-                // this assumes the transaction makes it at least into the service' storage
-                // TODO: 9/5/16 make it splice in a round trip to the service to get more solid data on broadcastability.
-                val resultData = Intent()
-                // TODO: this intent has no action yet and neither is it handled on the receiving side
-                resultData.putExtra("broadcastTX", tx.hashAsString)
-                communicationManager.send(callingPackageName, resultData)
+                if(config.broadcastUsingWapi) {
+                    asyncWapiBroadcast(txBytes)
+                } else {
+                    clone.action = SpvService.ACTION_BROADCAST_TRANSACTION
+                    // this assumes the transaction makes it at least into the service' storage
+                    // TODO: 9/5/16 make it splice in a round trip to the service to get more solid data on broadcastability.
+                    val resultData = Intent()
+                    // TODO: this intent has no action yet and neither is it handled on the receiving side
+                    val tx = Transaction(Constants.NETWORK_PARAMETERS, txBytes)
+                    resultData.putExtra("broadcastTX", tx.hashAsString)
+                    communicationManager.send(callingPackageName, resultData)
+                }
             }
 
             "com.mycelium.wallet.receiveTransactions" -> {
@@ -114,5 +120,39 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
         }
     }
 
-    private val LOG_TAG: String? = this.javaClass.canonicalName
+    private fun asyncWapiBroadcast(tx: ByteArray) {
+        Thread(Runnable {
+            try {
+                val url = URL("https://${if (Constants.TEST) "testnet." else "" }blockexplorer.com/api/tx/send")
+                val conn = url.openConnection() as HttpURLConnection
+                conn.setRequestMethod("POST")
+                conn.setRequestProperty("Content-Type", "application/json;charset=UTF-8")
+                conn.setRequestProperty("Accept", "application/json")
+                conn.setDoOutput(true)
+                conn.setDoInput(true)
+
+                val jsonParam = JSONObject()
+                jsonParam.put("rawtx", tx.map {String.format("%02X", it)}.joinToString(""))
+
+                Log.i("JSON", jsonParam.toString())
+                val os = DataOutputStream(conn.getOutputStream())
+                os.writeBytes(jsonParam.toString())
+
+                os.flush()
+                os.close()
+
+                val transaction = Transaction(Constants.NETWORK_PARAMETERS, tx)
+                val intent = Intent("com.mycelium.wallet.broadcaststatus")
+                intent.putExtra("tx", transaction.hash)
+                intent.putExtra("result", if(conn.responseCode == 200) "success" else "failure")
+                SpvMessageSender.send(CommunicationManager.getInstance(context), intent)
+
+                conn.disconnect()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }).start()
+    }
+
+    private val LOG_TAG: String = this.javaClass.canonicalName
 }
