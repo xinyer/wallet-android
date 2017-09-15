@@ -159,7 +159,6 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                 // if idling, shutdown service
                 if (isIdle) {
                     Log.i(LOG_TAG, "Think that idling is detected, would have tried to service")
-                    stopSelf()
                 }
             }
 
@@ -181,7 +180,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
      * When all requests have been handled, the IntentService stops itself,
      * so you should not call [.stopSelf].
      *
-     * @param intent The value passed to [               ][android.content.Context.startService].
+     * @param intent The value passed to [android.content.Context.startService].
      * This may be null if the service is being restarted after
      * its process has gone away; see
      * [android.app.Service.onStartCommand]
@@ -248,7 +247,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
             broadcastBlockchainState()
             future.get()
         } else {
-            Log.w(LOG_TAG, "service restart, although it was started as non-sticky")
+            Log.w(LOG_TAG, "onHandleIntent: service restart, although it was started as non-sticky")
             broadcastBlockchainState()
         }
     }
@@ -449,7 +448,6 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
 
         if (level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND) {
             Log.w(LOG_TAG, "low memory detected, stopping service")
-            //stopSelf()
         }
     }
 
