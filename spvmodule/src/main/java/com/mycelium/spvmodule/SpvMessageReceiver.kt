@@ -26,20 +26,26 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
             "com.mycelium.wallet.broadcastTransaction" -> {
                 val config = SpvModuleApplication.getApplication().configuration!!
                 val txBytes = intent.getByteArrayExtra("TX")
-                if(config.broadcastUsingWapi) {
-                    asyncWapiBroadcast(txBytes)
-                } else {
-                    clone.action = SpvService.ACTION_BROADCAST_TRANSACTION
+                val accountIndex = intent.getIntExtra("ACCOUNT_INDEX", 0)
+                clone.putExtra("ACCOUNT_INDEX", 0)
+                if(SpvModuleApplication.getWallet(accountIndex) != null) {
+                    if (config.broadcastUsingWapi) {
+                        asyncWapiBroadcast(txBytes)
+                    } else {
+                        clone.action = SpvService.ACTION_BROADCAST_TRANSACTION
+                    }
                 }
             }
             "com.mycelium.wallet.receiveTransactions" -> {
-                val wallet = SpvModuleApplication.getWallet()
+                val accountIndex = intent.getIntExtra("ACCOUNT_INDEX", 0)
+                clone.putExtra("ACCOUNT_INDEX", 0)
+                val wallet = SpvModuleApplication.getWallet(accountIndex)
                 if(wallet == null || wallet.keyChainGroupSize == 0) {
                     // Ask for private Key
-                    SpvMessageSender.requestPrivateKey(communicationManager)
+                    SpvMessageSender.requestPrivateKey(communicationManager, accountIndex)
                     return
                 }
-
+                Log.d(LOG_TAG, "com.mycelium.wallet.receiveTransactions,  accountIndex = $accountIndex")
                 val transactionSet = wallet.getTransactions(false)
                 val utxos = wallet.unspents.toHashSet()
                 if(!transactionSet.isEmpty() || !utxos.isEmpty()) {
@@ -47,10 +53,12 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
                 }
             }
             "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToSPV" -> {
-                val privateExtendedKeyCoinType = intent.getStringArrayListExtra("PrivateExtendedKeyCoinType")
+                val bip39Passphrase = intent.getStringArrayListExtra("bip39Passphrase")
+                val accountIndex = intent.getIntExtra("ACCOUNT_INDEX", 0)
+                clone.putExtra("ACCOUNT_INDEX", 0)
                 val creationTimeSeconds = intent.getLongExtra("creationTimeSeconds", 0)
                 SpvModuleApplication.getApplication()
-                        .resetBlockchainWithExtendedKey(privateExtendedKeyCoinType, creationTimeSeconds)
+                        .resetBlockchainWithExtendedKey(bip39Passphrase, creationTimeSeconds, accountIndex)
             }
         }
         if(intent.action != "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToSPV" &&

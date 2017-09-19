@@ -1309,6 +1309,8 @@ public class MbwManager implements WalletManager.TransactionFetcher {
       Intent service = new Intent();
       //TODO: harmonize names and capitalization. monitor addresses?
       service.setAction("com.mycelium.wallet.receiveTransactions");
+      service.putExtra("ACCOUNT_INDEX",
+          ((Bip44Account) getSelectedAccount()).getAccountIndex());
       //String[] addressStrings = new String[addresses.size()];
       //int i=0;
       /* for(WalletManager.AddressWithCreationTime awct : addresses) {
@@ -1325,6 +1327,9 @@ public class MbwManager implements WalletManager.TransactionFetcher {
             Log.d(LOG_TAG, "getTransactions: Intent is " + service + ", Addresses are : " + sb.toString());
          }
 */
+
+      Log.d(LOG_TAG, "getTransactions: Intent is " + service + ", account index is : "
+          + ((Bip44Account) getSelectedAccount()).getAccountIndex());
       CommunicationManager.Companion.getInstance(_applicationContext)
           .send(WalletApplication.getSpvModuleName(), service);
    }

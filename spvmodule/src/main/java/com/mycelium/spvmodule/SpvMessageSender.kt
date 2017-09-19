@@ -65,13 +65,14 @@ class SpvMessageSender {
             communicationManager.send(SpvModuleApplication.getMbwModuleName(), intent)
         }
 
-        fun requestPrivateKey(communicationManager: CommunicationManager) {
+        fun requestPrivateKey(communicationManager: CommunicationManager, accountIndex: Int) {
             if(BuildConfig.DEBUG) {
                 Log.d(LOG_TAG, "requestPrivateKey")
             }
-            val requestPrivateExtendedKeyCoinTypeIntent = Intent()
-            requestPrivateExtendedKeyCoinTypeIntent.action = "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW"
-            send(communicationManager, requestPrivateExtendedKeyCoinTypeIntent)
+            val requestPrivateExtendedKeyAccountLevelIntent = Intent()
+            requestPrivateExtendedKeyAccountLevelIntent.action = "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW"
+            requestPrivateExtendedKeyAccountLevelIntent.putExtra("ACCOUNT_INDEX", accountIndex)
+            send(communicationManager, requestPrivateExtendedKeyAccountLevelIntent)
         }
     }
 }

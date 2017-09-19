@@ -45,6 +45,7 @@ import android.widget.Toast;
 
 import com.google.common.base.Preconditions;
 import com.mrd.bitlib.model.Transaction;
+import com.mrd.bitlib.model.hdpath.Bip44Account;
 import com.mrd.bitlib.util.Sha256Hash;
 import com.mycelium.modularizationtools.CommunicationManager;
 import com.mycelium.wallet.Constants;
@@ -126,7 +127,11 @@ public class BroadcastTransactionActivity extends Activity {
             if(_mbwManager.useSpvModule()) {
                Intent intent = new Intent("com.mycelium.wallet.broadcastTransaction");
                intent.putExtra("TX", _transaction.toBytes());
-               CommunicationManager communicationManager = CommunicationManager.Companion.getInstance(BroadcastTransactionActivity.this);
+               intent.putExtra("ACCOUNT_INDEX",
+                   ((com.mycelium.wapi.wallet.bip44.Bip44Account) _mbwManager.getSelectedAccount()).getAccountIndex());
+
+               CommunicationManager communicationManager =
+                   CommunicationManager.Companion.getInstance(BroadcastTransactionActivity.this);
                communicationManager.send(WalletApplication.getSpvModuleName(), intent);
                return WalletAccount.BroadcastResult.SUCCESS;
             } else {

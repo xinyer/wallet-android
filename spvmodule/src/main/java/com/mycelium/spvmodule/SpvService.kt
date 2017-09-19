@@ -62,6 +62,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantLock
+import kotlin.collections.ArrayList
 
 class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cursor> {
     private var application: SpvModuleApplication? = null
@@ -158,7 +159,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
 
                 // if idling, shutdown service
                 if (isIdle) {
-                    Log.i(LOG_TAG, "Think that idling is detected, would have tried to service")
+                    Log.i(LOG_TAG, "Think that idling is detected, would have tried to stop the service.")
                 }
             }
 
@@ -199,20 +200,24 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
             }
             when (intent.action) {
                 ACTION_CANCEL_COINS_RECEIVED -> {
-                    initializeBlockchain(null, 0)
+                    val accountIndex = intent.getIntExtra("ACCOUNT_INDEX", 0)
+                    initializeBlockchain(null, 0, accountIndex)
                     notificationManager!!.cancel(Constants.NOTIFICATION_ID_COINS_RECEIVED)
                 }
                 ACTION_RESET_BLOCKCHAIN -> {
-                    val extendedKey = intent.getStringArrayListExtra("extendedKey")
+                    val bip39Passphrase = intent.getStringArrayListExtra("bip39Passphrase")
+                    val accountIndex = intent.getIntExtra("ACCOUNT_INDEX", 0)
+
                     val creationTimeSeconds = intent.getLongExtra("creationTimeSeconds", 0)
-                    Log.i(LOG_TAG, "will reset blockchain with extended key : $extendedKey")
-                    initializeBlockchain(extendedKey, creationTimeSeconds)
+                    Log.i(LOG_TAG, "will reset blockchain with bip39Passphrase : $bip39Passphrase")
+                    initializeBlockchain(bip39Passphrase, creationTimeSeconds, accountIndex)
                     future.set(0)
                     resetBlockchainOnShutdown = true
                     stopSelf()
                 }
                 ACTION_BROADCAST_TRANSACTION -> {
-                    initializeBlockchain(null, 0)
+                    val accountIndex = intent.getIntExtra("ACCOUNT_INDEX", 0)
+                    initializeBlockchain(null, 0, accountIndex)
                     val transactionByteArray = intent.getByteArrayExtra("TX")
                     val tx = Transaction(Constants.NETWORK_PARAMETERS, transactionByteArray)
                     Log.i(LOG_TAG, "onReceive: TX = " + tx)
@@ -241,7 +246,8 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                     }
                 }
                 else -> {
-                    initializeBlockchain(null, 0)
+                    val accountIndex = intent.getIntExtra("ACCOUNT_INDEX", 0)
+                    initializeBlockchain(null, 0, accountIndex)
                 }
             }
             broadcastBlockchainState()
@@ -253,9 +259,10 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
     }
 
     @Synchronized // TODO: why are we getting here twice in parallel???
-    fun initializeBlockchain(extendedKey: ArrayList<String>?, creationTimeSeconds : Long) {
+    fun initializeBlockchain(seedStringArray: ArrayList<String>?, creationTimeSeconds : Long,
+                             accountIndex : Int) {
         serviceCreatedAtInMs = System.currentTimeMillis()
-        Log.d(LOG_TAG, "initializeBlockchain() with extended key ${extendedKey.toString()}")
+        Log.d(LOG_TAG, "initializeBlockchain() with seedStringArray ${seedStringArray.toString()}")
 
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -266,32 +273,33 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
 
         application = getApplication() as SpvModuleApplication
         config = application!!.configuration
-        if(extendedKey != null) {
-            /* val key = ECKey.fromPrivate(extendedKey)
+        if(seedStringArray != null) {
+            /*val key = ECKey.fromPrivate(privateExtendedKeyAccountLevel)
             key.creationTimeSeconds = creationTimeSeconds
             val keyList : MutableList<ECKey> = mutableListOf()
             keyList.add(key) */
             if(SpvModuleApplication.getWallet() == null) {
-                /*SpvModuleApplication.getApplication().replaceWallet(
-                        Wallet.fromKeys(
-                                NetworkParameters.fromID(NetworkParameters.ID_TESTNET),
-                                keyList)) */
                 val newWallet : Wallet = Wallet.fromSeed(
                         Constants.NETWORK_PARAMETERS,
-                        DeterministicSeed(extendedKey, null, "", creationTimeSeconds),
-                        ImmutableList.of(ChildNumber(44, true), ChildNumber(1, true), ChildNumber(0, true)))
+                        DeterministicSeed(seedStringArray, null, "", creationTimeSeconds),
+                        ImmutableList.of(ChildNumber(44, true), ChildNumber(1, true),
+                                ChildNumber(accountIndex!!, true)))
+
 
                 SpvModuleApplication.getApplication().replaceWallet(newWallet)
-
+                SpvModuleApplication.getWallet()!!.keyChainGroupLookaheadSize = 30
+                /* SpvModuleApplication.getWallet()!!.upgradeToDeterministic(null)
                 Log.d(LOG_TAG, "initializeBlockchain, " +
                         "creationTime = ${Date(creationTimeSeconds * DateUtils.SECOND_IN_MILLIS)}, " +
                         "freshReceiveAddress = ${SpvModuleApplication.getWallet()!!.freshReceiveAddress().toBase58()}")
-                SpvModuleApplication.getWallet()!!.clearTransactions(0)
+                        */
                 val blockChainFile = File(applicationContext.getDir("blockstore", Context.MODE_PRIVATE),
-                        Constants.Files.BLOCKCHAIN_FILENAME)
+                        Constants.Files.BLOCKCHAIN_FILENAME + "_$accountIndex")
                 if (!blockChainFile.exists()) {
                     blockChainFile.delete()
                 }
+                Log.d(LOG_TAG, "initializeBlockchain, wallet's watched addresses count is " +
+                        "${SpvModuleApplication.getWallet()!!.watchedAddresses.size}")
                 for (address in SpvModuleApplication.getWallet()!!.watchedAddresses) {
                     Log.d(LOG_TAG, "initializeBlockchain, address = $address")
                 }
@@ -313,7 +321,8 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         cursorLoader!!.registerListener(LOADER_ID_NETWORK, this)
         cursorLoader!!.startLoading()
 
-        blockChainFile = File(getDir("blockstore", Context.MODE_PRIVATE), Constants.Files.BLOCKCHAIN_FILENAME)
+        blockChainFile = File(getDir("blockstore", Context.MODE_PRIVATE),
+                Constants.Files.BLOCKCHAIN_FILENAME+ "_$accountIndex")
         val blockChainFileExists = blockChainFile!!.exists()
 
         if (!blockChainFileExists) {
@@ -360,12 +369,29 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         intentFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION)
         intentFilter.addAction(Intent.ACTION_DEVICE_STORAGE_LOW)
         intentFilter.addAction(Intent.ACTION_DEVICE_STORAGE_OK)
+
+        try {
+            unregisterReceiver(connectivityReceiver)
+        } catch (e : IllegalArgumentException) {
+            //Receiver not registered.
+            //Log.e(LOG_TAG, e.localizedMessage, e)
+            // TODO TEMP FIX // DEBUG THAT
+
+        }
+
         registerReceiver(connectivityReceiver, intentFilter) // implicitly start PeerGroup
         wallet.addCoinsReceivedEventListener(Threading.SAME_THREAD, walletEventListener)
         wallet.addCoinsSentEventListener(Threading.SAME_THREAD, walletEventListener)
         wallet.addChangeEventListener(Threading.SAME_THREAD, walletEventListener)
         wallet.addTransactionConfidenceEventListener(Threading.SAME_THREAD, walletEventListener)
 
+        try {
+            unregisterReceiver(tickReceiver)
+        } catch (e : IllegalArgumentException) {
+            //Receiver not registered.
+            //Log.e(LOG_TAG, e.localizedMessage, e)
+            // TODO TEMP FIX // DEBUG THAT
+        }
         registerReceiver(tickReceiver, IntentFilter(Intent.ACTION_TIME_TICK))
     }
 

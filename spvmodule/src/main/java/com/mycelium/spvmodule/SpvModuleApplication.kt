@@ -42,6 +42,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
 
     private var walletFile: File? = null
     private var wallet: Wallet? = null
+    private var walletAccountIndex : Int? = null
     var packageInfo: PackageInfo? = null
         private set
     private val spvMessageReceiver: SpvMessageReceiver = SpvMessageReceiver(this)
@@ -76,13 +77,15 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         blockchainServiceCancelCoinsReceivedIntent = Intent(SpvService.ACTION_CANCEL_COINS_RECEIVED, null, this,
                 SpvService::class.java)
         blockchainServiceResetBlockchainIntent = Intent(SpvService.ACTION_RESET_BLOCKCHAIN, null, this, SpvService::class.java)
-        walletFile = getFileStreamPath(Constants.Files.WALLET_FILENAME_PROTOBUF)
+    }
 
+    private fun switchAccount(accountIndex: Int) {
+        Log.d(LOG_TAG, "switchAccount, accountIndex = $accountIndex")
+        walletFile = getFileStreamPath(Constants.Files.WALLET_FILENAME_PROTOBUF + "_$accountIndex")
         loadWalletFromProtobuf()
-
         afterLoadWallet()
-
         cleanupFiles()
+        walletAccountIndex = accountIndex
     }
 
     private fun afterLoadWallet() {
@@ -251,10 +254,12 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         }
     }
 
-    fun startBlockchainService(cancelCoinsReceived: Boolean) {
+    fun startBlockchainService(cancelCoinsReceived: Boolean, accountIndex: Int) {
         Handler(Looper.getMainLooper()).post {
-            if (cancelCoinsReceived)
+            if (cancelCoinsReceived) {
+                blockchainServiceCancelCoinsReceivedIntent!!.putExtra("ACCOUNT_INDEX", accountIndex)
                 startService(blockchainServiceCancelCoinsReceivedIntent)
+            }
             else
                 startService(blockchainServiceIntent)
         }
@@ -265,6 +270,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     }
 
     fun resetBlockchain() {
+        Log.d(LOG_TAG, "resetBlockchain")
         Handler(Looper.getMainLooper()).post {
             // implicitly stops blockchain service
             startService(blockchainServiceResetBlockchainIntent)
@@ -272,11 +278,15 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     }
 
     @Synchronized
-    fun resetBlockchainWithExtendedKey(extendedKey: ArrayList<String>, creationTimeSeconds: Long) {
-        Log.d(LOG_TAG, "resetBlockchainWithExtendedKey, extend key = $extendedKey, creationTimeSeconds = $creationTimeSeconds")
+    fun resetBlockchainWithExtendedKey(bip39Passphrase: ArrayList<String>, creationTimeSeconds: Long,
+                                       accountIndex: Int) {
+        Log.d(LOG_TAG, "resetBlockchainWithExtendedKey, bip39Passphrase = $bip39Passphrase, creationTimeSeconds = $creationTimeSeconds")
         // implicitly stops blockchain service
         Handler(Looper.getMainLooper()).post {
-            blockchainServiceResetBlockchainIntent!!.putExtra("extendedKey", extendedKey)
+            blockchainServiceResetBlockchainIntent!!
+                    .putExtra("bip39Passphrase", bip39Passphrase)
+            blockchainServiceResetBlockchainIntent!!
+                    .putExtra("ACCOUNT_INDEX", accountIndex)
             blockchainServiceResetBlockchainIntent!!.putExtra("creationTimeSeconds", creationTimeSeconds)
             stopBlockchainService()
             Log.d(LOG_TAG, "resetBlockchainWithExtendedKey, startService : $blockchainServiceResetBlockchainIntent")
@@ -299,16 +309,17 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     }
 
     @Throws(VerificationException::class)
-    fun processDirectTransaction(tx: Transaction) {
+    fun processDirectTransaction(tx: Transaction, accountIndex: Int) {
         if (wallet!!.isTransactionRelevant(tx)) {
             wallet!!.receivePending(tx, null)
-            broadcastTransaction(tx)
+            broadcastTransaction(tx, accountIndex)
         }
     }
 
-    fun broadcastTransaction(tx: Transaction) {
+    fun broadcastTransaction(tx: Transaction, accountIndex: Int) {
         val intent = Intent(SpvService.ACTION_BROADCAST_TRANSACTION, null, this, SpvService::class.java)
         intent.putExtra(SpvService.ACTION_BROADCAST_TRANSACTION_HASH, tx.hash.bytes)
+        intent.putExtra("ACCOUNT_INDEX", accountIndex)
         Handler(Looper.getMainLooper()).post {
             startService(intent)
         }
@@ -332,7 +343,14 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
 
         fun getApplication(): SpvModuleApplication = INSTANCE!!
 
-        fun getWallet(): Wallet? = INSTANCE!!.wallet
+        fun getWallet(): Wallet? =  INSTANCE!!.wallet
+
+        fun getWallet(index : Int): Wallet? {
+            if(INSTANCE!!.walletAccountIndex != index) {
+                INSTANCE!!.switchAccount(index)
+            }
+            return getWallet()
+        }
 
         fun packageInfoFromContext(context: Context): PackageInfo {
             try {
@@ -367,7 +385,9 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
             Log.i(LOG_TAG, "last used ${lastUsedAgo / DateUtils.MINUTE_IN_MILLIS} minutes ago, rescheduling blockchain sync in roughly ${alarmInterval / DateUtils.MINUTE_IN_MILLIS} minutes")
 
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-            val alarmIntent = PendingIntent.getService(context, 0, Intent(context, SpvService::class.java), 0)
+            val intent =  Intent(context, SpvService::class.java)
+            intent.putExtra("ACCOUNT_INDEX", INSTANCE!!.walletAccountIndex)
+            val alarmIntent = PendingIntent.getService(context, 0, intent, 0)
             alarmManager.cancel(alarmIntent)
 
             // workaround for no inexact set() before KitKat

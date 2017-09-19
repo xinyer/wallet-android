@@ -24,6 +24,9 @@ import com.mycelium.wapi.wallet.bip44.Bip44Account
 import com.squareup.otto.Bus
 import org.bitcoinj.core.NetworkParameters
 import org.bitcoinj.core.TransactionConfidence.ConfidenceType.*
+import org.bitcoinj.crypto.ChildNumber
+import org.bitcoinj.crypto.DeterministicKey
+import org.bitcoinj.crypto.HDKeyDerivation
 import java.nio.ByteBuffer
 import java.util.*
 import kotlin.collections.ArrayList
@@ -171,6 +174,8 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
             }
             "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW" -> {
                 val _mbwManager = MbwManager.getInstance(context)
+                val accountIndex = intent.getIntExtra("ACCOUNT_INDEX",
+                        (_mbwManager.selectedAccount as Bip44Account).accountIndex)
                 val masterSeed: Bip39.MasterSeed
                 try {
                     masterSeed = _mbwManager.getWalletManager(false).getMasterSeed(AesKeyCipher.defaultKeyCipher())
@@ -178,7 +183,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                     throw RuntimeException(invalidKeyCipher)
                 }
                 //_mbwManager.getWalletManager(false).getBip44Account(0).allVisibleAddresses dsihdsohs
-/*
+
                 val masterDeterministicKey : DeterministicKey = HDKeyDerivation.createMasterPrivateKey(masterSeed.bip32Seed)
                 val bip44LevelDeterministicKey = HDKeyDerivation.deriveChildKey(masterDeterministicKey, ChildNumber(44, true))
                 val coinType = if (_mbwManager.network.isTestnet) {
@@ -193,25 +198,23 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 } else {
                     NetworkParameters.fromID(NetworkParameters.ID_MAINNET)!!
                 }
-                val byteArrayToTransmitToSPVModule = cointypeLevelDeterministicKey.serializePrivate(networkParameters)
-*/
+                //val byteArrayToTransmitToSPVModule = accountLevelDeterministicKey.serializePrivate(networkParameters)
+
                 val service = Intent()
                 //TODO: harmonize names and capitalization. monitor addresses?
                 service.action = "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToSPV"
-                val bip39PassphraseList : ArrayList<String> = ArrayList(masterSeed.bip39WordList)
-                Log.d(TAG, "onMessage, com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW, " +
-                        "masterSeed.bip39Passphrase = $bip39PassphraseList, " +
-                        "masterSeed.bip32Seed = ${Arrays.toString(masterSeed.bip32Seed)}")
 
                 for (address in _mbwManager.getWalletManager(false).addresses) {
                     Log.d(TAG, "onMessage, com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW, " +
                             "address = $address")
                 }
+
                 //HexUtils.toHex(masterSeed.bip32Seed)
-                service.putExtra("PrivateExtendedKeyCoinType", bip39PassphraseList)
+                val bip39PassphraseList : ArrayList<String> = ArrayList(masterSeed.bip39WordList)
+                service.putExtra("bip39Passphrase", bip39PassphraseList)
+                service.putExtra("ACCOUNT_INDEX", accountIndex)
                 service.putExtra("creationTimeSeconds", 1504664986L) //TODO Change value after test. Nelson
                 CommunicationManager.getInstance(context).send(WalletApplication.getSpvModuleName(), service)
-
             }
             null -> Log.w(TAG, "onMessage failed. No action defined.")
             else -> Log.e(TAG, "onMessage failed. Unknown action ${intent.action}")
