@@ -6,6 +6,7 @@ import android.util.Log
 
 import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.modularizationtools.ModuleMessageReceiver
+import com.mycelium.spvmodule.providers.IntentContract
 
 import org.bitcoinj.core.Transaction
 import org.bitcoinj.utils.ContextPropagatingThreadFactory
@@ -23,6 +24,9 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
         val clone = intent.clone() as Intent
         clone.setClass(context, SpvService::class.java)
         when (intent.action) {
+            IntentContract.ACTION_SEND_FUNDS -> {
+                clone.action = SpvService.ACTION_SEND_FUNDS
+            }
             "com.mycelium.wallet.broadcastTransaction" -> {
                 val config = SpvModuleApplication.getApplication().configuration!!
                 val txBytes = intent.getByteArrayExtra("TX")
