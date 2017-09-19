@@ -40,6 +40,7 @@ import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
@@ -66,8 +67,10 @@ import com.mrd.bitlib.model.Transaction;
 import com.mrd.bitlib.model.UnspentTransactionOutput;
 import com.mrd.bitlib.util.CoinUtil;
 import com.mrd.bitlib.util.CoinUtil.Denomination;
+import com.mycelium.modularizationtools.CommunicationManager;
 import com.mycelium.paymentrequest.PaymentRequestException;
 import com.mycelium.paymentrequest.PaymentRequestInformation;
+import com.mycelium.spvmodule.providers.IntentContract;
 import com.mycelium.wallet.BitcoinUri;
 import com.mycelium.wallet.BitcoinUriWithAddress;
 import com.mycelium.wallet.MbwManager;
@@ -75,6 +78,7 @@ import com.mycelium.wallet.MinerFee;
 import com.mycelium.wallet.R;
 import com.mycelium.wallet.StringHandleConfig;
 import com.mycelium.wallet.Utils;
+import com.mycelium.wallet.WalletApplication;
 import com.mycelium.wallet.activity.GetAmountActivity;
 import com.mycelium.wallet.activity.ScanActivity;
 import com.mycelium.wallet.activity.StringHandlerActivity;
@@ -101,6 +105,7 @@ import org.bitcoin.protocols.payments.PaymentACK;
 
 import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.UUID;
 
 import butterknife.BindView;
@@ -903,7 +908,23 @@ public class SendMainActivity extends Activity {
       }
 
       disableButtons();
-      SignTransactionActivity.callMe(this, _account.getId(), _isColdStorage, _unsigned, SIGN_TRANSACTION_REQUEST_CODE);
+
+      if(_mbwManager.useSpvModule()) {
+         String receivingAddress = _receivingAddress.toString();
+         BitcoinValue amountToSend = getBitcoinValueToSend();
+         long getFeePerKb = getFeePerKb().getLongValue();
+         sendWithSpvModule(receivingAddress, amountToSend, getFeePerKb);
+      } else {
+         SignTransactionActivity.callMe(this, _account.getId(), _isColdStorage, _unsigned, SIGN_TRANSACTION_REQUEST_CODE);
+      }
+   }
+
+   private void sendWithSpvModule(String address, BitcoinValue amountToSend, long getFeePerKb) {
+      String rawUri = String.format(Locale.US, "bitcoin:%s?amount=%s&fee=%d", address, amountToSend.getValue().toPlainString(), getFeePerKb);
+      Intent paymentIntent = new Intent(IntentContract.ACTION_SEND_FUNDS, Uri.parse(rawUri));
+      paymentIntent.putExtra("account_id", _account.getId());
+      CommunicationManager communicationManager = CommunicationManager.Companion.getInstance(this);
+      communicationManager.send(WalletApplication.getSpvModuleName(), paymentIntent);
    }
 
    protected void disableButtons() {

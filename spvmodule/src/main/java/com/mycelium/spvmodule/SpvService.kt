@@ -18,7 +18,10 @@
 package com.mycelium.spvmodule
 
 import android.annotation.SuppressLint
-import android.app.*
+import android.app.IntentService
+import android.app.Notification
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.*
 import android.content.Context
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
@@ -49,8 +52,10 @@ import org.bitcoinj.net.discovery.PeerDiscoveryException
 import org.bitcoinj.store.BlockStore
 import org.bitcoinj.store.BlockStoreException
 import org.bitcoinj.store.SPVBlockStore
+import org.bitcoinj.uri.BitcoinURI
 import org.bitcoinj.utils.Threading
 import org.bitcoinj.wallet.DeterministicSeed
+import org.bitcoinj.wallet.SendRequest
 import org.bitcoinj.wallet.Wallet
 import java.io.File
 import java.io.IOException
@@ -85,6 +90,8 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
     private var resetBlockchainOnShutdown = false
 
     private var cursorLoader: CursorLoader? = null
+
+    private var startId = 0
 
     private val walletEventListener = object
         : ThrottlingWalletChangeListener(APPWIDGET_THROTTLE_MS) {
@@ -159,7 +166,8 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
 
                 // if idling, shutdown service
                 if (isIdle) {
-                    Log.i(LOG_TAG, "Think that idling is detected, would have tried to stop the service.")
+                    Log.i(LOG_TAG, "Think that idling is detected, would have tried to stop service [$startId]")
+                    stopSelf(startId) //use of startId will prevent from losing Intents waiting in the IntentService queue
                 }
             }
 
@@ -171,6 +179,11 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
 
     private val future = SettableFuture.create<Long>()
     private var reentrantLock = ReentrantLock(true)
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        this.startId = startId
+        return super.onStartCommand(intent, flags, startId)
+    }
 
     /**
      * This method is invoked on the worker thread with a request to process.
@@ -244,6 +257,26 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                     } else {
                         Log.w(LOG_TAG, "peergroup not available, not broadcasting transaction " + tx.hashAsString)
                     }
+                }
+                ACTION_SEND_FUNDS -> {
+                    Log.w(LOG_TAG, "Payment URI: ${intent.dataString}")
+                    val bitcoinUri = BitcoinURI(null, intent.dataString)
+                    Log.w(LOG_TAG, bitcoinUri.toString())
+                    val sendRequest = SendRequest.to(bitcoinUri.address, bitcoinUri.amount)
+                    val fee = bitcoinUri.getParameterByName("fee")
+                    if (fee != null) {
+                        val feeStr = fee as String
+                        sendRequest.feePerKb = Coin.valueOf(feeStr.toLong())
+                    }
+                    val wallet = SpvModuleApplication.getWallet()!!
+                    val tx = wallet.sendCoinsOffline(sendRequest)
+                    if (peerGroup != null) {
+                        Log.i(LOG_TAG, "broadcasting transaction ${tx.hashAsString}")
+                        peerGroup!!.broadcastTransaction(tx)
+                    } else {
+                        Log.w(LOG_TAG, "peergroup not available, not broadcasting transaction ${tx.hashAsString}")
+                    }
+                    return
                 }
                 else -> {
                     val accountIndex = intent.getIntExtra("ACCOUNT_INDEX", 0)
@@ -815,6 +848,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         val ACTION_RESET_BLOCKCHAIN = PACKAGE_NAME + ".reset_blockchain"
         val ACTION_BROADCAST_TRANSACTION = PACKAGE_NAME + ".broadcast_transaction"
         val ACTION_BROADCAST_TRANSACTION_HASH = "hash"
+        val ACTION_SEND_FUNDS = PACKAGE_NAME + ".send_funds"
 
         private val MIN_COLLECT_HISTORY = 2
         private val IDLE_BLOCK_TIMEOUT_MIN = 2
