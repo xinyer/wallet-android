@@ -914,6 +914,7 @@ public class SendMainActivity extends Activity {
          BitcoinValue amountToSend = getBitcoinValueToSend();
          long getFeePerKb = getFeePerKb().getLongValue();
          sendWithSpvModule(receivingAddress, amountToSend, getFeePerKb);
+         finish();
       } else {
          SignTransactionActivity.callMe(this, _account.getId(), _isColdStorage, _unsigned, SIGN_TRANSACTION_REQUEST_CODE);
       }
