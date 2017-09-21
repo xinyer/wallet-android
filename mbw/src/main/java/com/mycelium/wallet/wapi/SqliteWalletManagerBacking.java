@@ -1196,10 +1196,10 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
          db.execSQL("CREATE INDEX IF NOT EXISTS accountIDIndex ON tx (accountID);");
          db.execSQL("CREATE INDEX IF NOT EXISTS heightIndex ON tx (height);");
 
-         db.execSQL("CREATE TABLE IF NOT EXISTS outtx (id BLOB PRIMARY KEY, raw BLOB, TEXT accountID);");
+         db.execSQL("CREATE TABLE IF NOT EXISTS outtx (id BLOB PRIMARY KEY, raw BLOB, accountID TEXT);");
          db.execSQL("CREATE INDEX IF NOT EXISTS accountIDIndex ON outtx (accountID);");
 
-         db.execSQL("CREATE TABLE IF NOT EXISTS txtoptxo (txid BLOB, input BLOB, TEXT accountID, PRIMARY KEY (txid, input) );");
+         db.execSQL("CREATE TABLE IF NOT EXISTS txtoptxo (txid BLOB, input BLOB, accountID TEXT, PRIMARY KEY (txid, input) );");
          db.execSQL("CREATE INDEX IF NOT EXISTS accountIDIndex ON  txtoptxo (accountID);");
 
       }
