@@ -17,6 +17,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
+    @Synchronized
     override fun onMessage(callingPackageName: String, intent: Intent) {
         Log.d(LOG_TAG, "onMessage($callingPackageName, $intent)")
         org.bitcoinj.core.Context.propagate(Constants.CONTEXT)

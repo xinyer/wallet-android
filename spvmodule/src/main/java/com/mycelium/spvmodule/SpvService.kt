@@ -463,7 +463,9 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         if (peerGroup != null) {
             peerGroup!!.removeDisconnectedEventListener(peerConnectivityListener!!)
             peerGroup!!.removeConnectedEventListener(peerConnectivityListener!!)
-            peerGroup!!.removeWallet(SpvModuleApplication.getWallet())
+            if (SpvModuleApplication.getWallet() != null) {
+                peerGroup!!.removeWallet(SpvModuleApplication.getWallet())
+            }
             peerGroup!!.stop()
 
             Log.i(LOG_TAG, "peergroup stopped")
