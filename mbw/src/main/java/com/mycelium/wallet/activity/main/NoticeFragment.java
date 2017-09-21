@@ -354,7 +354,8 @@ public class NoticeFragment extends Fragment {
    @Subscribe
    public void balanceChanged(BalanceChanged event) {
       WalletAccount selectedAccount = _mbwManager.getSelectedAccount();
-      if(selectedAccount!= null && event.account.equals(selectedAccount.getId())) {
+      // TODO: 21.09.17 HACK: the account should never be null 
+      if(event.account == null || selectedAccount!= null && event.account.equals(selectedAccount.getId())) {
          recheckNotice();
       }
    }
