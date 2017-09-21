@@ -1437,9 +1437,10 @@ public class SendMainActivity extends Activity {
     }
 
     private void sendWithSpvModule(String address, BitcoinValue amountToSend, long getFeePerKb) {
-        String rawUri = String.format(Locale.US, "bitcoin:%s?amount=%s&fee=%d", address, amountToSend.getValue().toPlainString(), getFeePerKb);
-        Intent paymentIntent = new Intent(IntentContract.ACTION_SEND_FUNDS, Uri.parse(rawUri));
-        paymentIntent.putExtra("account_id", _account.getId());
+        Intent paymentIntent = new Intent(IntentContract.SendFunds.ACTION);
+        paymentIntent.putExtra(IntentContract.SendFunds.ADDRESS_EXTRA, address);
+        paymentIntent.putExtra(IntentContract.SendFunds.AMOUNT_EXTRA, amountToSend.getLongValue());
+        paymentIntent.putExtra(IntentContract.SendFunds.FEE_EXTRA, getFeePerKb);
         CommunicationManager communicationManager = CommunicationManager.Companion.getInstance(this);
         communicationManager.send(WalletApplication.getSpvModuleName(), paymentIntent);
     }

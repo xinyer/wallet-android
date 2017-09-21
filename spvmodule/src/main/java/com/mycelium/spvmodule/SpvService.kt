@@ -38,9 +38,8 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
 import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.spvmodule.BlockchainState.Impediment
-
-
 import com.mycelium.spvmodule.providers.BlockchainContract
+import com.mycelium.spvmodule.providers.IntentContract
 import org.bitcoinj.core.*
 import org.bitcoinj.core.listeners.PeerConnectedEventListener
 import org.bitcoinj.core.listeners.PeerDataEventListener
@@ -52,7 +51,6 @@ import org.bitcoinj.net.discovery.PeerDiscoveryException
 import org.bitcoinj.store.BlockStore
 import org.bitcoinj.store.BlockStoreException
 import org.bitcoinj.store.SPVBlockStore
-import org.bitcoinj.uri.BitcoinURI
 import org.bitcoinj.utils.Threading
 import org.bitcoinj.wallet.DeterministicSeed
 import org.bitcoinj.wallet.SendRequest
@@ -67,7 +65,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantLock
-import kotlin.collections.ArrayList
 
 class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cursor> {
     private var application: SpvModuleApplication? = null
@@ -90,8 +87,6 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
     private var resetBlockchainOnShutdown = false
 
     private var cursorLoader: CursorLoader? = null
-
-    private var startId = 0
 
     private val walletEventListener = object
         : ThrottlingWalletChangeListener(APPWIDGET_THROTTLE_MS) {
@@ -166,8 +161,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
 
                 // if idling, shutdown service
                 if (isIdle) {
-                    Log.i(LOG_TAG, "Think that idling is detected, would have tried to stop service [$startId]")
-                    stopSelf(startId) //use of startId will prevent from losing Intents waiting in the IntentService queue
+                    Log.i(LOG_TAG, "Think that idling is detected, would have tried to stop service")
                 }
             }
 
@@ -179,11 +173,6 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
 
     private val future = SettableFuture.create<Long>()
     private var reentrantLock = ReentrantLock(true)
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        this.startId = startId
-        return super.onStartCommand(intent, flags, startId)
-    }
 
     /**
      * This method is invoked on the worker thread with a request to process.
@@ -259,14 +248,15 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                     }
                 }
                 ACTION_SEND_FUNDS -> {
-                    Log.w(LOG_TAG, "Payment URI: ${intent.dataString}")
-                    val bitcoinUri = BitcoinURI(null, intent.dataString)
-                    Log.w(LOG_TAG, bitcoinUri.toString())
-                    val sendRequest = SendRequest.to(bitcoinUri.address, bitcoinUri.amount)
-                    val fee = bitcoinUri.getParameterByName("fee")
-                    if (fee != null) {
-                        val feeStr = fee as String
-                        sendRequest.feePerKb = Coin.valueOf(feeStr.toLong())
+                    val rawAddress = intent.getStringExtra(IntentContract.SendFunds.ADDRESS_EXTRA)
+                    val rawAmount = intent.getLongExtra(IntentContract.SendFunds.AMOUNT_EXTRA, 0)
+                    val feePerKb = intent.getLongExtra(IntentContract.SendFunds.FEE_EXTRA, 0)
+
+                    val address = Address.fromBase58(Constants.NETWORK_PARAMETERS, rawAddress)
+                    val amount = Coin.valueOf(rawAmount)
+                    val sendRequest = SendRequest.to(address, amount)
+                    if (feePerKb > 0) {
+                        sendRequest.feePerKb = Coin.valueOf(feePerKb)
                     }
                     val wallet = SpvModuleApplication.getWallet()!!
                     val tx = wallet.sendCoinsOffline(sendRequest)

@@ -25,7 +25,7 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
         val clone = intent.clone() as Intent
         clone.setClass(context, SpvService::class.java)
         when (intent.action) {
-            IntentContract.ACTION_SEND_FUNDS -> {
+            IntentContract.SendFunds.ACTION -> {
                 clone.action = SpvService.ACTION_SEND_FUNDS
             }
             "com.mycelium.wallet.broadcastTransaction" -> {
