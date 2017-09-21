@@ -1042,14 +1042,10 @@ public class SendMainActivity extends Activity {
                         if (preparedTransaction != null && !preparedTransaction.txHex.isEmpty()) {
                             Log.d(TAG, " preparedTransaction=" + preparedTransaction.txHex);
                             _preparedColuTx = preparedTransaction;
-                            if (callback != null) {
-                                callback.success();
-                            }
+                            callback.success();
                             Toast.makeText(SendMainActivity.this, R.string.colu_succeeded_to_prepare, Toast.LENGTH_SHORT).show();
                         } else {
-                            if (callback != null) {
-                                callback.fail();
-                            }
+                            callback.fail();
                             Toast.makeText(SendMainActivity.this, getString(R.string.colu_failed_to_prepare), Toast.LENGTH_SHORT).show();
                             updateUi();
                         }
@@ -1433,8 +1429,7 @@ public class SendMainActivity extends Activity {
         if (_mbwManager.useSpvModule()) {
             String receivingAddress = _receivingAddress.toString();
             BitcoinValue amountToSend = getBitcoinValueToSend();
-            long getFeePerKb = getFeePerKb().getLongValue();
-            sendWithSpvModule(receivingAddress, amountToSend, getFeePerKb);
+            sendWithSpvModule(receivingAddress, amountToSend, feePerKbValue);
             finish();
         } else {
             SignTransactionActivity.callMe(this, _account.getId(), _isColdStorage, _unsigned, SIGN_TRANSACTION_REQUEST_CODE);
