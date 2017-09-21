@@ -73,6 +73,7 @@ import com.mycelium.wallet.activity.AboutActivity;
 import com.mycelium.wallet.activity.ScanActivity;
 import com.mycelium.wallet.activity.main.BalanceMasterFragment;
 import com.mycelium.wallet.activity.main.TransactionHistoryFragment;
+import com.mycelium.wallet.activity.main.RecommendationsFragment;
 import com.mycelium.wallet.activity.send.InstantWalletActivity;
 import com.mycelium.wallet.activity.settings.SettingsActivity;
 import com.mycelium.wallet.coinapult.CoinapultAccount;
@@ -88,6 +89,8 @@ import java.io.*;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -105,14 +108,19 @@ public class ModernMain extends ActionBarActivity {
    private static final String APP_START = "APP_START";
    private MbwManager _mbwManager;
 
+   private int addressBookTabIndex;
+
    ViewPager mViewPager;
    TabsAdapter mTabsAdapter;
    ActionBar.Tab mBalanceTab;
    ActionBar.Tab mAccountsTab;
+   ActionBar.Tab mRecommendationsTab;
    private MenuItem refreshItem;
    private Toaster _toaster;
-   private long _lastSync = 0;
+   private volatile long _lastSync = 0;
    private boolean _isAppStart = true;
+
+   private Timer balanceRefreshTimer;
 
    @Override
    public void onCreate(Bundle savedInstanceState) {
@@ -153,10 +161,12 @@ public class ModernMain extends ActionBarActivity {
       mBalanceTab = bar.newTab();
       mTabsAdapter.addTab(mBalanceTab.setText(getString(R.string.tab_balance)), BalanceMasterFragment.class, null);
       mTabsAdapter.addTab(bar.newTab().setText(getString(R.string.tab_transactions)), TransactionHistoryFragment.class, null);
+      mRecommendationsTab = bar.newTab();
+      mTabsAdapter.addTab(mRecommendationsTab.setText(getString(R.string.tab_partners)), RecommendationsFragment.class, null);
       final Bundle addressBookConfig = new Bundle();
       addressBookConfig.putBoolean(AddressBookFragment.SELECT_ONLY, false);
       mTabsAdapter.addTab(bar.newTab().setText(getString(R.string.tab_addresses)), AddressBookFragment.class, addressBookConfig);
-
+      addressBookTabIndex = mTabsAdapter.getCount() - 1; // save address book tab id to show/hide add contact
       bar.selectTab(mBalanceTab);
       _toaster = new Toaster(this);
 
@@ -252,35 +262,49 @@ public class ModernMain extends ActionBarActivity {
       }
    }
 
+   protected void stopBalanceRefreshTimer() {
+      if (balanceRefreshTimer != null) {
+         balanceRefreshTimer.cancel();
+      }
+   }
 
    @Override
    protected void onResume() {
       _mbwManager.getEventBus().register(this);
 
-      // Start WAPI as a delayed action. This way we don't immediately block the account
-      // while synchronizing
-      Handler h = new Handler();
-      if (_lastSync == 0 || new Date().getTime() - _lastSync > MIN_AUTOSYNC_INTERVAL) {
+      long curTime = new Date().getTime();
+      if (_lastSync == 0 || curTime - _lastSync > MIN_AUTOSYNC_INTERVAL) {
+         Handler h = new Handler();
          h.postDelayed(new Runnable() {
             @Override
             public void run() {
                _mbwManager.getVersionManager().checkForUpdate();
-               _mbwManager.getExchangeRateManager().requestRefresh();
-
-               // if the last full sync is too old (or not known), start a full sync for _all_ accounts
-               // otherwise just run a normal sync for the current account
-               final Optional<Long> lastFullSync = _mbwManager.getMetadataStorage().getLastFullSync();
-               if (lastFullSync.isPresent()
-                     && (new Date().getTime() - lastFullSync.get()< MIN_FULLSYNC_INTERVAL) ) {
-                  _mbwManager.getWalletManager(false).startSynchronization();
-               } else {
-                  _mbwManager.getWalletManager(false).startSynchronization(SyncMode.FULL_SYNC_ALL_ACCOUNTS);
-                  _mbwManager.getMetadataStorage().setLastFullSync(new Date().getTime());
-               }
             }
-         }, 70);
-         _lastSync = new Date().getTime();
+         }, 50);
       }
+
+      stopBalanceRefreshTimer();
+      balanceRefreshTimer = new Timer();
+      balanceRefreshTimer.scheduleAtFixedRate(new TimerTask() {
+         @Override
+         public void run() {
+            _mbwManager.getExchangeRateManager().requestRefresh();
+
+            // if the last full sync is too old (or not known), start a full sync for _all_ accounts
+            // otherwise just run a normal sync for the current account
+            final Optional<Long> lastFullSync = _mbwManager.getMetadataStorage().getLastFullSync();
+            if (lastFullSync.isPresent()
+                    && (new Date().getTime() - lastFullSync.get()< MIN_FULLSYNC_INTERVAL) ) {
+               _mbwManager.getWalletManager(false).startSynchronization();
+            } else {
+               _mbwManager.getWalletManager(false).startSynchronization(SyncMode.FULL_SYNC_ALL_ACCOUNTS);
+               _mbwManager.getMetadataStorage().setLastFullSync(new Date().getTime());
+            }
+
+            _lastSync = new Date().getTime();
+         }
+      }, 100, MIN_AUTOSYNC_INTERVAL);
+
       supportInvalidateOptionsMenu();
       // remove the transaction notification (if exists)
       NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
@@ -290,6 +314,7 @@ public class ModernMain extends ActionBarActivity {
 
    @Override
    protected void onPause() {
+      stopBalanceRefreshTimer();
       _mbwManager.getEventBus().unregister(this);
       _mbwManager.getVersionManager().closeDialog();
       super.onPause();
@@ -367,7 +392,7 @@ public class ModernMain extends ActionBarActivity {
 
       Preconditions.checkNotNull(menu.findItem(R.id.miRescanTransactions)).setVisible(isHistoryTab);
 
-      final boolean isAddressBook = tabIdx == 3;
+      final boolean isAddressBook = tabIdx == addressBookTabIndex;
       Preconditions.checkNotNull(menu.findItem(R.id.miAddAddress)).setVisible(isAddressBook);
 
       return super.onPrepareOptionsMenu(menu);
@@ -403,6 +428,7 @@ public class ModernMain extends ActionBarActivity {
                syncMode = SyncMode.NORMAL_ALL_ACCOUNTS_FORCED;
             }
             _mbwManager.getWalletManager(false).startSynchronization(syncMode);
+            _mbwManager.getColuManager().startSynchronization();
             // also fetch a new exchange rate, if necessary
             _mbwManager.getExchangeRateManager().requestOptionalRefresh();
             break;
@@ -417,6 +443,7 @@ public class ModernMain extends ActionBarActivity {
          case R.id.miRescanTransactions:
             _mbwManager.getSelectedAccount().dropCachedData();
             _mbwManager.getWalletManager(false).startSynchronization(SyncMode.FULL_SYNC_CURRENT_ACCOUNT_FORCED);
+            _mbwManager.getColuManager().startSynchronization();
             break;
          case R.id.miExportHistory:
             shareTransactionHistory();
@@ -487,7 +514,8 @@ public class ModernMain extends ActionBarActivity {
 
    public void setRefreshAnimation() {
       if (refreshItem != null) {
-         if (_mbwManager.getWalletManager(false).getState() == WalletManager.State.SYNCHRONIZING) {
+         if (_mbwManager.getWalletManager(false).getState() == WalletManager.State.SYNCHRONIZING
+                 || _mbwManager.getColuManager().getState() == WalletManager.State.SYNCHRONIZING) {
             MenuItem menuItem = MenuItemCompat.setActionView(refreshItem, R.layout.actionbar_indeterminate_progress);
             ImageView ivTorIcon = (ImageView) menuItem.getActionView().findViewById(R.id.ivTorIcon);
 

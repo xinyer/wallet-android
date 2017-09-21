@@ -115,7 +115,7 @@
         <ImageView
                 android:id="@+id/btScan"
                 style="@style/MyceliumButton"
-                android:layout_width="wrap_content"
+                android:layout_width="?attr/actionBarSize"
                 android:layout_height="fill_parent"
                 android:src="@drawable/photo"
                 android:contentDescription="@string/scan_qr_code"/>
