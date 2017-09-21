@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.UUID;
 
 public interface WalletManagerBacking extends SecureKeyValueStoreBacking {
-
    boolean createBip44AccountContext(Bip44AccountContext context);
 
    List<Bip44AccountContext> loadBip44AccountContexts();

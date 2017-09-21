@@ -40,6 +40,7 @@ dependencies {
     compile "com.android.support:appcompat-v7:$androidSupportVersion"
     compile "com.android.support:support-v4:$androidSupportVersion"
     compile "com.android.support:animated-vector-drawable:$androidSupportVersion"
+    compile 'com.android.support:recyclerview-v7:22.2.0'
     //not upgrading. This will be removed from the core app
     compile('com.google.android.gms:play-services-base:9.0.2') {
         exclude module: 'support-v4'
@@ -67,6 +68,8 @@ dependencies {
     // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
     compile 'com.google.protobuf:protobuf-java:3.1.0'
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    annotationProcessor 'com.jakewharton:butterknife-compiler:8.1.0'
+    compile 'com.jjoe64:graphview:4.2.1'
 }
 
 android {
@@ -96,8 +99,8 @@ android {
     buildToolsVersion androidSdkBuildVersion
 
     defaultConfig {
-        versionCode 281100
-        versionName '2.8.11'
+        versionCode 290300
+        versionName '2.9.3'
         multiDexEnabled true
     }
 

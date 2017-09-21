@@ -10,6 +10,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+
 import com.google.android.vending.licensing.AESObfuscator;
 import com.google.android.vending.licensing.LicenseChecker;
 import com.google.android.vending.licensing.LicenseCheckerCallback;
@@ -97,6 +98,7 @@ public class SimplexMainActivity extends Activity {
         super.onDestroy();
         destroyCheckers();
     }
+    /** Simplex App Auth logic Start **/
 
     /* Simplex App Auth logic Start */
     private Runnable simplexAsync = new Runnable() {

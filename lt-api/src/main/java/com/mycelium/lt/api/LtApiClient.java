@@ -56,7 +56,6 @@ import com.squareup.okhttp.*;
 
 @SuppressWarnings("deprecation")
 public class LtApiClient implements LtApi {
-
    public static final int TIMEOUT_MS = 60000 * 2;
 
    public interface Logger {
@@ -95,7 +94,6 @@ public class LtApiClient implements LtApi {
    private HttpEndpoint getEndpoint() {
       return _serverEndpoints.getCurrentEndpoint();
    }
-
 
    private <T> LtResponse<T> sendRequest(LtRequest request, TypeReference<LtResponse<T>> typeReference) {
       try {
@@ -637,5 +635,4 @@ public class LtApiClient implements LtApi {
       return sendRequest(r, new TypeReference<LtResponse<Void>>() {
       });
    }
-
 }

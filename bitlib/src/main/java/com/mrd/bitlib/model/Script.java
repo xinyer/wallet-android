@@ -143,7 +143,7 @@ public abstract class Script implements Serializable {
    }
 
    protected static boolean isOP(byte[] chunk, int op) {
-      return chunk.length == 1 && (((int) chunk[0]) & 0xFF) == op;
+      return chunk != null && chunk.length == 1 && (((int) chunk[0]) & 0xFF) == op;
    }
 
    public static int opToIntValue(byte[] chunk) {
