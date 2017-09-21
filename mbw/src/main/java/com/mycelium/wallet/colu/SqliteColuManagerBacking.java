@@ -61,7 +61,7 @@ import java.util.*;
 import static com.mycelium.wallet.persistence.SQLiteQueryWithBlobs.uuidToBytes;
 
 public class SqliteColuManagerBacking implements WalletManagerBacking {
-   private static final String LOG_TAG = "SqliteColuManagerBacking";
+   private static final String LOG_TAG = "SqliteColuManagerBackin";
    private static final String TABLE_KV = "kv";
    private static final int DEFAULT_SUB_ID = 0;
    private SQLiteDatabase _database;
@@ -141,17 +141,14 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
       }
    }
 
-   @Override
    public void beginTransaction() {
       _database.beginTransaction();
    }
 
-   @Override
    public void setTransactionSuccessful() {
       _database.setTransactionSuccessful();
    }
 
-   @Override
    public void endTransaction() {
       _database.endTransaction();
    }
@@ -193,7 +190,7 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
    }
 
    @Override
-   public void createBip44AccountContext(Bip44AccountContext context) {
+   public boolean createBip44AccountContext(Bip44AccountContext context) {
       _database.beginTransaction();
       try {
 
@@ -219,6 +216,7 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
          _insertOrReplaceBip44Account.executeInsert();
 
          _database.setTransactionSuccessful();
+         return true;
       } finally {
          _database.endTransaction();
       }
@@ -266,7 +264,7 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
    }
 
    @Override
-   public void createSingleAddressAccountContext(SingleAddressAccountContext context) {
+   public boolean createSingleAddressAccountContext(SingleAddressAccountContext context) {
       _database.beginTransaction();
       try {
 
@@ -286,6 +284,7 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
          _insertOrReplaceSingleAddressAccount.bindLong(5, context.getBlockHeight());
          _insertOrReplaceSingleAddressAccount.executeInsert();
          _database.setTransactionSuccessful();
+         return true;
       } finally {
          _database.endTransaction();
       }
@@ -300,38 +299,45 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
    }
 
    @Override
-   public void deleteSingleAddressAccountContext(UUID accountId) {
+   public boolean deleteSingleAddressAccountContext(UUID accountId) {
       // "DELETE FROM single WHERE id = ?"
       beginTransaction();
       try {
          SqliteColuAccountBacking backing = _backings.get(accountId);
          if (backing == null) {
-            return;
+            return false;
          }
          _deleteSingleAddressAccount.bindBlob(1, uuidToBytes(accountId));
          _deleteSingleAddressAccount.execute();
          backing.dropTables();
          _backings.remove(accountId);
          setTransactionSuccessful();
+         return true;
       } finally {
          endTransaction();
       }
    }
 
    @Override
-   public void deleteBip44AccountContext(UUID accountId) {
+   public Map<Address, Long> getAllAddressCreationTimes() {
+      throw new Error("not implemented");
+   }
+
+   @Override
+   public boolean deleteBip44AccountContext(UUID accountId) {
       // "DELETE FROM bip44 WHERE id = ?"
       beginTransaction();
       try {
          SqliteColuAccountBacking backing = _backings.get(accountId);
          if (backing == null) {
-            return;
+            return false;
          }
          _deleteBip44Account.bindBlob(1, uuidToBytes(accountId));
          _deleteBip44Account.execute();
          backing.dropTables();
          _backings.remove(accountId);
          setTransactionSuccessful();
+         return true;
       } finally {
          endTransaction();
       }
@@ -510,21 +516,6 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
       }
 
       @Override
-      public void beginTransaction() {
-         SqliteColuManagerBacking.this.beginTransaction();
-      }
-
-      @Override
-      public void setTransactionSuccessful() {
-         SqliteColuManagerBacking.this.setTransactionSuccessful();
-      }
-
-      @Override
-      public void endTransaction() {
-         SqliteColuManagerBacking.this.endTransaction();
-      }
-
-      @Override
       public void clear() {
          _db.execSQL("DELETE FROM " + utxoTableName);
          _db.execSQL("DELETE FROM " + ptxoTableName);
@@ -534,13 +525,13 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
       }
 
       @Override
-      public synchronized void putUnspentOutput(TransactionOutputEx output) {
+      public synchronized boolean putUnspentOutput(TransactionOutputEx output) {
          _insertOrReplaceUtxo.bindBlob(1, SQLiteQueryWithBlobs.outPointToBytes(output.outPoint));
          _insertOrReplaceUtxo.bindLong(2, output.height);
          _insertOrReplaceUtxo.bindLong(3, output.value);
          _insertOrReplaceUtxo.bindLong(4, output.isCoinBase ? 1 : 0);
          _insertOrReplaceUtxo.bindBlob(5, output.script);
-         _insertOrReplaceUtxo.executeInsert();
+         return _insertOrReplaceUtxo.executeInsert() > 0;
       }
 
       @Override
@@ -585,34 +576,43 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
       }
 
       @Override
-      public void deleteUnspentOutput(OutPoint outPoint) {
+      public boolean deleteUnspentOutput(OutPoint outPoint) {
          _deleteUtxo.bindBlob(1, SQLiteQueryWithBlobs.outPointToBytes(outPoint));
          _deleteUtxo.execute();
+         return true;
       }
 
       @Override
-      public void putParentTransactionOutput(TransactionOutputEx output) {
+      public boolean deleteAllUnspentOutput() {
+         throw new Error("not implemented");
+      }
+
+      @Override
+      public boolean putParentTransactionOutput(TransactionOutputEx output) {
          _insertOrReplacePtxo.bindBlob(1, SQLiteQueryWithBlobs.outPointToBytes(output.outPoint));
          _insertOrReplacePtxo.bindLong(2, output.height);
          _insertOrReplacePtxo.bindLong(3, output.value);
          _insertOrReplacePtxo.bindLong(4, output.isCoinBase ? 1 : 0);
          _insertOrReplacePtxo.bindBlob(5, output.script);
          _insertOrReplacePtxo.executeInsert();
+         return true;
       }
 
       @Override
-      public void putTxRefersParentTransaction(Sha256Hash txId, List<OutPoint> refersOutputs) {
+      public boolean putTxRefersParentTransaction(Sha256Hash txId, List<OutPoint> refersOutputs) {
          for (OutPoint output : refersOutputs) {
             _insertTxRefersParentTx.bindBlob(1, txId.getBytes());
             _insertTxRefersParentTx.bindBlob(2, SQLiteQueryWithBlobs.outPointToBytes(output));
             _insertTxRefersParentTx.executeInsert();
          }
+         return true;
       }
 
       @Override
-      public void deleteTxRefersParentTransaction(Sha256Hash txId) {
+      public boolean deleteTxRefersParentTransaction(Sha256Hash txId) {
          _deleteTxRefersParentTx.bindBlob(1, txId.getBytes());
          _deleteTxRefersParentTx.execute();
+         return true;
       }
 
       @Override
@@ -655,33 +655,22 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
       }
 
       @Override
-      public boolean hasParentTransactionOutput(OutPoint outPoint) {
-         Cursor cursor = null;
-         try {
-            SQLiteQueryWithBlobs blobQuery = new SQLiteQueryWithBlobs(_db);
-            blobQuery.bindBlob(1, SQLiteQueryWithBlobs.outPointToBytes(outPoint));
-            cursor = blobQuery.query(false, ptxoTableName, new String[]{"height"}, "outpoint = ?", null, null, null,
-                  null, null);
-            return cursor.moveToNext();
-         } finally {
-            if (cursor != null) {
-               cursor.close();
-            }
-         }
-      }
-
-      @Override
-      public void putTransaction(TransactionEx tx) {
+      public boolean putTransaction(TransactionEx tx) {
          _insertOrReplaceTx.bindBlob(1, tx.txid.getBytes());
          _insertOrReplaceTx.bindLong(2, tx.height == -1 ? Integer.MAX_VALUE : tx.height);
          _insertOrReplaceTx.bindLong(3, tx.time);
          _insertOrReplaceTx.bindBlob(4, tx.binary);
          _insertOrReplaceTx.executeInsert();
 
-         putReferencedOutputs(tx.binary);
+         return putReferencedOutputs(tx.binary);
       }
 
-      private void putReferencedOutputs(byte[] rawTx) {
+      @Override
+      public long getOldestTransactionTimestamp() {
+         throw new Error("not implemented");
+      }
+
+      private boolean putReferencedOutputs(byte[] rawTx) {
          try {
             final Transaction transaction = Transaction.fromBytes(rawTx);
             final List<OutPoint> refersOutpoint = new ArrayList<>();
@@ -689,9 +678,11 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
                refersOutpoint.add(input.outPoint);
             }
             putTxRefersParentTransaction(transaction.getHash(), refersOutpoint);
+            return true;
          } catch (Transaction.TransactionParsingException e) {
             Log.w(LOG_TAG, "Unable to decode transaction: " + e.getMessage());
          }
+         return false;
       }
 
       @Override
@@ -718,11 +709,11 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
       }
 
       @Override
-      public void deleteTransaction(Sha256Hash hash) {
+      public boolean deleteTransaction(Sha256Hash hash) {
          _deleteTx.bindBlob(1, hash.getBytes());
          _deleteTx.execute();
          // also delete all output references for this tx
-         deleteTxRefersParentTransaction(hash);
+         return deleteTxRefersParentTransaction(hash);
       }
 
       @Override
@@ -789,12 +780,12 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
       }
 
       @Override
-      public void putOutgoingTransaction(Sha256Hash txid, byte[] rawTransaction) {
+      public boolean putOutgoingTransaction(Sha256Hash txid, byte[] rawTransaction) {
          _insertOrReplaceOutTx.bindBlob(1, txid.getBytes());
          _insertOrReplaceOutTx.bindBlob(2, rawTransaction);
          _insertOrReplaceOutTx.executeInsert();
 
-         putReferencedOutputs(rawTransaction);
+         return putReferencedOutputs(rawTransaction);
       }
 
       @Override
@@ -815,12 +806,6 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
       }
 
       @Override
-      public void removeOutgoingTransaction(Sha256Hash txid) {
-         _deleteOutTx.bindBlob(1, txid.getBytes());
-         _deleteOutTx.execute();
-      }
-
-      @Override
       public boolean isOutgoingTransaction(Sha256Hash txid) {
          Cursor cursor = null;
          try {
@@ -834,6 +819,11 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
                cursor.close();
             }
          }
+      }
+
+      @Override
+      public boolean deleteOutgoingTransaction(Sha256Hash txid) {
+         throw new Error("not implemented");
       }
 
       @Override
@@ -880,13 +870,35 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
       }
 
       @Override
-      public void updateAccountContext(Bip44AccountContext context) {
+      public boolean updateAccountContext(Bip44AccountContext context) {
          updateBip44AccountContext(context);
+         return true;
       }
 
       @Override
-      public void updateAccountContext(SingleAddressAccountContext context) {
+      public boolean storeAddressCreationTime(Address address, long timestamp) {
+         throw new Error("not implemented");
+      }
+
+      @Override
+      public boolean storeAddressOldestActivityTime(Address address, long unixTimeSeconds) {
+         throw new Error("not implemented");
+      }
+
+      @Override
+      public long getCreationTimeByAddress(Address address) {
+         throw new Error("not implemented");
+      }
+
+      @Override
+      public long getOldestActivityTimeByAddress(Address address) {
+         throw new Error("not implemented");
+      }
+
+      @Override
+      public boolean updateAccountContext(SingleAddressAccountContext context) {
          updateSingleAddressAccountContext(context);
+         return true;
       }
    }
 

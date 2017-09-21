@@ -44,6 +44,7 @@ import com.mrd.bitlib.StandardTransactionBuilder;
 import com.mrd.bitlib.crypto.InMemoryPrivateKey;
 import com.mrd.bitlib.model.Address;
 import com.mrd.bitlib.model.NetworkParameters;
+import com.mrd.bitlib.model.OutPoint;
 import com.mrd.bitlib.model.OutputList;
 import com.mrd.bitlib.model.ScriptOutput;
 import com.mrd.bitlib.model.Transaction;
@@ -92,6 +93,7 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 //import com.colu.api.httpclient.ColuClient;
@@ -330,6 +332,11 @@ public class ColuAccount extends SynchronizeAbleWalletAccount implements Exporta
    @Override
    public Optional<Address> getReceivingAddress() {
       return Optional.of(address);
+   }
+
+   @Override
+   public Collection<Address> getAddresses() {
+      throw new Error("not implemented");
    }
 
    @Override
@@ -732,6 +739,11 @@ public class ColuAccount extends SynchronizeAbleWalletAccount implements Exporta
    }
 
    @Override
+   public void notifyNewTransactionDiscovered(TransactionEx transactionEx, Map<OutPoint, TransactionOutput> connectedOutputs, Set<OutPoint> utxoSet) {
+      throw new Error("not implemented");
+   }
+
+   @Override
    protected boolean doSynchronization(SyncMode mode) {
       try {
          manager.updateAccountBalance(this);
@@ -1018,6 +1030,16 @@ public class ColuAccount extends SynchronizeAbleWalletAccount implements Exporta
    @Override
    public String getAccountDefaultCurrency() {
       return getColuAsset().name;
+   }
+
+   @Override
+   public boolean storeAddressOldestActivityTime(Address address, long unixTimeinSecs) {
+      throw new Error("not implemented");
+   }
+
+   @Override
+   public long getOldestActivityTimeByAddress(Address address) {
+      throw new Error("not implemented");
    }
 
    public SingleAddressAccount getLinkedAccount() {

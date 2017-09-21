@@ -444,7 +444,11 @@ public class AddAdvancedAccountActivity extends Activity {
                }
                break;
                case SA:
-                  acc = _mbwManager.getWalletManager(false).createSingleAddressAccount(address);
+                  try {
+                     acc = _mbwManager.getWalletManager(false).createSingleAddressAccount(address);
+                  } catch (WalletManager.WalletManagerException e) {
+                     return null;
+                  }
                   break;
                case Colu:
                   ColuManager coluManager = _mbwManager.getColuManager();
@@ -483,7 +487,12 @@ public class AddAdvancedAccountActivity extends Activity {
                         public void onClick(DialogInterface dialogInterface, int i) {
                            UUID account;
                            if (selectedItem == 0) {
-                              account = _mbwManager.getWalletManager(false).createSingleAddressAccount(address);
+                              try {
+                                 account = _mbwManager.getWalletManager(false).createSingleAddressAccount(address);
+                              } catch (WalletManager.WalletManagerException e) {
+                                 finishNok();
+                                 return;
+                              }
                            } else {
                               ColuAccount.ColuAsset coluAsset = ColuAccount.ColuAsset.getByType(ColuAccount.ColuAssetType.parse(list.get(selectedItem)), _mbwManager.getNetwork());
                               account = _mbwManager.getColuManager().enableReadOnlyAsset(coluAsset, address);
