@@ -36,7 +36,9 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
                     clone.action = SpvService.ACTION_BROADCAST_TRANSACTION
                 }
             }
-            IntentContract.ReceiveTransactions.ACTION -> {}
+            IntentContract.ReceiveTransactions.ACTION -> {
+                clone.action = SpvService.ACTION_RECEIVE_TRANSACTIONS
+            }
             IntentContract.RequestPrivateExtendedKeyCoinTypeToSPV.ACTION -> {
                 val bip39Passphrase = intent.getStringArrayListExtra(IntentContract.RequestPrivateExtendedKeyCoinTypeToSPV.BIP39_PASS_PHRASE_EXTRA)
                 val accountIndex = intent.getIntExtra(IntentContract.ACCOUNT_INDEX_EXTRA, -1)

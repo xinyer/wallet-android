@@ -17,7 +17,6 @@ import android.text.format.DateUtils
 import android.util.Log
 import android.widget.Toast
 import com.mycelium.modularizationtools.ModuleMessageReceiver
-import com.mycelium.spvmodule.providers.IntentContract
 import org.bitcoinj.core.Context.enableStrictMode
 import org.bitcoinj.core.Context.propagate
 import org.bitcoinj.core.Transaction
