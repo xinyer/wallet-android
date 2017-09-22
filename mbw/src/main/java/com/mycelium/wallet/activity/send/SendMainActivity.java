@@ -72,7 +72,7 @@ import com.mrd.bitlib.model.UnspentTransactionOutput;
 import com.mycelium.modularizationtools.CommunicationManager;
 import com.mycelium.paymentrequest.PaymentRequestException;
 import com.mycelium.paymentrequest.PaymentRequestInformation;
-import com.mycelium.spvmodule.providers.IntentContract;
+import com.mycelium.spvmodule.IntentContract;
 import com.mycelium.wallet.BitcoinUri;
 import com.mycelium.wallet.BitcoinUriWithAddress;
 import com.mycelium.wallet.MbwManager;
@@ -1436,11 +1436,10 @@ public class SendMainActivity extends Activity {
     }
 
     private void sendWithSpvModule(String address, BitcoinValue amountToSend, long getFeePerKb) {
-        Intent paymentIntent = IntentContract.SendFunds.createIntent(
-                address, amountToSend.getLongValue(), getFeePerKb);
         Optional<UUID> accountByAddress = _mbwManager.getWalletManager(false).getAccountByAddress(Address.fromString(address));
         int accountIndex = ((Bip44Account) _mbwManager.getWalletManager(false).getAccount(accountByAddress.get())).getAccountIndex();
-        paymentIntent.putExtra(IntentContract.ACCOUNT_INDEX_EXTRA, accountIndex);
+        Intent paymentIntent = IntentContract.SendFunds.createIntent(
+                accountIndex, address, amountToSend.getLongValue(), getFeePerKb);
         CommunicationManager communicationManager = CommunicationManager.Companion.getInstance(this);
         communicationManager.send(WalletApplication.getSpvModuleName(), paymentIntent);
     }
