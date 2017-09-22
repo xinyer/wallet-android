@@ -17,6 +17,7 @@ import android.text.format.DateUtils
 import android.util.Log
 import android.widget.Toast
 import com.mycelium.modularizationtools.ModuleMessageReceiver
+import com.mycelium.spvmodule.providers.IntentContract
 import org.bitcoinj.core.Context.enableStrictMode
 import org.bitcoinj.core.Context.propagate
 import org.bitcoinj.core.Transaction
@@ -190,20 +191,6 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         }
     }
 
-    fun saveWallet() = try {
-        protobufSerializeWallet(wallet!!)
-    } catch (x: IOException) {
-        throw RuntimeException(x)
-    }
-
-    @Throws(IOException::class)
-    private fun protobufSerializeWallet(wallet: Wallet) {
-        val start = System.currentTimeMillis()
-
-        wallet.saveToFile(walletFile!!)
-        Log.d(LOG_TAG, "wallet saved to: $walletFile', took ${System.currentTimeMillis() - start}ms")
-    }
-
     private val LOG_TAG: String? = this.javaClass.canonicalName
 
     fun backupWallet() {
@@ -235,9 +222,9 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     }
 
     private fun migrateBackup() {
+        // TODO: make this multi-wallet aware
         if (!getFileStreamPath(Constants.Files.WALLET_KEY_BACKUP_PROTOBUF).exists()) {
             Log.i(LOG_TAG, "migrating automatic backup to protobuf")
-
             // make sure there is at least one recent backup
             backupWallet()
         }
@@ -257,7 +244,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     fun startBlockchainService(cancelCoinsReceived: Boolean, accountIndex: Int) {
         Handler(Looper.getMainLooper()).post {
             if (cancelCoinsReceived) {
-                blockchainServiceCancelCoinsReceivedIntent!!.putExtra("ACCOUNT_INDEX", accountIndex)
+                blockchainServiceCancelCoinsReceivedIntent!!.putExtra(IntentContract.ACCOUNT_INDEX_EXTRA, accountIndex)
                 startService(blockchainServiceCancelCoinsReceivedIntent)
             }
             else
@@ -280,13 +267,12 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     @Synchronized
     fun resetBlockchainWithExtendedKey(bip39Passphrase: ArrayList<String>, creationTimeSeconds: Long,
                                        accountIndex: Int) {
-        Log.d(LOG_TAG, "resetBlockchainWithExtendedKey, bip39Passphrase = $bip39Passphrase, creationTimeSeconds = $creationTimeSeconds")
         // implicitly stops blockchain service
         Handler(Looper.getMainLooper()).post {
             blockchainServiceResetBlockchainIntent!!
                     .putExtra("bip39Passphrase", bip39Passphrase)
             blockchainServiceResetBlockchainIntent!!
-                    .putExtra("ACCOUNT_INDEX", accountIndex)
+                    .putExtra(IntentContract.ACCOUNT_INDEX_EXTRA, accountIndex)
             blockchainServiceResetBlockchainIntent!!.putExtra("creationTimeSeconds", creationTimeSeconds)
             stopBlockchainService()
             Log.d(LOG_TAG, "resetBlockchainWithExtendedKey, startService : $blockchainServiceResetBlockchainIntent")
@@ -319,7 +305,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     fun broadcastTransaction(tx: Transaction, accountIndex: Int) {
         val intent = Intent(SpvService.ACTION_BROADCAST_TRANSACTION, null, this, SpvService::class.java)
         intent.putExtra(SpvService.ACTION_BROADCAST_TRANSACTION_HASH, tx.hash.bytes)
-        intent.putExtra("ACCOUNT_INDEX", accountIndex)
+        intent.putExtra(IntentContract.ACCOUNT_INDEX_EXTRA, accountIndex)
         Handler(Looper.getMainLooper()).post {
             startService(intent)
         }
@@ -386,7 +372,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
 
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
             val intent =  Intent(context, SpvService::class.java)
-            intent.putExtra("ACCOUNT_INDEX", INSTANCE!!.walletAccountIndex)
+            intent.putExtra(IntentContract.ACCOUNT_INDEX_EXTRA, INSTANCE!!.walletAccountIndex)
             val alarmIntent = PendingIntent.getService(context, 0, intent, 0)
             alarmManager.cancel(alarmIntent)
 

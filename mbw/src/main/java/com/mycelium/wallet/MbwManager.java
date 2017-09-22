@@ -80,6 +80,7 @@ import com.mycelium.modularizationtools.CommunicationManager;
 import com.mycelium.net.ServerEndpointType;
 import com.mycelium.net.TorManager;
 import com.mycelium.net.TorManagerOrbot;
+import com.mycelium.spvmodule.providers.IntentContract;
 import com.mycelium.wallet.activity.rmc.RmcApiClient;
 import com.mycelium.wallet.activity.util.BlockExplorer;
 import com.mycelium.wallet.activity.util.BlockExplorerManager;
@@ -1424,7 +1425,7 @@ public class MbwManager implements WalletManager.TransactionFetcher {
       Intent service = new Intent();
       //TODO: harmonize names and capitalization. monitor addresses?
       service.setAction("com.mycelium.wallet.receiveTransactions");
-      service.putExtra("ACCOUNT_INDEX",
+      service.putExtra(IntentContract.ACCOUNT_INDEX_EXTRA,
           ((Bip44Account) getSelectedAccount()).getAccountIndex());
       //String[] addressStrings = new String[addresses.size()];
       //int i=0;

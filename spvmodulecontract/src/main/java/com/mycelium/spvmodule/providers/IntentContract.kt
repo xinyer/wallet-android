@@ -5,10 +5,8 @@ package com.mycelium.spvmodule.providers
  * for the supported Actions.
  */
 class IntentContract {
-
     class SendFunds {
         companion object {
-
             @JvmField
             val ACTION = "com.mycelium.wallet.sendFunds"
 
@@ -21,5 +19,9 @@ class IntentContract {
             @JvmField
             val FEE_EXTRA = ACTION + "_fee"
         }
+    }
+    companion object {
+        @JvmField
+        val ACCOUNT_INDEX_EXTRA = "ACCOUNT_INDEX"
     }
 }
