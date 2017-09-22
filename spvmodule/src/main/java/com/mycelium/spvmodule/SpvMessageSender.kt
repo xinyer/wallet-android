@@ -18,8 +18,7 @@ class SpvMessageSender {
 
         fun sendTransactions(communicationManager: CommunicationManager,
                              transactionSet: Set<Transaction>,
-                             unspentTransactionOutputSet: Set<TransactionOutput>,
-                             receivingPackage:String? = null) {
+                             unspentTransactionOutputSet: Set<TransactionOutput>) {
             val transactions = transactionSet.map {
                 val transactionBytes = it.bitcoinSerialize()
                 //Log.d(LOG_TAG, "Sharing transaction $it with transaction bytes ${Hex.encode(transactionBytes)}")
@@ -71,7 +70,7 @@ class SpvMessageSender {
             }
             val requestPrivateExtendedKeyAccountLevelIntent = Intent()
             requestPrivateExtendedKeyAccountLevelIntent.action = "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW"
-            requestPrivateExtendedKeyAccountLevelIntent.putExtra("ACCOUNT_INDEX", accountIndex)
+            requestPrivateExtendedKeyAccountLevelIntent.putExtra(IntentContract.ACCOUNT_INDEX_EXTRA, accountIndex)
             send(communicationManager, requestPrivateExtendedKeyAccountLevelIntent)
         }
     }

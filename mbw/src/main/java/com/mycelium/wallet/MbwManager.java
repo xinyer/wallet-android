@@ -80,6 +80,7 @@ import com.mycelium.modularizationtools.CommunicationManager;
 import com.mycelium.net.ServerEndpointType;
 import com.mycelium.net.TorManager;
 import com.mycelium.net.TorManagerOrbot;
+import com.mycelium.spvmodule.IntentContract;
 import com.mycelium.wallet.activity.rmc.RmcApiClient;
 import com.mycelium.wallet.activity.util.BlockExplorer;
 import com.mycelium.wallet.activity.util.BlockExplorerManager;
@@ -1421,11 +1422,9 @@ public class MbwManager implements WalletManager.TransactionFetcher {
 
    @Override
    public void getTransactions(Set<WalletManager.AddressWithCreationTime> addresses) {
-      Intent service = new Intent();
+      int accountIndex = ((Bip44Account) getSelectedAccount()).getAccountIndex();
+      Intent service = IntentContract.ReceiveTransactions.createIntent(accountIndex);
       //TODO: harmonize names and capitalization. monitor addresses?
-      service.setAction("com.mycelium.wallet.receiveTransactions");
-      service.putExtra("ACCOUNT_INDEX",
-          ((Bip44Account) getSelectedAccount()).getAccountIndex());
       //String[] addressStrings = new String[addresses.size()];
       //int i=0;
       /* for(WalletManager.AddressWithCreationTime awct : addresses) {
@@ -1443,8 +1442,7 @@ public class MbwManager implements WalletManager.TransactionFetcher {
          }
 */
 
-      Log.d(LOG_TAG, "getTransactions: Intent is " + service + ", account index is : "
-          + ((Bip44Account) getSelectedAccount()).getAccountIndex());
+      Log.d(LOG_TAG, "getTransactions: Intent is " + service + ", account index is : " + accountIndex);
       CommunicationManager.Companion.getInstance(_applicationContext)
           .send(WalletApplication.getSpvModuleName(), service);
    }
