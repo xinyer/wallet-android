@@ -39,7 +39,7 @@ import com.google.common.util.concurrent.SettableFuture
 import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.spvmodule.BlockchainState.Impediment
 import com.mycelium.spvmodule.providers.BlockchainContract
-import com.mycelium.spvmodule.providers.IntentContract
+import com.mycelium.spvmodule.IntentContract
 import org.bitcoinj.core.*
 import org.bitcoinj.core.listeners.PeerConnectedEventListener
 import org.bitcoinj.core.listeners.PeerDataEventListener
@@ -269,7 +269,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                     }
                     return
                 }
-                "com.mycelium.wallet.receiveTransactions" -> {
+                IntentContract.ReceiveTransactions.ACTION -> {
                     val tmpWallet = SpvModuleApplication.getWallet(accountIndex)
                     if(tmpWallet == null || tmpWallet.keyChainGroupSize == 0) {
                         // Ask for private Key
