@@ -7,10 +7,8 @@ import android.content.Intent
  * for the supported Actions.
  */
 class IntentContract {
-
     class SendFunds {
         companion object {
-
             @JvmField
             val ACTION = "com.mycelium.wallet.sendFunds"
 
@@ -32,5 +30,9 @@ class IntentContract {
                 return intent;
             }
         }
+    }
+    companion object {
+        @JvmField
+        val ACCOUNT_INDEX_EXTRA = "ACCOUNT_INDEX"
     }
 }

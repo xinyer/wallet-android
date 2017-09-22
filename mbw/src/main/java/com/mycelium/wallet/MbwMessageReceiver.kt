@@ -15,6 +15,7 @@ import com.mrd.bitlib.model.NetworkParameters.NetworkType.*
 import com.mrd.bitlib.util.Sha256Hash
 import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.modularizationtools.ModuleMessageReceiver
+import com.mycelium.spvmodule.providers.IntentContract
 import com.mycelium.wallet.activity.modern.ModernMain
 import com.mycelium.wallet.event.SpvSyncChanged
 import com.mycelium.wallet.persistence.MetadataStorage
@@ -174,7 +175,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
             }
             "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW" -> {
                 val _mbwManager = MbwManager.getInstance(context)
-                val accountIndex = intent.getIntExtra("ACCOUNT_INDEX",
+                val accountIndex = intent.getIntExtra(IntentContract.ACCOUNT_INDEX_EXTRA,
                         (_mbwManager.selectedAccount as Bip44Account).accountIndex)
                 val masterSeed: Bip39.MasterSeed
                 try {
@@ -212,7 +213,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 //HexUtils.toHex(masterSeed.bip32Seed)
                 val bip39PassphraseList : ArrayList<String> = ArrayList(masterSeed.bip39WordList)
                 service.putExtra("bip39Passphrase", bip39PassphraseList)
-                service.putExtra("ACCOUNT_INDEX", accountIndex)
+                service.putExtra(IntentContract.ACCOUNT_INDEX_EXTRA, accountIndex)
                 service.putExtra("creationTimeSeconds", 1504664986L) //TODO Change value after test. Nelson
                 CommunicationManager.getInstance(context).send(WalletApplication.getSpvModuleName(), service)
             }

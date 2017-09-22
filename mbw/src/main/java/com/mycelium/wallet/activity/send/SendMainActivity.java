@@ -111,6 +111,7 @@ import com.mycelium.wapi.wallet.AesKeyCipher;
 import com.mycelium.wapi.wallet.KeyCipher;
 import com.mycelium.wapi.wallet.WalletAccount;
 import com.mycelium.wapi.wallet.WalletManager;
+import com.mycelium.wapi.wallet.bip44.Bip44Account;
 import com.mycelium.wapi.wallet.bip44.Bip44AccountExternalSignature;
 import com.mycelium.wapi.wallet.currency.BitcoinValue;
 import com.mycelium.wapi.wallet.currency.CurrencyValue;
@@ -1437,6 +1438,9 @@ public class SendMainActivity extends Activity {
     private void sendWithSpvModule(String address, BitcoinValue amountToSend, long getFeePerKb) {
         Intent paymentIntent = IntentContract.SendFunds.createIntent(
                 address, amountToSend.getLongValue(), getFeePerKb);
+        Optional<UUID> accountByAddress = _mbwManager.getWalletManager(false).getAccountByAddress(Address.fromString(address));
+        int accountIndex = ((Bip44Account) _mbwManager.getWalletManager(false).getAccount(accountByAddress.get())).getAccountIndex();
+        paymentIntent.putExtra(IntentContract.ACCOUNT_INDEX_EXTRA, accountIndex);
         CommunicationManager communicationManager = CommunicationManager.Companion.getInstance(this);
         communicationManager.send(WalletApplication.getSpvModuleName(), paymentIntent);
     }
