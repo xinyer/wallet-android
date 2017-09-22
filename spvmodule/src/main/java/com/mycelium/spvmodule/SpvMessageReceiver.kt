@@ -6,7 +6,6 @@ import android.util.Log
 
 import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.modularizationtools.ModuleMessageReceiver
-import com.mycelium.spvmodule.providers.IntentContract
 
 import org.bitcoinj.core.Transaction
 import org.bitcoinj.utils.ContextPropagatingThreadFactory
@@ -27,9 +26,9 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
             IntentContract.SendFunds.ACTION -> {
                 clone.action = SpvService.ACTION_SEND_FUNDS
             }
-            "com.mycelium.wallet.broadcastTransaction" -> {
+            IntentContract.BroadcastTransaction.ACTION -> {
                 val config = SpvModuleApplication.getApplication().configuration!!
-                val txBytes = intent.getByteArrayExtra("TX")
+                val txBytes = intent.getByteArrayExtra(IntentContract.BroadcastTransaction.TX_EXTRA)
                 if (config.broadcastUsingWapi) {
                     asyncWapiBroadcast(txBytes)
                     return
@@ -37,15 +36,15 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
                     clone.action = SpvService.ACTION_BROADCAST_TRANSACTION
                 }
             }
-            "com.mycelium.wallet.receiveTransactions" -> {}
-            "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToSPV" -> {
-                val bip39Passphrase = intent.getStringArrayListExtra("bip39Passphrase")
+            IntentContract.ReceiveTransactions.ACTION -> {}
+            IntentContract.RequestPrivateExtendedKeyCoinTypeToSPV.ACTION -> {
+                val bip39Passphrase = intent.getStringArrayListExtra(IntentContract.RequestPrivateExtendedKeyCoinTypeToSPV.BIP39_PASS_PHRASE_EXTRA)
                 val accountIndex = intent.getIntExtra(IntentContract.ACCOUNT_INDEX_EXTRA, -1)
                 if (accountIndex == -1) {
                     Log.e(LOG_TAG, "no account specified. Skipping ${intent.action}.")
                     return
                 }
-                val creationTimeSeconds = intent.getLongExtra("creationTimeSeconds", 0)
+                val creationTimeSeconds = intent.getLongExtra(IntentContract.RequestPrivateExtendedKeyCoinTypeToSPV.CREATION_TIME_SECONDS_EXTRA, 0)
                 SpvModuleApplication.getApplication()
                         .resetBlockchainWithExtendedKey(bip39Passphrase, creationTimeSeconds, accountIndex)
                 return

@@ -45,10 +45,9 @@ import android.widget.Toast;
 
 import com.google.common.base.Preconditions;
 import com.mrd.bitlib.model.Transaction;
-import com.mrd.bitlib.model.hdpath.Bip44Account;
 import com.mrd.bitlib.util.Sha256Hash;
 import com.mycelium.modularizationtools.CommunicationManager;
-import com.mycelium.spvmodule.providers.IntentContract;
+import com.mycelium.spvmodule.IntentContract;
 import com.mycelium.wallet.Constants;
 import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.R;
@@ -126,11 +125,9 @@ public class BroadcastTransactionActivity extends Activity {
          protected WalletAccount.BroadcastResult doInBackground(Void... args) {
             // TODO: 12/1/16 move this distinction to AbstractAccount or so.
             if(_mbwManager.useSpvModule()) {
-               Intent intent = new Intent("com.mycelium.wallet.broadcastTransaction");
-               intent.putExtra("TX", _transaction.toBytes());
-               intent.putExtra(IntentContract.ACCOUNT_INDEX_EXTRA,
-                   ((com.mycelium.wapi.wallet.bip44.Bip44Account) _mbwManager.getSelectedAccount()).getAccountIndex());
-
+               int accountIndex = ((com.mycelium.wapi.wallet.bip44.Bip44Account) _mbwManager.getSelectedAccount()).getAccountIndex();
+               Intent intent = IntentContract.BroadcastTransaction.createIntent(
+                       accountIndex, _transaction.toBytes());
                CommunicationManager communicationManager =
                    CommunicationManager.Companion.getInstance(BroadcastTransactionActivity.this);
                communicationManager.send(WalletApplication.getSpvModuleName(), intent);

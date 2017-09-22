@@ -15,7 +15,7 @@ import com.mrd.bitlib.model.NetworkParameters.NetworkType.*
 import com.mrd.bitlib.util.Sha256Hash
 import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.modularizationtools.ModuleMessageReceiver
-import com.mycelium.spvmodule.providers.IntentContract
+import com.mycelium.spvmodule.IntentContract
 import com.mycelium.wallet.activity.modern.ModernMain
 import com.mycelium.wallet.event.SpvSyncChanged
 import com.mycelium.wallet.persistence.MetadataStorage
@@ -164,18 +164,22 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 val bestChainHeight = intent.getIntExtra("best_chain_height", 0)
                 // val replaying = intent.getBooleanExtra("replaying", true)
                 // val impediments = intent.getStringArrayExtra("impediment")
-                walletManager.activeAccounts
-                        .filterIsInstance<Bip44Account>()
-                        .forEach {
-                            if(it.accountIndex
-                                    == intent.getIntExtra(IntentContract.ACCOUNT_INDEX_EXTRA, -1)) {
-                                it.blockChainHeight = bestChainHeight
+                val accountIndex = intent.getIntExtra(IntentContract.ACCOUNT_INDEX_EXTRA, -1)
+                if(accountIndex != -1) {
+                    walletManager.activeAccounts
+                            .filterIsInstance<Bip44Account>()
+                            .forEach {
+                                if (it.accountIndex == accountIndex) {
+                                    it.blockChainHeight = bestChainHeight
+                                }
                             }
-                        }
-                // Defines a Handler object that's attached to the UI thread
-                val runnable = Runnable {
-                    eventBus.post(SpvSyncChanged(Date(bestChainDate), bestChainHeight.toLong())) }
-                Handler(Looper.getMainLooper()).post(runnable)
+                    // Defines a Handler object that's attached to the UI thread
+                    val runnable = Runnable {
+                        eventBus.post(SpvSyncChanged(Date(bestChainDate), bestChainHeight.toLong(),
+                                accountIndex))
+                    }
+                    Handler(Looper.getMainLooper()).post(runnable)
+                }
 
             }
             "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW" -> {
@@ -206,10 +210,6 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 }
                 //val byteArrayToTransmitToSPVModule = accountLevelDeterministicKey.serializePrivate(networkParameters)
 
-                val service = Intent()
-                //TODO: harmonize names and capitalization. monitor addresses?
-                service.action = "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToSPV"
-
                 for (address in _mbwManager.getWalletManager(false).addresses) {
                     Log.d(TAG, "onMessage, com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW, " +
                             "address = $address")
@@ -217,9 +217,9 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
 
                 //HexUtils.toHex(masterSeed.bip32Seed)
                 val bip39PassphraseList : ArrayList<String> = ArrayList(masterSeed.bip39WordList)
-                service.putExtra("bip39Passphrase", bip39PassphraseList)
-                service.putExtra(IntentContract.ACCOUNT_INDEX_EXTRA, accountIndex)
-                service.putExtra("creationTimeSeconds", 1504664986L) //TODO Change value after test. Nelson
+                val service = IntentContract.RequestPrivateExtendedKeyCoinTypeToSPV.createIntent(
+                        accountIndex, bip39PassphraseList,
+                        1504664986L) //TODO Change value after test. Nelson
                 CommunicationManager.getInstance(context).send(WalletApplication.getSpvModuleName(), service)
             }
             null -> Log.w(TAG, "onMessage failed. No action defined.")

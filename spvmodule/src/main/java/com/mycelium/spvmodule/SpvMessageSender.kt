@@ -3,7 +3,6 @@ package com.mycelium.spvmodule
 import android.content.Intent
 import android.util.Log
 import com.mycelium.modularizationtools.CommunicationManager
-import com.mycelium.spvmodule.providers.IntentContract
 import org.bitcoinj.core.Transaction
 import org.bitcoinj.core.TransactionConfidence
 import org.bitcoinj.core.TransactionOutput
