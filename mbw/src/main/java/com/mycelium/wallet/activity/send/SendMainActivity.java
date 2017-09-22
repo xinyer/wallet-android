@@ -40,7 +40,6 @@ import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -127,7 +126,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 
 import butterknife.BindView;
@@ -1437,10 +1435,8 @@ public class SendMainActivity extends Activity {
     }
 
     private void sendWithSpvModule(String address, BitcoinValue amountToSend, long getFeePerKb) {
-        Intent paymentIntent = new Intent(IntentContract.SendFunds.ACTION);
-        paymentIntent.putExtra(IntentContract.SendFunds.ADDRESS_EXTRA, address);
-        paymentIntent.putExtra(IntentContract.SendFunds.AMOUNT_EXTRA, amountToSend.getLongValue());
-        paymentIntent.putExtra(IntentContract.SendFunds.FEE_EXTRA, getFeePerKb);
+        Intent paymentIntent = IntentContract.SendFunds.createIntent(
+                address, amountToSend.getLongValue(), getFeePerKb);
         CommunicationManager communicationManager = CommunicationManager.Companion.getInstance(this);
         communicationManager.send(WalletApplication.getSpvModuleName(), paymentIntent);
     }
