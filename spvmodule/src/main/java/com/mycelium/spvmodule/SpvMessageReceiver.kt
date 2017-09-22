@@ -22,6 +22,7 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
         org.bitcoinj.core.Context.propagate(Constants.CONTEXT)
         val clone = intent.clone() as Intent
         clone.setClass(context, SpvService::class.java)
+        clone.putExtra(IntentContract.ACCOUNT_INDEX_EXTRA, intent.getIntExtra(IntentContract.ACCOUNT_INDEX_EXTRA, -1))
         when (intent.action) {
             IntentContract.SendFunds.ACTION -> {
                 clone.action = SpvService.ACTION_SEND_FUNDS
