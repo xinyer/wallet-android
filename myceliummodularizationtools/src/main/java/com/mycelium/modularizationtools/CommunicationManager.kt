@@ -205,12 +205,11 @@ class CommunicationManager private constructor(val context: Context) {
             return
         }
 
-        Handler(Looper.getMainLooper()).post {
-            val serviceIntent = intent.clone() as Intent
-            serviceIntent.putExtra("key", getKey(receivingPackage))
-            serviceIntent.component = ComponentName(receivingPackage, MessageReceiver::class.qualifiedName)
-            context.startService(serviceIntent)
-        }
+        val serviceIntent = intent.clone() as Intent
+        serviceIntent.putExtra("key", getKey(receivingPackage))
+        serviceIntent.component = ComponentName(receivingPackage, MessageReceiver::class.qualifiedName)
+        context.startService(serviceIntent)
+
     }
 }
 

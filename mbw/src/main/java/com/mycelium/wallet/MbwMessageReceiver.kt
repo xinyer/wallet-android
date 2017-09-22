@@ -165,8 +165,13 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 // val replaying = intent.getBooleanExtra("replaying", true)
                 // val impediments = intent.getStringArrayExtra("impediment")
                 walletManager.activeAccounts
-                        .filterIsInstance<AbstractAccount>()
-                        .forEach { it.blockChainHeight = bestChainHeight }
+                        .filterIsInstance<Bip44Account>()
+                        .forEach {
+                            if(it.accountIndex
+                                    == intent.getIntExtra(IntentContract.ACCOUNT_INDEX_EXTRA, -1)) {
+                                it.blockChainHeight = bestChainHeight
+                            }
+                        }
                 // Defines a Handler object that's attached to the UI thread
                 val runnable = Runnable {
                     eventBus.post(SpvSyncChanged(Date(bestChainDate), bestChainHeight.toLong())) }

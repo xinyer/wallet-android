@@ -17,7 +17,6 @@
 
 package com.mycelium.spvmodule
 
-import android.annotation.SuppressLint
 import android.app.IntentService
 import android.app.Notification
 import android.app.NotificationManager
@@ -27,7 +26,9 @@ import android.content.Context
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener
 import android.database.Cursor
 import android.net.ConnectivityManager
+import android.os.AsyncTask
 import android.os.Handler
+import android.os.Looper
 import android.os.PowerManager
 import android.os.PowerManager.WakeLock
 import android.support.v4.content.LocalBroadcastManager
@@ -41,8 +42,8 @@ import com.mycelium.spvmodule.BlockchainState.Impediment
 import com.mycelium.spvmodule.providers.BlockchainContract
 import com.mycelium.spvmodule.providers.IntentContract
 import org.bitcoinj.core.*
+import org.bitcoinj.core.listeners.DownloadProgressTracker
 import org.bitcoinj.core.listeners.PeerConnectedEventListener
-import org.bitcoinj.core.listeners.PeerDataEventListener
 import org.bitcoinj.core.listeners.PeerDisconnectedEventListener
 import org.bitcoinj.crypto.ChildNumber
 import org.bitcoinj.net.discovery.MultiplexingDiscovery
@@ -76,7 +77,6 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
     private var peerGroup: PeerGroup? = null
 
     private val handler = Handler()
-    private val delayHandler = Handler()
     private var wakeLock: WakeLock? = null
 
     private var peerConnectivityListener: PeerConnectivityListener? = null
@@ -88,10 +88,14 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
 
     private var cursorLoader: CursorLoader? = null
 
+    private lateinit var downloadProgressTracker: DownloadProgressTracker
+    private lateinit var connectivityReceiver : ConnectivityReceiver
+
+
     private val walletEventListener = object
         : ThrottlingWalletChangeListener(APPWIDGET_THROTTLE_MS) {
         override fun onChanged(wallet: Wallet) {
-            notifyTransactions(wallet.getTransactions(true))
+            notifyTransactions(wallet!!.getTransactions(true))
         }
 
         override fun onTransactionConfidenceChanged(wallet: Wallet, tx: Transaction) {
@@ -115,7 +119,8 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
 
     private val LOG_TAG: String? = this::class.java.canonicalName
 
-    private val tickReceiver = object : BroadcastReceiver() {
+    private val tickReceiver = TickReceiver()
+    inner class TickReceiver : BroadcastReceiver() {
         private var lastChainHeight = 0
         private val activityHistory = LinkedList<ActivityHistoryEntry>()
 
@@ -171,10 +176,10 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
 
     private val LOADER_ID_NETWORK: Int = 0
 
-    private val future = SettableFuture.create<Long>()
+    private val futureSpvService = SettableFuture.create<Long>()
     private var reentrantLock = ReentrantLock(true)
 
-    private lateinit var wallet: Wallet
+    private var wallet: Wallet? = null
     private var accountIndex: Int = -1
 
     override fun onHandleIntent(intent: Intent?) {
@@ -216,7 +221,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                     val bip39Passphrase = intent.getStringArrayListExtra("bip39Passphrase")
                     val creationTimeSeconds = intent.getLongExtra("creationTimeSeconds", 0)
                     initializeBlockchain(bip39Passphrase, creationTimeSeconds)
-                    future.set(0)
+                    futureSpvService.set(0)
                     resetBlockchainOnShutdown = true
                     stopSelf()
                 }
@@ -227,7 +232,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                     Log.i(LOG_TAG, "onReceive: TX = " + tx)
                     tx.getConfidence().setSource(TransactionConfidence.Source.SELF);
                     tx.setPurpose(Transaction.Purpose.USER_PAYMENT);
-                    wallet.maybeCommitTx(tx)
+                    wallet!!.maybeCommitTx(tx)
                     if (peerGroup != null) {
                         Log.i(LOG_TAG, "broadcasting transaction ${tx.hashAsString}")
 
@@ -260,7 +265,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                         sendRequest.feePerKb = Coin.valueOf(feePerKb)
                     }
                     wallet = SpvModuleApplication.getWallet(accountIndex)!!
-                    val tx = wallet.sendCoinsOffline(sendRequest)
+                    val tx = wallet!!.sendCoinsOffline(sendRequest)
                     if (peerGroup != null) {
                         Log.i(LOG_TAG, "broadcasting transaction ${tx.hashAsString}")
                         peerGroup!!.broadcastTransaction(tx)
@@ -278,8 +283,8 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                     }
                     initializeBlockchain(null, 0)
                     Log.d(LOG_TAG, "com.mycelium.wallet.receiveTransactions,  accountIndex = $accountIndex")
-                    val transactionSet = wallet.getTransactions(false)
-                    val utxos = wallet.unspents.toHashSet()
+                    val transactionSet = wallet!!.getTransactions(false)
+                    val utxos = wallet!!.unspents.toHashSet()
                     if(!transactionSet.isEmpty() || !utxos.isEmpty()) {
                         SpvMessageSender.sendTransactions(CommunicationManager.getInstance(this), transactionSet, utxos)
                     }
@@ -289,7 +294,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                 }
             }
             broadcastBlockchainState()
-            future.get()
+            futureSpvService.get()
         } else {
             Log.w(LOG_TAG, "onHandleIntent: service restart, although it was started as non-sticky")
             broadcastBlockchainState()
@@ -360,14 +365,14 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
 
         if (!blockChainFileExists) {
             Log.i(LOG_TAG, "blockchain does not exist, resetting wallet")
-            wallet.reset()
+            wallet!!.reset()
         }
 
         try {
             blockStore = SPVBlockStore(Constants.NETWORK_PARAMETERS, blockChainFile!!)
             blockStore!!.chainHead // detect corruptions as early as possible
 
-            val earliestKeyCreationTime = wallet.earliestKeyCreationTime
+            val earliestKeyCreationTime = wallet!!.earliestKeyCreationTime
 
             if (!blockChainFileExists && earliestKeyCreationTime > 0) {
                 try {
@@ -409,14 +414,15 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
             //Log.e(LOG_TAG, e.localizedMessage, e)
             // TODO TEMP FIX // DEBUG THAT
 
-        }
+        } catch (e : UninitializedPropertyAccessException) {}
 
+        connectivityReceiver = ConnectivityReceiver()
         registerReceiver(connectivityReceiver, intentFilter) // implicitly start PeerGroup
-        wallet.addCoinsReceivedEventListener(Threading.SAME_THREAD, walletEventListener)
-        wallet.addCoinsSentEventListener(Threading.SAME_THREAD, walletEventListener)
-        wallet.addChangeEventListener(Threading.SAME_THREAD, walletEventListener)
-        wallet.addTransactionConfidenceEventListener(Threading.SAME_THREAD, walletEventListener)
-
+        wallet!!.addCoinsReceivedEventListener(Threading.SAME_THREAD, walletEventListener)
+        wallet!!.addCoinsSentEventListener(Threading.SAME_THREAD, walletEventListener)
+        wallet!!.addChangeEventListener(Threading.SAME_THREAD, walletEventListener)
+        wallet!!.addTransactionConfidenceEventListener(Threading.SAME_THREAD, walletEventListener)
+/*
         try {
             unregisterReceiver(tickReceiver)
         } catch (e : IllegalArgumentException) {
@@ -425,6 +431,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
             // TODO TEMP FIX // DEBUG THAT
         }
         registerReceiver(tickReceiver, IntentFilter(Intent.ACTION_TIME_TICK))
+        */
     }
 
     override fun onDestroy() {
@@ -439,29 +446,32 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         cursor?.close()
 
         SpvModuleApplication.scheduleStartBlockchainService(this)
-        try {
+        /*try {
             unregisterReceiver(tickReceiver)
         } catch (e : IllegalArgumentException) {
             //Receiver not registered.
             //Log.e(LOG_TAG, e.localizedMessage, e)
+        } */
+        if(wallet != null) {
+            wallet!!.removeChangeEventListener(walletEventListener)
+            wallet!!.removeCoinsSentEventListener(walletEventListener)
+            wallet!!.removeCoinsReceivedEventListener(walletEventListener)
         }
-
-        wallet.removeChangeEventListener(walletEventListener)
-        wallet.removeCoinsSentEventListener(walletEventListener)
-        wallet.removeCoinsReceivedEventListener(walletEventListener)
 
         try {
             unregisterReceiver(connectivityReceiver)
         } catch (e : IllegalArgumentException) {
             //Receiver not registered.
             //Log.e(LOG_TAG, e.localizedMessage, e)
-        }
+        } catch (e : UninitializedPropertyAccessException) {}
 
         if (peerGroup != null) {
             peerGroup!!.removeDisconnectedEventListener(peerConnectivityListener!!)
             peerGroup!!.removeConnectedEventListener(peerConnectivityListener!!)
             peerGroup!!.removeWallet(wallet)
-            peerGroup!!.stop()
+            if(peerGroup!!.isRunning) {
+                peerGroup!!.stop()
+            }
 
             Log.i(LOG_TAG, "peergroup stopped")
         }
@@ -469,16 +479,15 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         if(peerConnectivityListener != null) {
             peerConnectivityListener!!.stop()
         }
-
-        delayHandler.removeCallbacksAndMessages(null)
-
         blockStore?.close()
 
         val start = System.currentTimeMillis()
 
-        val walletFile = getFileStreamPath(Constants.Files.WALLET_FILENAME_PROTOBUF + "_$accountIndex")
-        wallet.saveToFile(walletFile)
-        Log.d(LOG_TAG, "wallet saved to: $walletFile', took ${System.currentTimeMillis() - start}ms")
+        if(wallet != null) {
+            val walletFile = getFileStreamPath(Constants.Files.WALLET_FILENAME_PROTOBUF + "_$accountIndex")
+            wallet!!.saveToFile(walletFile)
+            Log.d(LOG_TAG, "wallet saved to: $walletFile', took ${System.currentTimeMillis() - start}ms")
+        }
 
         if (resetBlockchainOnShutdown && blockChainFile != null) {
             Log.i(LOG_TAG, "removing blockchain, reset blockchain on shutdown")
@@ -528,7 +537,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         semaphore.acquire()
         if (!transactions.isEmpty()) {
             // send the new transaction and the *complete* utxo set of the wallet
-            val utxos = wallet.unspents.toSet()
+            val utxos = wallet!!.unspents.toSet()
             SpvMessageSender.sendTransactions(CommunicationManager.getInstance(this), transactions, utxos)
         }
         semaphore.release()
@@ -569,13 +578,12 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
 
         private fun changed() {
             if(!stopped.get()) {
-                this@SpvService.changed()
+                AsyncTask.execute(Runnable { this@SpvService.changed() })
             }
         }
     }
 
     private fun changed() {
-        handler.post {
             val connectivityNotificationEnabled = config!!.connectivityNotificationEnabled
 
             if (!connectivityNotificationEnabled || peerCount == 0) {
@@ -606,71 +614,46 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
 
             // send broadcast
             broadcastPeerState(peerCount)
-        }
     }
 
-    private val peerDataEventListener = object : PeerDataEventListener {
-        /**
-         * Called when a download is started with the initial number of blocks to be downloaded.
+    inner class DownloadProgressTrackerExt : DownloadProgressTracker() {
 
-         * @param peer       the peer receiving the block
-         * *
-         * @param blocksLeft the number of blocks left to download
-         */
         override fun onChainDownloadStarted(peer: Peer?, blocksLeft: Int) {
-            return
+            super.onChainDownloadStarted(peer, blocksLeft)
+            Log.d(LOG_TAG, "onChainDownloadStarted(), Blockchain's download is starting. " +
+                    "Blocks left to download is $blocksLeft")
         }
-
-        /**
-         *
-         * Called when a message is received by a peer, before the message is processed. The returned message is
-         * processed instead. Returning null will cause the message to be ignored by the Peer returning the same message
-         * object allows you to see the messages received but not change them. The result from one event listeners
-         * callback is passed as "m" to the next, forming a chain.
-
-         *
-         * Note that this will never be called if registered with any executor other than
-         * [org.bitcoinj.utils.Threading.SAME_THREAD]
-         */
-        override fun onPreMessageReceived(peer: Peer?, m: Message?): Message = m!!
-
-        /**
-         *
-         * Called when a peer receives a getdata message, usually in response to an "inv" being broadcast. Return as many
-         * items as possible which appear in the [GetDataMessage], or null if you're not interested in responding.
-
-         *
-         * Note that this will never be called if registered with any executor other than
-         * [org.bitcoinj.utils.Threading.SAME_THREAD]
-         */
-        override fun getData(peer: Peer?, m: GetDataMessage?): MutableList<Message>? = null
 
         private val lastMessageTime = AtomicLong(0)
 
-        override fun onBlocksDownloaded(peer: Peer?, block: Block?, filteredBlock: FilteredBlock?, blocksLeft: Int) {
-            delayHandler.removeCallbacksAndMessages(null)
-
+        override fun onBlocksDownloaded(peer: Peer, block: Block, filteredBlock: FilteredBlock?, blocksLeft: Int) {
+            if(BuildConfig.DEBUG) {
+                //Log.d(LOG_TAG, "onBlocksDownloaded, blocks left + $blocksLeft")
+            }
             val now = System.currentTimeMillis()
-            if (now - lastMessageTime.get() > BLOCKCHAIN_STATE_BROADCAST_THROTTLE_MS) {
-                delayHandler.post(runnable)
-            } else {
-                delayHandler.postDelayed(runnable, BLOCKCHAIN_STATE_BROADCAST_THROTTLE_MS)
+
+            if (now - lastMessageTime.get() > BLOCKCHAIN_STATE_BROADCAST_THROTTLE_MS
+                    || blocksLeft == 0) {
+                AsyncTask.execute(runnable)
             }
-            if(blocksLeft == 0) {
-                future.set(peer!!.bestHeight)
-            }
+            super.onBlocksDownloaded(peer, block, filteredBlock, blocksLeft)
+        }
+
+        override fun doneDownload() {
+            super.doneDownload()
+            Log.d(LOG_TAG, "doneDownload(), Blockchain is fully downloaded.")
+            futureSpvService.set(config!!.bestChainHeightEver.toLong())
         }
 
         private val runnable = Runnable {
             lastMessageTime.set(System.currentTimeMillis())
-
             config!!.maybeIncrementBestChainHeightEver(blockChain!!.chainHead.height)
             broadcastBlockchainState()
             changed()
         }
     }
 
-    private val connectivityReceiver = object : BroadcastReceiver() {
+    inner class ConnectivityReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val action = intent.action
 
@@ -708,7 +691,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                 wakeLock!!.acquire()
 
                 // consistency check
-                val walletLastBlockSeenHeight = wallet.lastBlockSeenHeight
+                val walletLastBlockSeenHeight = wallet!!.lastBlockSeenHeight
                 val bestChainHeight = blockChain!!.bestChainHeight
                 if (walletLastBlockSeenHeight != -1 && walletLastBlockSeenHeight != bestChainHeight) {
                     val message = "check(), wallet/blockchain out of sync: $walletLastBlockSeenHeight/$bestChainHeight"
@@ -748,7 +731,8 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                         var needsTrimPeersWorkaround = false
 
                         if (hasTrustedPeer) {
-                            Log.i(LOG_TAG, "check(), trusted peer '$trustedPeerHost' ${if (connectTrustedPeerOnly) " only" else ""}")
+                            Log.i(LOG_TAG, "check(), trusted peer '$trustedPeerHost' " +
+                                    if (connectTrustedPeerOnly) " only" else "")
 
                             val addr = InetSocketAddress(trustedPeerHost, Constants.NETWORK_PARAMETERS.port)
                             if (addr.address != null) {
@@ -777,8 +761,11 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                 //peerGroup!!.addWallet(wallet)
 
                 // start peergroup
-                peerGroup!!.startAsync()
-                peerGroup!!.startBlockChainDownload(peerDataEventListener)
+                downloadProgressTracker = DownloadProgressTrackerExt()
+                peerGroup!!.start()
+                peerGroup!!.startBlockChainDownload(downloadProgressTracker)
+                downloadProgressTracker.await()
+                peerGroup!!.stop()
             } else if (!impediments.isEmpty() && peerGroup != null) {
                 Log.i(LOG_TAG, "check(), stopping peergroup")
                 peerGroup!!.removeDisconnectedEventListener(peerConnectivityListener!!)
@@ -826,7 +813,9 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         // "broadcast" to registered consumers
         val securedMulticastIntent = Intent()
         securedMulticastIntent.action = "com.mycelium.wallet.blockchainState"
+        securedMulticastIntent.putExtra(IntentContract.ACCOUNT_INDEX_EXTRA, accountIndex)
         blockchainState.putExtras(securedMulticastIntent)
+
         SpvMessageSender.send(CommunicationManager.getInstance(this), securedMulticastIntent)
     }
 
