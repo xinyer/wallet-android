@@ -1436,8 +1436,8 @@ public class SendMainActivity extends Activity {
     }
 
     private void sendWithSpvModule(String address, BitcoinValue amountToSend, long getFeePerKb) {
-        Optional<UUID> accountByAddress = _mbwManager.getWalletManager(false).getAccountByAddress(Address.fromString(address));
-        int accountIndex = ((Bip44Account) _mbwManager.getWalletManager(false).getAccount(accountByAddress.get())).getAccountIndex();
+        WalletAccount selectedAccount = _mbwManager.getSelectedAccount();
+        int accountIndex = ((Bip44Account) selectedAccount).getAccountIndex();
         Intent paymentIntent = IntentContract.SendFunds.createIntent(
                 accountIndex, address, amountToSend.getLongValue(), getFeePerKb);
         CommunicationManager communicationManager = CommunicationManager.Companion.getInstance(this);
