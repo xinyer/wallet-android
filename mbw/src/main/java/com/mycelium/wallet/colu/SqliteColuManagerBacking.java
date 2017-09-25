@@ -42,8 +42,12 @@ import android.database.sqlite.SQLiteDoneException;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteStatement;
 import android.util.Log;
+
 import com.google.common.base.Preconditions;
-import com.mrd.bitlib.model.*;
+import com.mrd.bitlib.model.Address;
+import com.mrd.bitlib.model.OutPoint;
+import com.mrd.bitlib.model.Transaction;
+import com.mrd.bitlib.model.TransactionInput;
 import com.mrd.bitlib.util.BitUtils;
 import com.mrd.bitlib.util.HashUtils;
 import com.mrd.bitlib.util.HexUtils;
@@ -59,7 +63,14 @@ import com.mycelium.wapi.wallet.WalletManagerBacking;
 import com.mycelium.wapi.wallet.bip44.Bip44AccountContext;
 import com.mycelium.wapi.wallet.single.SingleAddressAccountContext;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static com.mycelium.wallet.persistence.SQLiteQueryWithBlobs.uuidToBytes;
 
@@ -1010,6 +1021,8 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
          db.execSQL("CREATE TABLE single (id TEXT PRIMARY KEY, address BLOB, addressstring TEXT, archived INTEGER, blockheight INTEGER);");
          db.execSQL("CREATE TABLE bip44 (id TEXT PRIMARY KEY, accountIndex INTEGER, archived INTEGER, blockheight INTEGER, lastExternalIndexWithActivity INTEGER, lastInternalIndexWithActivity INTEGER, firstMonitoredInternalIndex INTEGER, lastDiscovery, accountType INTEGER, accountSubId INTEGER);");
          db.execSQL("CREATE TABLE kv (k BLOB NOT NULL, v BLOB, checksum BLOB, subId INTEGER NOT NULL, PRIMARY KEY (k, subId) );");
+         db.execSQL("CREATE TABLE addressTimestamp (address TEXT PRIMARY KEY, timestamp INTEGER DEFAULT 0,"
+                 + " oldestactivitytimestamp INTEGER DEFAULT 1479081600);");
       }
 
       @Override
@@ -1030,7 +1043,11 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
             db.execSQL("ALTER TABLE bip44 ADD COLUMN accountType INTEGER DEFAULT 0");
             db.execSQL("ALTER TABLE bip44 ADD COLUMN accountSubId INTEGER DEFAULT 0");
          }
-         if(oldVersion <6) {
+         if (oldVersion < 4) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS addressTimestamp (address TEXT PRIMARY KEY, "
+                    + "timestamp INTEGER DEFAULT 0);");
+         }
+         if (oldVersion < 6) {
             db.execSQL("ALTER TABLE addressTimestamp ADD COLUMN oldestactivitytimestamp INTEGER DEFAULT 1479081600");
          }
       }

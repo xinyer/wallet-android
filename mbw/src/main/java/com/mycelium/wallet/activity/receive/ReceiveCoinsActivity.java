@@ -409,7 +409,8 @@ public class ReceiveCoinsActivity extends Activity {
             Uri soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
 
             NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(getApplicationContext())
-                    .setSound(soundUri, AudioManager.STREAM_NOTIFICATION); //This sets the sound to play
+                    .setSound(soundUri, AudioManager.STREAM_NOTIFICATION)
+                    .setSmallIcon(R.drawable.mycelium_logo_transp); //This sets the sound to play
             notificationManager.notify(0, mBuilder.build());
 
             _lastAddressBalance = sum;
