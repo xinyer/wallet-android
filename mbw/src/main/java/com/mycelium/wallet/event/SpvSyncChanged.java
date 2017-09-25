@@ -6,7 +6,7 @@ public class SpvSyncChanged {
     public final Date bestChainDate;
     public final long blockHeight;
 
-    public SpvSyncChanged(Date bestChainDate, long blockHeight) {
+    public SpvSyncChanged(Date bestChainDate, long blockHeight, int accountIndex) {
         this.bestChainDate = bestChainDate;
         this.blockHeight = blockHeight;
     }
