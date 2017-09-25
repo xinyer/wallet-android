@@ -621,7 +621,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         override fun onChainDownloadStarted(peer: Peer?, blocksLeft: Int) {
             super.onChainDownloadStarted(peer, blocksLeft)
             Log.d(LOG_TAG, "onChainDownloadStarted(), Blockchain's download is starting. " +
-                    "Blocks left to download is $blocksLeft")
+                    "Blocks left to download is $blocksLeft, peer = $peer")
         }
 
         private val lastMessageTime = AtomicLong(0)
@@ -687,8 +687,6 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         //@SuppressLint("Wakelock")
         private fun check() {
             if (impediments.isEmpty() && peerGroup == null) {
-                Log.d(LOG_TAG, "check(), acquiring wakelock")
-                wakeLock!!.acquire()
 
                 // consistency check
                 val walletLastBlockSeenHeight = wallet!!.lastBlockSeenHeight
@@ -752,7 +750,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                         return peers.toTypedArray()
                     }
 
-                    override fun shutdown() {wakeLock
+                    override fun shutdown() {
                         normalPeerDiscovery.shutdown()
                     }
                 })
@@ -762,9 +760,14 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
 
                 // start peergroup
                 downloadProgressTracker = DownloadProgressTrackerExt()
-                peerGroup!!.start()
+                peerGroup!!.startAsync()
                 peerGroup!!.startBlockChainDownload(downloadProgressTracker)
-                downloadProgressTracker.await()
+                try {
+                    downloadProgressTracker.await()
+                } catch (e: InterruptedException) {
+                    throw RuntimeException(e)
+                }
+                Log.i(LOG_TAG, "check(), stopping peergroup")
                 peerGroup!!.stop()
             } else if (!impediments.isEmpty() && peerGroup != null) {
                 Log.i(LOG_TAG, "check(), stopping peergroup")
@@ -773,9 +776,6 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                 peerGroup!!.removeWallet(wallet)
                 peerGroup!!.stopAsync()
                 peerGroup = null
-
-                Log.d(LOG_TAG, "check(), releasing wakelock")
-                wakeLock!!.release()
             }
 
             broadcastBlockchainState()
