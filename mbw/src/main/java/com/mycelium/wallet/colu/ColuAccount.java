@@ -337,7 +337,7 @@ public class ColuAccount extends SynchronizeAbleWalletAccount implements Exporta
 
    @Override
    public Collection<Address> getAddresses() {
-      throw new Error("not implemented");
+      return Collections.singleton(getAddress());
    }
 
    @Override
@@ -1035,12 +1035,12 @@ public class ColuAccount extends SynchronizeAbleWalletAccount implements Exporta
 
    @Override
    public boolean storeAddressOldestActivityTime(Address address, long unixTimeinSecs) {
-      throw new Error("not implemented");
+      return accountBacking.storeAddressOldestActivityTime(address, unixTimeinSecs);
    }
 
    @Override
    public long getOldestActivityTimeByAddress(Address address) {
-      throw new Error("not implemented");
+      return accountBacking.getOldestActivityTimeByAddress(address);
    }
 
    public SingleAddressAccount getLinkedAccount() {
