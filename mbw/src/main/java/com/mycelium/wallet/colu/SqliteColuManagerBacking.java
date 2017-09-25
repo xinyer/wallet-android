@@ -36,16 +36,23 @@ package com.mycelium.wallet.colu;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteDoneException;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteStatement;
 import android.util.Log;
+
 import com.google.common.base.Preconditions;
-import com.mrd.bitlib.model.*;
+import com.mrd.bitlib.model.Address;
+import com.mrd.bitlib.model.OutPoint;
+import com.mrd.bitlib.model.Transaction;
+import com.mrd.bitlib.model.TransactionInput;
 import com.mrd.bitlib.util.BitUtils;
 import com.mrd.bitlib.util.HashUtils;
 import com.mrd.bitlib.util.HexUtils;
 import com.mrd.bitlib.util.Sha256Hash;
+import com.mycelium.wallet.BuildConfig;
 import com.mycelium.wallet.persistence.SQLiteQueryWithBlobs;
 import com.mycelium.wapi.api.exception.DbCorruptedException;
 import com.mycelium.wapi.model.TransactionEx;
@@ -56,7 +63,14 @@ import com.mycelium.wapi.wallet.WalletManagerBacking;
 import com.mycelium.wapi.wallet.bip44.Bip44AccountContext;
 import com.mycelium.wapi.wallet.single.SingleAddressAccountContext;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static com.mycelium.wallet.persistence.SQLiteQueryWithBlobs.uuidToBytes;
 
@@ -76,6 +90,10 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
    private final SQLiteStatement _deleteKeyValue;
    private final SQLiteStatement _deleteSubId;
    private final SQLiteStatement _getMaxSubId;
+   private final SQLiteStatement _insertOrReplaceAddressTimestamp;
+   private final SQLiteStatement _updateOldestActivityTimestamp;
+   private final SQLiteStatement _getTimestampForAddress;
+   private final SQLiteStatement _getOldestActivityTimestampForAddress;
 
 
    public SqliteColuManagerBacking(Context context) {
@@ -92,6 +110,13 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
       _getMaxSubId = _database.compileStatement("SELECT max(subId) FROM kv");
       _deleteKeyValue = _database.compileStatement("DELETE FROM kv WHERE k = ?");
       _deleteSubId = _database.compileStatement("DELETE FROM kv WHERE subId = ?");
+      _insertOrReplaceAddressTimestamp = _database.compileStatement("INSERT OR REPLACE INTO addressTimestamp VALUES (?,?,?)");
+      _updateOldestActivityTimestamp = _database.compileStatement("UPDATE addressTimestamp "
+              + "SET oldestactivitytimestamp = ? WHERE address = ? AND (oldestactivitytimestamp == 1479081600 OR ? < oldestactivitytimestamp)");
+      _getTimestampForAddress = _database.compileStatement("SELECT timestamp FROM addressTimestamp WHERE address=?");
+      _getOldestActivityTimestampForAddress = _database.compileStatement(
+              "SELECT oldestactivitytimestamp FROM addressTimestamp WHERE address=?");
+
       _backings = new HashMap<>();
       for (UUID id : getAccountIds(_database)) {
          _backings.put(id, new SqliteColuAccountBacking(id, _database));
@@ -320,7 +345,15 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
 
    @Override
    public Map<Address, Long> getAllAddressCreationTimes() {
-      throw new Error("not implemented");
+      synchronized (this) {
+         Map<Address, Long> map = new HashMap<>();
+         Cursor cursor = _database.rawQuery("SELECT address, timestamp FROM addressTimestamp;", null);
+         while (cursor.moveToNext()) {
+            map.put(Address.fromString(cursor.getString(0)), cursor.getLong(1));
+         }
+         cursor.close();
+         return map;
+      }
    }
 
    @Override
@@ -667,7 +700,22 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
 
       @Override
       public long getOldestTransactionTimestamp() {
-         throw new Error("not implemented");
+         Cursor cursor = null;
+         try {
+            SQLiteQueryWithBlobs blobQuery = new SQLiteQueryWithBlobs(_db);
+            cursor = blobQuery.query(false, txTableName, new String[] {"time"}, "id = ? AND accountID = \'"
+                    + _id.toString() + "\'", null, null, null, "time ASC", "1");
+            if (cursor.moveToNext()) {
+               return cursor.getInt(0);
+            }
+            return 0L;
+         } catch (SQLiteDoneException e) {
+            return 0L;
+         } finally {
+            if (cursor != null) {
+               cursor.close();
+            }
+         }
       }
 
       private boolean putReferencedOutputs(byte[] rawTx) {
@@ -823,7 +871,17 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
 
       @Override
       public boolean deleteOutgoingTransaction(Sha256Hash txid) {
-         throw new Error("not implemented");
+         beginTransaction();
+         try {
+            _deleteOutTx.bindBlob(1, txid.getBytes());
+            boolean result =_deleteOutTx.executeUpdateDelete() == 1;
+            setTransactionSuccessful();
+            return result;
+         } catch(SQLException e) {
+            return false;
+         } finally {
+            endTransaction();
+         }
       }
 
       @Override
@@ -877,28 +935,70 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
 
       @Override
       public boolean storeAddressCreationTime(Address address, long timestamp) {
-         throw new Error("not implemented");
+         beginTransaction();
+         try {
+            _insertOrReplaceAddressTimestamp.bindString(1, address.toString());
+            _insertOrReplaceAddressTimestamp.bindLong(2, timestamp);
+            _insertOrReplaceAddressTimestamp.bindLong(3, 1479081600L);
+            boolean result = _insertOrReplaceAddressTimestamp.executeInsert() != -1;
+            setTransactionSuccessful();
+            return result;
+         } catch (SQLException e) {
+            logException(e);
+            return false;
+         } finally {
+            endTransaction();
+         }
       }
 
       @Override
       public boolean storeAddressOldestActivityTime(Address address, long unixTimeSeconds) {
-         throw new Error("not implemented");
+         beginTransaction();
+         try {
+            _updateOldestActivityTimestamp.bindLong(1, unixTimeSeconds);
+            _updateOldestActivityTimestamp.bindString(2, address.toString());
+            _updateOldestActivityTimestamp.bindLong(3, unixTimeSeconds);
+            boolean result = _updateOldestActivityTimestamp.executeInsert() != -1;
+            setTransactionSuccessful();
+            return result;
+         } catch (SQLException e) {
+            logException(e);
+            return false;
+         } finally {
+            endTransaction();
+         }
       }
 
       @Override
       public long getCreationTimeByAddress(Address address) {
-         throw new Error("not implemented");
+         _getTimestampForAddress.bindString(1, address.toString());
+         try {
+            return _getTimestampForAddress.simpleQueryForLong();
+         } catch (Exception e) {
+            return 0;
+         }
       }
 
       @Override
       public long getOldestActivityTimeByAddress(Address address) {
-         throw new Error("not implemented");
+         _getOldestActivityTimestampForAddress.bindString(1, address.toString());
+         try {
+            return _getOldestActivityTimestampForAddress.simpleQueryForLong();
+         } catch (Exception e) {
+            return 0;
+         }
       }
 
       @Override
       public boolean updateAccountContext(SingleAddressAccountContext context) {
          updateSingleAddressAccountContext(context);
          return true;
+      }
+   }
+
+   private void logException(SQLException e) {
+      if(BuildConfig.DEBUG) {
+         Log.e(LOG_TAG, e.getLocalizedMessage(), e);
       }
    }
 
@@ -921,6 +1021,8 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
          db.execSQL("CREATE TABLE single (id TEXT PRIMARY KEY, address BLOB, addressstring TEXT, archived INTEGER, blockheight INTEGER);");
          db.execSQL("CREATE TABLE bip44 (id TEXT PRIMARY KEY, accountIndex INTEGER, archived INTEGER, blockheight INTEGER, lastExternalIndexWithActivity INTEGER, lastInternalIndexWithActivity INTEGER, firstMonitoredInternalIndex INTEGER, lastDiscovery, accountType INTEGER, accountSubId INTEGER);");
          db.execSQL("CREATE TABLE kv (k BLOB NOT NULL, v BLOB, checksum BLOB, subId INTEGER NOT NULL, PRIMARY KEY (k, subId) );");
+         db.execSQL("CREATE TABLE addressTimestamp (address TEXT PRIMARY KEY, timestamp INTEGER DEFAULT 0,"
+                 + " oldestactivitytimestamp INTEGER DEFAULT 1479081600);");
       }
 
       @Override
@@ -940,6 +1042,13 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
             // add column to store what account type it is
             db.execSQL("ALTER TABLE bip44 ADD COLUMN accountType INTEGER DEFAULT 0");
             db.execSQL("ALTER TABLE bip44 ADD COLUMN accountSubId INTEGER DEFAULT 0");
+         }
+         if (oldVersion < 4) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS addressTimestamp (address TEXT PRIMARY KEY, "
+                    + "timestamp INTEGER DEFAULT 0);");
+         }
+         if (oldVersion < 6) {
+            db.execSQL("ALTER TABLE addressTimestamp ADD COLUMN oldestactivitytimestamp INTEGER DEFAULT 1479081600");
          }
       }
    }
