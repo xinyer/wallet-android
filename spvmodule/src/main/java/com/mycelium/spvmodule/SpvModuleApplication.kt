@@ -293,6 +293,23 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         LocalBroadcastManager.getInstance(this).sendBroadcast(broadcast)
     }
 
+    @Throws(VerificationException::class)
+    fun processDirectTransaction(tx: Transaction, accountIndex: Int) {
+        if (wallet!!.isTransactionRelevant(tx)) {
+            wallet!!.receivePending(tx, null)
+            broadcastTransaction(tx, accountIndex)
+        }
+    }
+
+    fun broadcastTransaction(tx: Transaction, accountIndex: Int) {
+        val intent = Intent(SpvService.ACTION_BROADCAST_TRANSACTION, null, this, SpvService::class.java)
+        intent.putExtra(SpvService.ACTION_BROADCAST_TRANSACTION_HASH, tx.hash.bytes)
+        intent.putExtra(IntentContract.ACCOUNT_INDEX_EXTRA, accountIndex)
+        Handler(Looper.getMainLooper()).post {
+            startService(intent)
+        }
+    }
+
     fun packageInfo(): PackageInfo = packageInfo!!
 
     fun httpUserAgent(): String = httpUserAgent(packageInfo().versionName)
