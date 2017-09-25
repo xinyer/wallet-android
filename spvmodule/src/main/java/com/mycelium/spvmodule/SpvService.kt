@@ -274,7 +274,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                     }
                     return
                 }
-                IntentContract.ReceiveTransactions.ACTION -> {
+                ACTION_RECEIVE_TRANSACTIONS -> {
                     val tmpWallet = SpvModuleApplication.getWallet(accountIndex)
                     if(tmpWallet == null || tmpWallet.keyChainGroupSize == 0) {
                         // Ask for private Key
@@ -827,6 +827,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         val ACTION_CANCEL_COINS_RECEIVED = PACKAGE_NAME + ".cancel_coins_received"
         val ACTION_RESET_BLOCKCHAIN = PACKAGE_NAME + ".reset_blockchain"
         val ACTION_BROADCAST_TRANSACTION = PACKAGE_NAME + ".broadcast_transaction"
+        val ACTION_RECEIVE_TRANSACTIONS = PACKAGE_NAME + ".receive_transactions"
         val ACTION_BROADCAST_TRANSACTION_HASH = "hash"
         val ACTION_SEND_FUNDS = PACKAGE_NAME + ".send_funds"
 
