@@ -34,6 +34,7 @@ import android.support.v4.content.LocalBroadcastManager
 import android.text.format.DateUtils
 import android.util.Log
 import com.google.common.collect.ImmutableList
+import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
 import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.spvmodule.BlockchainState.Impediment
@@ -236,11 +237,13 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                     val tx = wallet!!.sendCoinsOffline(sendRequest)
                     if (peerGroup != null) {
                         Log.i(LOG_TAG, "broadcasting transaction ${tx.hashAsString}")
-                        peerGroup!!.broadcastTransaction(tx)
+                        val transactionBroadcast: TransactionBroadcast = peerGroup!!.broadcastTransaction(tx)
+                        transactionBroadcast.setMinConnections(1)
+                        val future : ListenableFuture<Transaction> = transactionBroadcast.future()
+                        future.get()
                     } else {
                         Log.w(LOG_TAG, "peergroup not available, not broadcasting transaction ${tx.hashAsString}")
                     }
-                    return
                 }
                 ACTION_RECEIVE_TRANSACTIONS -> {
                     val tmpWallet = SpvModuleApplication.getWallet(accountIndex)
