@@ -12,20 +12,6 @@ public interface IntentContract {
 
     String ACCOUNT_INDEX_EXTRA = "ACCOUNT_INDEX";
 
-    class BroadcastTransaction {
-
-        public static final String ACTION = "com.mycelium.wallet.broadcastTransaction";
-
-        public static final String TX_EXTRA = ACTION + "_tx";
-
-        public static Intent createIntent(int accountId, byte[] transaction) {
-            Intent intent = new Intent(ACTION);
-            intent.putExtra(IntentContract.ACCOUNT_INDEX_EXTRA, accountId);
-            intent.putExtra(TX_EXTRA, transaction);
-            return intent;
-        }
-    }
-
     class ReceiveTransactions {
 
         public static final String ACTION = "com.mycelium.wallet.receiveTransactions";
