@@ -28,6 +28,7 @@ import android.database.Cursor
 import android.net.ConnectivityManager
 import android.os.AsyncTask
 import android.os.Handler
+import android.os.Looper
 import android.os.PowerManager
 import android.os.PowerManager.WakeLock
 import android.support.v4.content.LocalBroadcastManager
@@ -39,6 +40,7 @@ import com.google.common.util.concurrent.SettableFuture
 import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.spvmodule.BlockchainState.Impediment
 import com.mycelium.spvmodule.providers.BlockchainContract
+import com.mycelium.spvmodule.IntentContract
 import org.bitcoinj.core.*
 import org.bitcoinj.core.listeners.DownloadProgressTracker
 import org.bitcoinj.core.listeners.PeerConnectedEventListener
@@ -222,6 +224,35 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                     futureSpvService.set(0)
                     resetBlockchainOnShutdown = true
                     stopSelf()
+                }
+                ACTION_BROADCAST_TRANSACTION -> {
+                    initializeBlockchain(null, 0)
+                    val transactionByteArray = intent.getByteArrayExtra("TX")
+                    val tx = Transaction(Constants.NETWORK_PARAMETERS, transactionByteArray)
+                    Log.i(LOG_TAG, "onReceive: TX = " + tx)
+                    tx.getConfidence().setSource(TransactionConfidence.Source.SELF);
+                    tx.setPurpose(Transaction.Purpose.USER_PAYMENT);
+                    wallet!!.maybeCommitTx(tx)
+                    if (peerGroup != null) {
+                        Log.i(LOG_TAG, "broadcasting transaction ${tx.hashAsString}")
+
+                        // A proposed transaction is now sitting in tx - send it in the background.
+                        val transactionBroadcast: TransactionBroadcast = peerGroup!!.broadcastTransaction(tx)
+                        transactionBroadcast.setMinConnections(1)
+                        val future : ListenableFuture<Transaction> = transactionBroadcast.future()
+                        // The future will complete when we've seen the transaction ripple across
+                        // the network to a sufficient degree.
+
+                        // Here, we just wait for it to finish, but we can also attach a listener
+                        // that'll get run on a background
+
+                        // thread when finished. Or we could just assume the network accepts the
+                        // transaction and carry on.
+                        future.get()
+                        Log.i(LOG_TAG, "transaction ${tx.hashAsString} broadcasted")
+                    } else {
+                        Log.w(LOG_TAG, "peergroup not available, not broadcasting transaction ${tx.hashAsString}")
+                    }
                 }
                 ACTION_SEND_FUNDS -> {
                     val rawAddress = intent.getStringExtra(IntentContract.SendFunds.ADDRESS_EXTRA)
@@ -797,6 +828,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         val ACTION_BLOCKCHAIN_STATE = PACKAGE_NAME + ".blockchain_state"
         val ACTION_CANCEL_COINS_RECEIVED = PACKAGE_NAME + ".cancel_coins_received"
         val ACTION_RESET_BLOCKCHAIN = PACKAGE_NAME + ".reset_blockchain"
+        val ACTION_BROADCAST_TRANSACTION = PACKAGE_NAME + ".broadcast_transaction"
         val ACTION_RECEIVE_TRANSACTIONS = PACKAGE_NAME + ".receive_transactions"
         val ACTION_BROADCAST_TRANSACTION_HASH = "hash"
         val ACTION_SEND_FUNDS = PACKAGE_NAME + ".send_funds"

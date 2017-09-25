@@ -123,7 +123,18 @@ public class BroadcastTransactionActivity extends Activity {
       AsyncTask<Void, Integer, WalletAccount.BroadcastResult> task = new AsyncTask<Void, Integer, WalletAccount.BroadcastResult>() {
          @Override
          protected WalletAccount.BroadcastResult doInBackground(Void... args) {
-            return _account.broadcastTransaction(_transaction);
+            // TODO: 12/1/16 move this distinction to AbstractAccount or so.
+            if(_mbwManager.useSpvModule()) {
+               int accountIndex = ((com.mycelium.wapi.wallet.bip44.Bip44Account) _mbwManager.getSelectedAccount()).getAccountIndex();
+               Intent intent = IntentContract.BroadcastTransaction.createIntent(
+                       accountIndex, _transaction.toBytes());
+               CommunicationManager communicationManager =
+                   CommunicationManager.Companion.getInstance(BroadcastTransactionActivity.this);
+               communicationManager.send(WalletApplication.getSpvModuleName(), intent);
+               return WalletAccount.BroadcastResult.SUCCESS;
+            } else {
+               return _account.broadcastTransaction(_transaction);
+            }
          }
 
          @Override
