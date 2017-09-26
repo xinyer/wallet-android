@@ -176,7 +176,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
 
     private val LOADER_ID_NETWORK: Int = 0
 
-    private val futureSpvService = SettableFuture.create<Long>()
+    private var futureSpvService : SettableFuture<Long>? = null
     private var reentrantLock = ReentrantLock(true)
 
     private var wallet: Wallet? = null
@@ -198,6 +198,8 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                 Log.e(LOG_TAG, "no account specified. Skipping ${intent.action}.")
                 return
             }
+
+            futureSpvService = SettableFuture.create<Long>();
 
             if(wakeLock == null) {
                 // if we still hold a wakelock, we don't leave it dangling to block until later.
@@ -221,7 +223,8 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                     val bip39Passphrase = intent.getStringArrayListExtra("bip39Passphrase")
                     val creationTimeSeconds = intent.getLongExtra("creationTimeSeconds", 0)
                     initializeBlockchain(bip39Passphrase, creationTimeSeconds)
-                    futureSpvService.set(0)
+                    Log.d(LOG_TAG, "onHandleIntent(), ACTION_RESET_BLOCKCHAIN, setting futureSpvService to 0")
+                    futureSpvService!!.set(0)
                     resetBlockchainOnShutdown = true
                     stopSelf()
                 }
@@ -296,7 +299,9 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                 }
             }
             broadcastBlockchainState()
-            futureSpvService.get()
+            Log.d(LOG_TAG, "onHandleIntent: waiting")
+            futureSpvService!!.get()
+            Log.d(LOG_TAG, "onHandleIntent: waiting stopped.")
         } else {
             Log.w(LOG_TAG, "onHandleIntent: service restart, although it was started as non-sticky")
             broadcastBlockchainState()
@@ -419,6 +424,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         } catch (e : UninitializedPropertyAccessException) {}
 
         connectivityReceiver = ConnectivityReceiver()
+        Log.d(LOG_TAG, "initializeBlockchain, registering ConnectivityReceiver")
         registerReceiver(connectivityReceiver, intentFilter) // implicitly start PeerGroup
         wallet!!.addCoinsReceivedEventListener(Threading.SAME_THREAD, walletEventListener)
         wallet!!.addCoinsSentEventListener(Threading.SAME_THREAD, walletEventListener)
@@ -475,7 +481,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                 peerGroup!!.stop()
             }
 
-            Log.i(LOG_TAG, "peergroup stopped")
+            Log.i(LOG_TAG, "onDestroy, peergroup stopped")
         }
 
         if(peerConnectivityListener != null) {
@@ -494,6 +500,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         if (resetBlockchainOnShutdown && blockChainFile != null) {
             Log.i(LOG_TAG, "removing blockchain, reset blockchain on shutdown")
             blockChainFile!!.delete()
+            resetBlockchainOnShutdown = false
         }
 
         if (wakeLock != null && wakeLock!!.isHeld) {
@@ -621,9 +628,9 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
     inner class DownloadProgressTrackerExt : DownloadProgressTracker() {
 
         override fun onChainDownloadStarted(peer: Peer?, blocksLeft: Int) {
-            super.onChainDownloadStarted(peer, blocksLeft)
             Log.d(LOG_TAG, "onChainDownloadStarted(), Blockchain's download is starting. " +
                     "Blocks left to download is $blocksLeft, peer = $peer")
+            super.onChainDownloadStarted(peer, blocksLeft)
         }
 
         private val lastMessageTime = AtomicLong(0)
@@ -642,9 +649,14 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         }
 
         override fun doneDownload() {
-            super.doneDownload()
             Log.d(LOG_TAG, "doneDownload(), Blockchain is fully downloaded.")
-            futureSpvService.set(config!!.bestChainHeightEver.toLong())
+            super.doneDownload()
+            if(peerGroup!!.isRunning) {
+                Log.i(LOG_TAG, "doneDownload(), stopping peergroup")
+                peerGroup!!.stopAsync()
+            }
+            Log.i(LOG_TAG, "doneDownload(), setting futureSpvService to ${config!!.bestChainHeightEver.toLong()}")
+            futureSpvService!!.set(config!!.bestChainHeightEver.toLong())
         }
 
         private val runnable = Runnable {
@@ -662,7 +674,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
             when (action) {
                 ConnectivityManager.CONNECTIVITY_ACTION -> {
                     val hasConnectivity = !intent.getBooleanExtra(ConnectivityManager.EXTRA_NO_CONNECTIVITY, false)
-                    Log.i(LOG_TAG, "network is " + if (hasConnectivity) "up" else "down")
+                    Log.i(LOG_TAG, "ConnectivityReceiver, network is " + if (hasConnectivity) "up" else "down")
 
                     if (hasConnectivity) {
                         impediments.remove(Impediment.NETWORK)
@@ -672,13 +684,13 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                     check()
                 }
                 Intent.ACTION_DEVICE_STORAGE_LOW -> {
-                    Log.i(LOG_TAG, "device storage low")
+                    Log.i(LOG_TAG, "ConnectivityReceiver, device storage low")
 
                     impediments.add(Impediment.STORAGE)
                     check()
                 }
                 Intent.ACTION_DEVICE_STORAGE_OK -> {
-                    Log.i(LOG_TAG, "device storage ok")
+                    Log.i(LOG_TAG, "ConnectivityReceiver, device storage ok")
 
                     impediments.remove(Impediment.STORAGE)
                     check()
@@ -705,8 +717,6 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                 /*
                 peerGroup!!.addWallet(wallet)
                 */
-
-
                 peerGroup!!.setUserAgent(Constants.USER_AGENT, application!!.packageInfo!!.versionName)
                 peerGroup!!.addConnectedEventListener(peerConnectivityListener)
                 peerGroup!!.addDisconnectedEventListener(peerConnectivityListener)
@@ -725,14 +735,15 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                     private val normalPeerDiscovery = MultiplexingDiscovery.forServices(Constants.NETWORK_PARAMETERS, 0)
 
                     @Throws(PeerDiscoveryException::class)
-                    override fun getPeers(services: Long, timeoutValue: Long, timeoutUnit: TimeUnit): Array<InetSocketAddress> {
+                    override fun getPeers(services: Long, timeoutValue: Long, timeoutUnit: TimeUnit)
+                            : Array<InetSocketAddress> {
                         val peers = LinkedList<InetSocketAddress>()
 
                         var needsTrimPeersWorkaround = false
 
                         if (hasTrustedPeer) {
                             Log.i(LOG_TAG, "check(), trusted peer '$trustedPeerHost' " +
-                                    if (connectTrustedPeerOnly) " only" else "")
+                                    if (connectTrustedPeerOnly) " only." else "")
 
                             val addr = InetSocketAddress(trustedPeerHost, Constants.NETWORK_PARAMETERS.port)
                             if (addr.address != null) {
@@ -741,13 +752,16 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                             }
                         }
 
-                        if (!connectTrustedPeerOnly)
+                        if (!connectTrustedPeerOnly) {
                             peers.addAll(Arrays.asList(*normalPeerDiscovery.getPeers(services, timeoutValue, timeoutUnit)))
+                        }
 
                         // workaround because PeerGroup will shuffle peers
-                        if (needsTrimPeersWorkaround)
-                            while (peers.size >= maxConnectedPeers)
+                        if (needsTrimPeersWorkaround) {
+                            while (peers.size >= maxConnectedPeers) {
                                 peers.removeAt(peers.size - 1)
+                            }
+                        }
 
                         return peers.toTypedArray()
                     }
@@ -762,15 +776,10 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
 
                 // start peergroup
                 downloadProgressTracker = DownloadProgressTrackerExt()
+                Log.i(LOG_TAG, "check(), peergroup startAsync")
                 peerGroup!!.startAsync()
+                Log.i(LOG_TAG, "check(), peergroup startBlockChainDownload")
                 peerGroup!!.startBlockChainDownload(downloadProgressTracker)
-                try {
-                    downloadProgressTracker.await()
-                } catch (e: InterruptedException) {
-                    throw RuntimeException(e)
-                }
-                Log.i(LOG_TAG, "check(), stopping peergroup")
-                peerGroup!!.stop()
             } else if (!impediments.isEmpty() && peerGroup != null) {
                 Log.i(LOG_TAG, "check(), stopping peergroup")
                 peerGroup!!.removeDisconnectedEventListener(peerConnectivityListener!!)
@@ -778,8 +787,14 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                 peerGroup!!.removeWallet(wallet)
                 peerGroup!!.stopAsync()
                 peerGroup = null
-            }
-
+                Log.i(LOG_TAG, "check(), impediments is not empty && peergroup is not null")
+                Log.i(LOG_TAG, "check(), setting futureSpvService to ${config!!.bestChainHeightEver.toLong()}")
+                futureSpvService!!.set(config!!.bestChainHeightEver.toLong())
+            } else {
+                Log.i(LOG_TAG, "check(), impediments size is ${impediments.size} && peergroup is $peerGroup")
+                Log.i(LOG_TAG, "check(), setting futureSpvService to ${config!!.bestChainHeightEver.toLong()}")
+                futureSpvService!!.set(config!!.bestChainHeightEver.toLong())
+            } 
             broadcastBlockchainState()
         }
     }
