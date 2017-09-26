@@ -8,7 +8,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
-import android.os.AsyncTask
 import android.os.Handler
 import android.os.Looper
 import android.os.StrictMode
@@ -242,15 +241,14 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     }
 
     fun startBlockchainService(cancelCoinsReceived: Boolean, accountIndex: Int) {
-        AsyncTask.execute( {
+        Handler(Looper.getMainLooper()).post {
             if (cancelCoinsReceived) {
                 blockchainServiceCancelCoinsReceivedIntent!!.putExtra(IntentContract.ACCOUNT_INDEX_EXTRA, accountIndex)
                 startService(blockchainServiceCancelCoinsReceivedIntent)
             }
-            else {
+            else
                 startService(blockchainServiceIntent)
-            }
-        })
+        }
     }
 
     fun stopBlockchainService() {
@@ -259,17 +257,17 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
 
     fun resetBlockchain() {
         Log.d(LOG_TAG, "resetBlockchain")
-        AsyncTask.execute({
+        Handler(Looper.getMainLooper()).post {
             // implicitly stops blockchain service
             startService(blockchainServiceResetBlockchainIntent)
-        })
+        }
     }
 
     @Synchronized
     fun resetBlockchainWithExtendedKey(bip39Passphrase: ArrayList<String>, creationTimeSeconds: Long,
                                        accountIndex: Int) {
         // implicitly stops blockchain service
-        AsyncTask.execute( {
+        Handler(Looper.getMainLooper()).post {
             blockchainServiceResetBlockchainIntent!!
                     .putExtra("bip39Passphrase", bip39Passphrase)
             blockchainServiceResetBlockchainIntent!!
@@ -278,7 +276,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
             stopBlockchainService()
             Log.d(LOG_TAG, "resetBlockchainWithExtendedKey, startService : $blockchainServiceResetBlockchainIntent")
             startService(blockchainServiceResetBlockchainIntent)
-        })
+        }
     }
 
     fun replaceWallet(newWallet: Wallet) {
@@ -307,9 +305,9 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         val intent = Intent(SpvService.ACTION_BROADCAST_TRANSACTION, null, this, SpvService::class.java)
         intent.putExtra(SpvService.ACTION_BROADCAST_TRANSACTION_HASH, tx.hash.bytes)
         intent.putExtra(IntentContract.ACCOUNT_INDEX_EXTRA, accountIndex)
-        AsyncTask.execute( {
+        Handler(Looper.getMainLooper()).post {
             startService(intent)
-        })
+        }
     }
 
     fun packageInfo(): PackageInfo = packageInfo!!
