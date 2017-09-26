@@ -1004,7 +1004,7 @@ public class SqliteColuManagerBacking implements WalletManagerBacking {
 
    private class OpenHelper extends SQLiteOpenHelper {
       private static final String DATABASE_NAME = "columanagerbacking.db";
-      private static final int DATABASE_VERSION = 3;
+      private static final int DATABASE_VERSION = 6;
 
       OpenHelper(Context context) {
          super(context, DATABASE_NAME, null, DATABASE_VERSION);
