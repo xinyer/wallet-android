@@ -47,6 +47,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -264,8 +265,26 @@ public class BalanceFragment extends Fragment {
    public BroadcastReceiver waitingIntentsReceiver = new BroadcastReceiver() {
       @Override
       public void onReceive(Context context, Intent intent) {
-         String[] waitingActions = intent.getStringArrayExtra(IntentContract.WaitingIntents.WAITING_ACTIONS);
-         _pbWaitingForSpvModule.setVisibility(waitingActions.length > 0 ? View.VISIBLE : View.GONE);
+         final String[] waitingActions = intent.getStringArrayExtra(IntentContract.WaitingIntents.WAITING_ACTIONS);
+         boolean showProgress = false;
+         for (String action : waitingActions) {
+            if ("com.mycelium.spvmodule.send_funds".equals(action)) {
+               showProgress = true;
+            }
+         }
+         _pbWaitingForSpvModule.setVisibility(showProgress ? View.VISIBLE : View.GONE);
+         _pbWaitingForSpvModule.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+               ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(), android.R.layout.simple_list_item_1, waitingActions);
+               final AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+               builder.setTitle("Waiting actions");
+               builder.setPositiveButton("Ok", null);
+               builder.setSingleChoiceItems(adapter, 0, null);
+               builder.show();
+               return true;
+            }
+         });
       }
    };
 
