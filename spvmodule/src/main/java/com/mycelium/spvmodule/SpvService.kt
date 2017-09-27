@@ -28,7 +28,6 @@ import android.database.Cursor
 import android.net.ConnectivityManager
 import android.os.AsyncTask
 import android.os.Handler
-import android.os.Looper
 import android.os.PowerManager
 import android.os.PowerManager.WakeLock
 import android.support.v4.content.LocalBroadcastManager
@@ -40,7 +39,6 @@ import com.google.common.util.concurrent.SettableFuture
 import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.spvmodule.BlockchainState.Impediment
 import com.mycelium.spvmodule.providers.BlockchainContract
-import com.mycelium.spvmodule.IntentContract
 import org.bitcoinj.core.*
 import org.bitcoinj.core.listeners.DownloadProgressTracker
 import org.bitcoinj.core.listeners.PeerConnectedEventListener
@@ -182,7 +180,13 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
     private var wallet: Wallet? = null
     private var accountIndex: Int = -1
 
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        intentsQueue.offer(intent)
+        return super.onStartCommand(intent, flags, startId)
+    }
+
     override fun onHandleIntent(intent: Intent?) {
+        intentsQueue.remove()
         org.bitcoinj.core.Context.propagate(Constants.CONTEXT)
         if (intent != null) {
             if(BuildConfig.DEBUG) {
@@ -444,6 +448,8 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
 
     override fun onDestroy() {
         Log.d(LOG_TAG, ".onDestroy()")
+
+        intentsQueue.clear()
 
         // Stop the cursor loader
         if (cursorLoader != null) {
@@ -854,5 +860,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         private val MAX_HISTORY_SIZE = Math.max(IDLE_TRANSACTION_TIMEOUT_MIN, IDLE_BLOCK_TIMEOUT_MIN)
         private val APPWIDGET_THROTTLE_MS = DateUtils.SECOND_IN_MILLIS
         private val BLOCKCHAIN_STATE_BROADCAST_THROTTLE_MS = DateUtils.SECOND_IN_MILLIS
+
+        var intentsQueue: Queue<Intent> = LinkedList<Intent>()
     }
 }

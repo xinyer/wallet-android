@@ -23,6 +23,21 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
         val clone = intent.clone() as Intent
         clone.setClass(context, SpvService::class.java)
         when (intent.action) {
+
+            IntentContract.WaitingIntents.ACTION -> {
+                val accountId = intent.getIntExtra(IntentContract.ACCOUNT_INDEX_EXTRA, -1)
+                val waitingActions = arrayListOf<String>()
+                for (queueIntent in SpvService.intentsQueue) {
+                    val queueIntentAccountId = queueIntent.getIntExtra(IntentContract.ACCOUNT_INDEX_EXTRA, -1)
+                    if (accountId == queueIntentAccountId) {
+                        waitingActions.add(queueIntent.action)
+                    }
+                }
+                val resultIntent = IntentContract.WaitingIntents.createResultIntent(accountId, waitingActions.toTypedArray())
+                context.sendBroadcast(resultIntent)
+                return
+            }
+
             IntentContract.SendFunds.ACTION -> {
                 clone.action = SpvService.ACTION_SEND_FUNDS
             }

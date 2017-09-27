@@ -36,23 +36,31 @@ package com.mycelium.wallet.activity.main;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.mrd.bitlib.model.Address;
+import com.mycelium.modularizationtools.CommunicationManager;
+import com.mycelium.spvmodule.IntentContract;
 import com.mycelium.wallet.Constants;
 import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.R;
 import com.mycelium.wallet.StringHandleConfig;
 import com.mycelium.wallet.Utils;
+import com.mycelium.wallet.WalletApplication;
 import com.mycelium.wallet.activity.ScanActivity;
 import com.mycelium.wallet.activity.modern.ModernMain;
 import com.mycelium.wallet.activity.modern.Toaster;
@@ -68,6 +76,7 @@ import com.mycelium.wallet.event.SelectedAccountChanged;
 import com.mycelium.wallet.event.SelectedCurrencyChanged;
 import com.mycelium.wallet.event.SyncStopped;
 import com.mycelium.wapi.wallet.WalletAccount;
+import com.mycelium.wapi.wallet.bip44.Bip44Account;
 import com.mycelium.wapi.wallet.currency.CurrencyBasedBalance;
 import com.mycelium.wapi.wallet.currency.CurrencyValue;
 import com.mycelium.wapi.wallet.currency.ExactCurrencyValue;
@@ -85,6 +94,8 @@ public class BalanceFragment extends Fragment {
    private Double _exchangeRatePrice;
    private Toaster _toaster;
    @BindView(R.id.tcdFiatDisplay) ToggleableCurrencyButton _tcdFiatDisplay;
+
+   @BindView(R.id.pbWaitingForSpvModule) ProgressBar _pbWaitingForSpvModule;
 
    @Override
    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -117,6 +128,7 @@ public class BalanceFragment extends Fragment {
    @Override
    public void onResume() {
       _mbwManager.getEventBus().register(this);
+      getActivity().registerReceiver(waitingIntentsReceiver, new IntentFilter(IntentContract.WaitingIntents.RESULT_ACTION));
       _exchangeRatePrice = _mbwManager.getCurrencySwitcher().getExchangeRatePrice();
       if (_exchangeRatePrice == null) {
          _mbwManager.getExchangeRateManager().requestRefresh();
@@ -169,6 +181,7 @@ public class BalanceFragment extends Fragment {
    @Override
    public void onPause() {
       _mbwManager.getEventBus().unregister(this);
+      getActivity().unregisterReceiver(waitingIntentsReceiver);
       super.onPause();
    }
 
@@ -187,6 +200,12 @@ public class BalanceFragment extends Fragment {
          _mbwManager.reportIgnoredException(ex);
          balance = CurrencyBasedBalance.ZERO_BITCOIN_BALANCE;
       }
+
+      WalletAccount selectedAccount = _mbwManager.getSelectedAccount();
+      int accountIndex = ((Bip44Account) selectedAccount).getAccountIndex();
+      Intent paymentIntent = IntentContract.WaitingIntents.createIntent(accountIndex);
+      CommunicationManager communicationManager = CommunicationManager.Companion.getInstance(getActivity());
+      communicationManager.send(WalletApplication.getSpvModuleName(), paymentIntent);
 
       // Hide spend button if not canSpend()
       int visibility = account.canSpend() ? View.VISIBLE : View.GONE;
@@ -241,6 +260,14 @@ public class BalanceFragment extends Fragment {
           }
       }
    }
+
+   public BroadcastReceiver waitingIntentsReceiver = new BroadcastReceiver() {
+      @Override
+      public void onReceive(Context context, Intent intent) {
+         String[] waitingActions = intent.getStringArrayExtra(IntentContract.WaitingIntents.WAITING_ACTIONS);
+         _pbWaitingForSpvModule.setVisibility(waitingActions.length > 0 ? View.VISIBLE : View.GONE);
+      }
+   };
 
    private void updateUiKnownBalance(CurrencyBasedBalance balance) {
       // Set Balance

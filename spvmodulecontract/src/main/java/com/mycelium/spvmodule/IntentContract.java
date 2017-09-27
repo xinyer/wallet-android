@@ -71,4 +71,25 @@ public interface IntentContract {
             return intent;
         }
     }
+
+    class WaitingIntents {
+
+        public static final String ACTION = "com.mycelium.wallet.waitingIntents";
+        public static final String RESULT_ACTION = "com.mycelium.wallet.waitingIntentsResult";
+
+        public static final String WAITING_ACTIONS = ACTION + "_actions";
+
+        public static Intent createResultIntent(int accountId, String[] waitingActions) {
+            Intent intent = new Intent(RESULT_ACTION);
+            intent.putExtra(IntentContract.ACCOUNT_INDEX_EXTRA, accountId);
+            intent.putExtra(WAITING_ACTIONS, waitingActions);
+            return intent;
+        }
+
+        public static Intent createIntent(int accountId) {
+            Intent intent = new Intent(ACTION);
+            intent.putExtra(IntentContract.ACCOUNT_INDEX_EXTRA, accountId);
+            return intent;
+        }
+    }
 }
