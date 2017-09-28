@@ -14,6 +14,6 @@ dependencies {
     compile 'com.fasterxml.jackson.core:jackson-annotations:2.5.1'
     compile 'com.fasterxml.jackson.core:jackson-databind:2.5.1'
     compile 'com.squareup.okhttp:okhttp:2.7.4'
-    compile 'com.google.guava:guava:18.0'
+    compile guavaArtifact
     compile 'com.google.code.findbugs:annotations:3.0.1'
 }
