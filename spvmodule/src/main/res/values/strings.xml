@@ -84,4 +84,6 @@
     <string name="missing_account">missing account</string>
     <string name="preferences_broadcast_using_wapi_summary">Use blockexplorer.com API for broadcasts</string>
     <string name="preferences_broadcast_using_wapi_title">Broadcast using blockexplorer.com</string>
+    <string name="sharedpreferences_file_name">com.mycelium.spvmodule.PREFERENCE_FILE_KEY</string>
+    <string name="account_index_stringset">account_index_stringset</string>
 </resources>

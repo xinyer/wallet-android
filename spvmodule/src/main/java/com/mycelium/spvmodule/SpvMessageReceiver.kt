@@ -63,7 +63,7 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
                 }
                 val creationTimeSeconds = intent.getLongExtra(IntentContract.RequestPrivateExtendedKeyCoinTypeToSPV.CREATION_TIME_SECONDS_EXTRA, 0)
                 SpvModuleApplication.getApplication()
-                        .resetBlockchainWithExtendedKey(bip39Passphrase, creationTimeSeconds, accountIndex)
+                        .addAccountWalletWithExtendedKey(bip39Passphrase, creationTimeSeconds, accountIndex)
                 return
             }
         }
