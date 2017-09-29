@@ -263,8 +263,12 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                 }
                 ACTION_SEND_FUNDS -> {
                     val rawAddress = intent.getStringExtra(IntentContract.SendFunds.ADDRESS_EXTRA)
-                    val rawAmount = intent.getLongExtra(IntentContract.SendFunds.AMOUNT_EXTRA, 0)
-                    val feePerKb = intent.getLongExtra(IntentContract.SendFunds.FEE_EXTRA, 0)
+                    val rawAmount = intent.getLongExtra(IntentContract.SendFunds.AMOUNT_EXTRA, -1)
+                    val feePerKb = intent.getLongExtra(IntentContract.SendFunds.FEE_EXTRA, -1)
+                    if (rawAddress.isEmpty() || rawAmount < 0 || feePerKb < 0) {
+                        Log.e(LOG_TAG, "Could not send funds with parameters rawAddress $rawAddress, rawAmount $rawAmount and feePerKb $feePerKb.")
+                        return
+                    }
                     val address = Address.fromBase58(Constants.NETWORK_PARAMETERS, rawAddress)
                     val amount = Coin.valueOf(rawAmount)
                     val sendRequest = SendRequest.to(address, amount)
