@@ -42,7 +42,7 @@ dependencies {
     compile "com.android.support:appcompat-v7:$androidSupportVersion"
     compile "com.android.support:support-v4:$androidSupportVersion"
     compile "com.android.support:animated-vector-drawable:$androidSupportVersion"
-    compile 'com.android.support:recyclerview-v7:22.2.0'
+    compile "com.android.support:recyclerview-v7:$androidSupportVersion"
     //not upgrading. This will be removed from the core app
     compile('com.google.android.gms:play-services-base:9.0.2') {
         exclude module: 'support-v4'
