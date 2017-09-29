@@ -332,7 +332,6 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                     ImmutableList.of(ChildNumber(44, true), ChildNumber(1, true),
                             ChildNumber(accountIndex, true)))
 
-
             SpvModuleApplication.getApplication().replaceWallet(newWallet)
             val tmpWallet = SpvModuleApplication.getWallet(accountIndex)!!
             tmpWallet.keyChainGroupLookaheadSize = 30
@@ -615,7 +614,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                 if(blockchainState.impediments.size > 0) {
                     // TODO: this is potentially unreachable as the service stops when offline.
                     // Not sure if impediment STORAGE ever shows. Probably both should show.
-                    val impedimentsString = blockchainState.impediments.map {it.toString()}.joinToString()
+                    val impedimentsString = blockchainState.impediments.joinToString {it.toString()}
                     contentText += " " +  getString(R.string.notification_chain_status_impediment, impedimentsString)
                 }
                 notification.setContentText(contentText)

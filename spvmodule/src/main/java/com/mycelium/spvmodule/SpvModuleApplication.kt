@@ -202,21 +202,12 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         builder.clearLastSeenBlockTimeSecs()
         val walletProto = builder.build()
 
-        var os: OutputStream? = null
-
         try {
-            os = openFileOutput(Constants.Files.WALLET_KEY_BACKUP_PROTOBUF, Context.MODE_PRIVATE)
-            walletProto.writeTo(os)
+            openFileOutput(Constants.Files.WALLET_KEY_BACKUP_PROTOBUF, Context.MODE_PRIVATE).use { os ->
+                walletProto.writeTo(os)
+            }
         } catch (x: IOException) {
             Log.e(LOG_TAG, "problem writing key backup", x)
-        } finally {
-            try {
-                if (os != null) {
-                    os.close()
-                }
-            } catch (ignored: IOException) {
-            }
-
         }
     }
 
