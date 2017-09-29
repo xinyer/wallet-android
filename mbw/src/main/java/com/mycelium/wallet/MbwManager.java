@@ -1421,28 +1421,9 @@ public class MbwManager implements WalletManager.TransactionFetcher {
    }
 
    @Override
-   public void getTransactions(Set<WalletManager.AddressWithCreationTime> addresses) {
-      int accountIndex = ((Bip44Account) getSelectedAccount()).getAccountIndex();
-      Intent service = IntentContract.ReceiveTransactions.createIntent(accountIndex);
-      //TODO: harmonize names and capitalization. monitor addresses?
-      //String[] addressStrings = new String[addresses.size()];
-      //int i=0;
-      /* for(WalletManager.AddressWithCreationTime awct : addresses) {
-         addressStrings[i++] = awct.address + ";" + awct.creationTime;
-      }
-      service.putExtra("ADDRESSES", addressStrings); */
-
-      /* if(BuildConfig.DEBUG) {
-            StringBuilder sb = new StringBuilder();
-            for (String s : addressStrings) {
-               sb.append(s);
-               sb.append("\t");
-            }
-            Log.d(LOG_TAG, "getTransactions: Intent is " + service + ", Addresses are : " + sb.toString());
-         }
-*/
-
-      Log.d(LOG_TAG, "getTransactions: Intent is " + service + ", account index is : " + accountIndex);
+   public void getTransactions(int accountId) {
+      Intent service = IntentContract.ReceiveTransactions.createIntent(accountId);
+      Log.d(LOG_TAG, "getTransactions: Intent is " + service + ", account index is : " + accountId);
       CommunicationManager.Companion.getInstance(_applicationContext)
           .send(WalletApplication.getSpvModuleName(), service);
    }

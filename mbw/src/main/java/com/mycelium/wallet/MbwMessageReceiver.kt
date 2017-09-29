@@ -184,15 +184,12 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
             }
             "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW" -> {
                 val _mbwManager = MbwManager.getInstance(context)
-                val accountIndex = intent.getIntExtra(IntentContract.ACCOUNT_INDEX_EXTRA,
-                        (_mbwManager.selectedAccount as Bip44Account).accountIndex)
-                val masterSeed: Bip39.MasterSeed
-                try {
-                    masterSeed = _mbwManager.getWalletManager(false).getMasterSeed(AesKeyCipher.defaultKeyCipher())
-                } catch (invalidKeyCipher: KeyCipher.InvalidKeyCipher) {
-                    throw RuntimeException(invalidKeyCipher)
+                val accountIndex = intent.getIntExtra(IntentContract.ACCOUNT_INDEX_EXTRA, -1)
+                if (accountIndex == -19) {
+                    Log.e(TAG, "Account Index required!")
+                    return
                 }
-                //_mbwManager.getWalletManager(false).getBip44Account(0).allVisibleAddresses dsihdsohs
+                val masterSeed = _mbwManager.getWalletManager(false).getMasterSeed(AesKeyCipher.defaultKeyCipher())
 
                 val masterDeterministicKey : DeterministicKey = HDKeyDerivation.createMasterPrivateKey(masterSeed.bip32Seed)
                 val bip44LevelDeterministicKey = HDKeyDerivation.deriveChildKey(masterDeterministicKey, ChildNumber(44, true))
