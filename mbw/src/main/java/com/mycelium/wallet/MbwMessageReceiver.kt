@@ -225,7 +225,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
             val newAccountUUID = walletManager.createArchivedGapFiller(AesKeyCipher.defaultKeyCipher(),
                     account.accountIndex + 1, archived)
             MbwManager.getInstance(context).metadataStorage
-                    .storeAccountLabel(newAccountUUID, "Account " + account.accountIndex + 1)
+                    .storeAccountLabel(newAccountUUID, "Account " + (account.accountIndex + 2 /** account index is zero based */))
             walletManager.startSynchronization()
         }
     }
