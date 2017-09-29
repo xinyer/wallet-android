@@ -205,12 +205,6 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 } else {
                     NetworkParameters.fromID(NetworkParameters.ID_MAINNET)!!
                 }
-                //val byteArrayToTransmitToSPVModule = accountLevelDeterministicKey.serializePrivate(networkParameters)
-
-                for (address in _mbwManager.getWalletManager(false).addresses) {
-                    Log.d(TAG, "onMessage, com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW, " +
-                            "address = $address")
-                }
 
                 //HexUtils.toHex(masterSeed.bip32Seed)
                 val bip39PassphraseList : ArrayList<String> = ArrayList(masterSeed.bip39WordList)

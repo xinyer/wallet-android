@@ -10,9 +10,7 @@ import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.R;
 import com.mycelium.wallet.simplex.SimplexMainActivity;
 
-
 public class SimplexServiceDescription extends BuySellServiceDescriptor {
-
    public SimplexServiceDescription() {
       super(R.string.si_buy_sell, R.string.si_buy_sell_description, R.string.si_setting_show_button_summary, R.drawable.credit_card_buy);
    }
