@@ -63,7 +63,7 @@
     <string name="local_service_label">SPV Service</string>
     <string name="notification_peers_connected_msg">%d peers connected.</string>
     <string name="notification_chain_status_behind">Chain is %d days behind.</string>
-    <string name="notification_chain_status_impediment">Chain syncing problem: %d</string>
+    <string name="notification_chain_status_impediment">Chain syncing problem: %s</string>
 
     <string name="preferences_activity_title">Settings</string>
     <string name="preferences_connectivity_notification_title">Connectivity indicator</string>
