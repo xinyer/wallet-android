@@ -46,6 +46,7 @@ import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.StrictMode;
 import android.os.Vibrator;
 import android.support.annotation.Nullable;
 import android.util.DisplayMetrics;
@@ -173,7 +174,13 @@ public class MbwManager implements WalletManager.TransactionFetcher {
 
    public static synchronized MbwManager getInstance(Context context) {
       if (_instance == null) {
-         _instance = new MbwManager(context);
+         if(BuildConfig.DEBUG) {
+            StrictMode.ThreadPolicy threadPolicy = StrictMode.allowThreadDiskReads();
+            _instance = new MbwManager(context);
+            StrictMode.setThreadPolicy(threadPolicy);
+         } else {
+            _instance = new MbwManager(context);
+         }
       }
       return _instance;
    }
@@ -1081,14 +1088,14 @@ public class MbwManager implements WalletManager.TransactionFetcher {
       this._language = _language;
       SharedPreferences.Editor editor = getEditor();
       editor.putString(Constants.LANGUAGE_SETTING, _language);
-      editor.commit();
+      editor.apply();
    }
 
    public void setTorMode(ServerEndpointType.Types torMode) {
       this._torMode = torMode;
       SharedPreferences.Editor editor = getEditor();
       editor.putString(Constants.TOR_MODE, torMode.toString());
-      editor.commit();
+      editor.apply();
 
       ServerEndpointType serverEndpointType = ServerEndpointType.fromType(torMode);
       if (serverEndpointType.mightUseTor()) {
@@ -1421,28 +1428,9 @@ public class MbwManager implements WalletManager.TransactionFetcher {
    }
 
    @Override
-   public void getTransactions(Set<WalletManager.AddressWithCreationTime> addresses) {
-      int accountIndex = ((Bip44Account) getSelectedAccount()).getAccountIndex();
-      Intent service = IntentContract.ReceiveTransactions.createIntent(accountIndex);
-      //TODO: harmonize names and capitalization. monitor addresses?
-      //String[] addressStrings = new String[addresses.size()];
-      //int i=0;
-      /* for(WalletManager.AddressWithCreationTime awct : addresses) {
-         addressStrings[i++] = awct.address + ";" + awct.creationTime;
-      }
-      service.putExtra("ADDRESSES", addressStrings); */
-
-      /* if(BuildConfig.DEBUG) {
-            StringBuilder sb = new StringBuilder();
-            for (String s : addressStrings) {
-               sb.append(s);
-               sb.append("\t");
-            }
-            Log.d(LOG_TAG, "getTransactions: Intent is " + service + ", Addresses are : " + sb.toString());
-         }
-*/
-
-      Log.d(LOG_TAG, "getTransactions: Intent is " + service + ", account index is : " + accountIndex);
+   public void getTransactions(int accountId) {
+      Intent service = IntentContract.ReceiveTransactions.createIntent(accountId);
+      Log.d(LOG_TAG, "getTransactions: Intent is " + service + ", account index is : " + accountId);
       CommunicationManager.Companion.getInstance(_applicationContext)
           .send(WalletApplication.getSpvModuleName(), service);
    }

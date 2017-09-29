@@ -6,14 +6,11 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.database.Cursor
 import android.net.Uri
-import android.os.Handler
-import android.os.Looper
 import android.util.Base64
 import android.util.Log
 import com.google.gson.GsonBuilder
 import java.io.File
 import java.io.InputStreamReader
-import java.io.OutputStream
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.util.*
@@ -30,15 +27,21 @@ class CommunicationManager private constructor(val context: Context) {
     }
 
     private fun saveSessions() {
+        // TODO: this can probably be done nicer, with delayed writing to avoid writing to disk too often
         Log.d(LOG_TAG, "saveSessions()")
-        val gson = GsonBuilder().create()
-        try {
-            val outputStream: OutputStream = context.openFileOutput(sessionFilename, Context.MODE_PRIVATE)
-            outputStream.write(gson.toJson(trustedPackages.values).toByteArray())
-            outputStream.close()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        Thread {
+            val gson = GsonBuilder().create()
+            try {
+                synchronized(this@CommunicationManager) {
+                    context.openFileOutput(sessionFilename, Context.MODE_PRIVATE).use {
+                        it.write(gson.toJson(trustedPackages.values).toByteArray())
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            Log.d(LOG_TAG, "new thread saving sessions finished.")
+        }.start()
     }
 
     private fun loadTrustedPackages() {
@@ -56,14 +59,13 @@ class CommunicationManager private constructor(val context: Context) {
         Log.d(LOG_TAG, "Restoring sessions for permitted packages…")
         val file = File(context.filesDir.absolutePath + File.separator + sessionFilename)
         if(file.exists()) {
-            val fileInputStream = context.openFileInput(sessionFilename)
-            val readerUser = InputStreamReader(fileInputStream)
-            val gson = GsonBuilder().create()
-            val trustedPackagesArray = gson.fromJson(readerUser, emptyArray<PackageMetaData>().javaClass) ?: emptyArray<PackageMetaData>()
-            for (pmd in trustedPackagesArray) {
-                val packageMetaData = trustedPackages[pmd.name]
-                if (packageMetaData != null) {
-                    packageMetaData.key = pmd.key
+            context.openFileInput(sessionFilename).use { fileInputStream ->
+                InputStreamReader(fileInputStream).use {readerUser ->
+                    val gson = GsonBuilder().create()
+                    val trustedPackagesArray = gson.fromJson(readerUser, emptyArray<PackageMetaData>().javaClass) ?: emptyArray<PackageMetaData>()
+                    for (pmd in trustedPackagesArray) {
+                        trustedPackages[pmd.name]?.key = pmd.key
+                    }
                 }
             }
         } else {
@@ -94,9 +96,6 @@ class CommunicationManager private constructor(val context: Context) {
         saveSessions()
     }
 
-    /**
-     *
-     */
     fun requestPair(packageName: String): Boolean {
         Log.d(LOG_TAG, "requestPair")
         var success = false

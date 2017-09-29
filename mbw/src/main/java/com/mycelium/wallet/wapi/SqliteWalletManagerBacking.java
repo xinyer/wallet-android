@@ -166,94 +166,84 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
       }
    }
 
-   private void beginTransaction() {
-      synchronized (this) {
-         _database.beginTransaction();
-      }
+   private synchronized void beginTransaction() {
+      _database.beginTransaction();
    }
 
-   private void setTransactionSuccessful() {
-      synchronized (this) {
-         _database.setTransactionSuccessful();
-      }
+   private synchronized void setTransactionSuccessful() {
+      _database.setTransactionSuccessful();
    }
 
-   private void endTransaction() {
-      synchronized (this) {
-         _database.endTransaction();
-      }
+   private synchronized void endTransaction() {
+      _database.endTransaction();
    }
 
    @Override
-   public List<Bip44AccountContext> loadBip44AccountContexts() {
-      synchronized (this) {
-         List<Bip44AccountContext> list = new ArrayList<>();
-         Cursor cursor = null;
-         try {
-            SQLiteQueryWithBlobs blobQuery = new SQLiteQueryWithBlobs(_database);
-            cursor = blobQuery.query(
-                false, "bip44",
-                new String[] {"id", "accountIndex", "archived", "blockheight",
-                    "lastExternalIndexWithActivity", "lastInternalIndexWithActivity",
-                    "firstMonitoredInternalIndex", "lastDiscovery", "accountType", "accountSubId"},
-                null, null, null, null, "accountIndex", null);
+   public synchronized List<Bip44AccountContext> loadBip44AccountContexts() {
+      List<Bip44AccountContext> list = new ArrayList<>();
+      Cursor cursor = null;
+      try {
+         SQLiteQueryWithBlobs blobQuery = new SQLiteQueryWithBlobs(_database);
+         cursor = blobQuery.query(
+             false, "bip44",
+             new String[] {"id", "accountIndex", "archived", "blockheight",
+                 "lastExternalIndexWithActivity", "lastInternalIndexWithActivity",
+                 "firstMonitoredInternalIndex", "lastDiscovery", "accountType", "accountSubId"},
+             null, null, null, null, "accountIndex", null);
 
-            while (cursor.moveToNext()) {
-               UUID id = SQLiteQueryWithBlobs.uuidFromBytes(cursor.getBlob(0));
-               int accountIndex = cursor.getInt(1);
-               boolean isArchived = cursor.getInt(2) == 1;
-               int blockHeight = cursor.getInt(3);
-               int lastExternalIndexWithActivity = cursor.getInt(4);
-               int lastInternalIndexWithActivity = cursor.getInt(5);
-               int firstMonitoredInternalIndex = cursor.getInt(6);
-               long lastDiscovery = cursor.getLong(7);
-               int accountType = cursor.getInt(8);
-               int accountSubId = (int) cursor.getLong(9);
+         while (cursor.moveToNext()) {
+            UUID id = SQLiteQueryWithBlobs.uuidFromBytes(cursor.getBlob(0));
+            int accountIndex = cursor.getInt(1);
+            boolean isArchived = cursor.getInt(2) == 1;
+            int blockHeight = cursor.getInt(3);
+            int lastExternalIndexWithActivity = cursor.getInt(4);
+            int lastInternalIndexWithActivity = cursor.getInt(5);
+            int firstMonitoredInternalIndex = cursor.getInt(6);
+            long lastDiscovery = cursor.getLong(7);
+            int accountType = cursor.getInt(8);
+            int accountSubId = (int) cursor.getLong(9);
 
-               list.add(new Bip44AccountContext(id, accountIndex, isArchived, blockHeight, lastExternalIndexWithActivity,
-                   lastInternalIndexWithActivity, firstMonitoredInternalIndex, lastDiscovery, accountType, accountSubId));
-            }
-            return list;
-         } finally {
-            if (cursor != null) {
-               cursor.close();
-            }
+            list.add(new Bip44AccountContext(id, accountIndex, isArchived, blockHeight, lastExternalIndexWithActivity,
+                lastInternalIndexWithActivity, firstMonitoredInternalIndex, lastDiscovery, accountType, accountSubId));
+         }
+         return list;
+      } finally {
+         if (cursor != null) {
+            cursor.close();
          }
       }
    }
 
    @Override
-   public boolean createBip44AccountContext(Bip44AccountContext context) {
-      synchronized (this) {
-         beginTransaction();
-         try {
-            // Create backing tables
-            SqliteAccountBacking backing = _backings.get(context.getId());
-            if (backing == null) {
-               backing = new SqliteAccountBacking(context.getId(), _database);
-               _backings.put(context.getId(), backing);
-            }
-
-            // Create context
-            _insertOrReplaceBip44Account.bindBlob(1, uuidToBytes(context.getId()));
-            _insertOrReplaceBip44Account.bindLong(2, context.getAccountIndex());
-            _insertOrReplaceBip44Account.bindLong(3, context.isArchived() ? 1 : 0);
-            _insertOrReplaceBip44Account.bindLong(4, context.getBlockHeight());
-            _insertOrReplaceBip44Account.bindLong(5, context.getLastExternalIndexWithActivity());
-            _insertOrReplaceBip44Account.bindLong(6, context.getLastInternalIndexWithActivity());
-            _insertOrReplaceBip44Account.bindLong(7, context.getFirstMonitoredInternalIndex());
-            _insertOrReplaceBip44Account.bindLong(8, context.getLastDiscovery());
-            _insertOrReplaceBip44Account.bindLong(9, context.getAccountType());
-            _insertOrReplaceBip44Account.bindLong(10, context.getAccountSubId());
-            boolean result = _insertOrReplaceBip44Account.executeInsert() != -1;
-            setTransactionSuccessful();
-            return result;
-         } catch (SQLException e) {
-            logException(e);
-            return false;
-         } finally {
-            endTransaction();
+   public synchronized boolean createBip44AccountContext(Bip44AccountContext context) {
+      beginTransaction();
+      try {
+         // Create backing tables
+         SqliteAccountBacking backing = _backings.get(context.getId());
+         if (backing == null) {
+            backing = new SqliteAccountBacking(context.getId(), _database);
+            _backings.put(context.getId(), backing);
          }
+
+         // Create context
+         _insertOrReplaceBip44Account.bindBlob(1, uuidToBytes(context.getId()));
+         _insertOrReplaceBip44Account.bindLong(2, context.getAccountIndex());
+         _insertOrReplaceBip44Account.bindLong(3, context.isArchived() ? 1 : 0);
+         _insertOrReplaceBip44Account.bindLong(4, context.getBlockHeight());
+         _insertOrReplaceBip44Account.bindLong(5, context.getLastExternalIndexWithActivity());
+         _insertOrReplaceBip44Account.bindLong(6, context.getLastInternalIndexWithActivity());
+         _insertOrReplaceBip44Account.bindLong(7, context.getFirstMonitoredInternalIndex());
+         _insertOrReplaceBip44Account.bindLong(8, context.getLastDiscovery());
+         _insertOrReplaceBip44Account.bindLong(9, context.getAccountType());
+         _insertOrReplaceBip44Account.bindLong(10, context.getAccountSubId());
+         boolean result = _insertOrReplaceBip44Account.executeInsert() != -1;
+         setTransactionSuccessful();
+         return result;
+      } catch (SQLException e) {
+         logException(e);
+         return false;
+      } finally {
+         endTransaction();
       }
    }
 
@@ -282,59 +272,55 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
    }
 
    @Override
-   public List<SingleAddressAccountContext> loadSingleAddressAccountContexts() {
-      synchronized (this) {
-         List<SingleAddressAccountContext> list = new ArrayList<>();
-         Cursor cursor = null;
-         try {
-            SQLiteQueryWithBlobs blobQuery = new SQLiteQueryWithBlobs(_database);
-            cursor = blobQuery.query(false, "single", new String[] {"id", "address", "addressstring", "archived", "blockheight"}, null, null,
-                null, null, null, null);
-            while (cursor.moveToNext()) {
-               UUID id = SQLiteQueryWithBlobs.uuidFromBytes(cursor.getBlob(0));
-               byte[] addressBytes = cursor.getBlob(1);
-               String addressString = cursor.getString(2);
-               Address address = new Address(addressBytes, addressString);
-               boolean isArchived = cursor.getInt(3) == 1;
-               int blockHeight = cursor.getInt(4);
-               list.add(new SingleAddressAccountContext(id, address, isArchived, blockHeight));
-            }
-            return list;
-         } finally {
-            if (cursor != null) {
-               cursor.close();
-            }
+   public synchronized List<SingleAddressAccountContext> loadSingleAddressAccountContexts() {
+      List<SingleAddressAccountContext> list = new ArrayList<>();
+      Cursor cursor = null;
+      try {
+         SQLiteQueryWithBlobs blobQuery = new SQLiteQueryWithBlobs(_database);
+         cursor = blobQuery.query(false, "single", new String[] {"id", "address", "addressstring", "archived", "blockheight"}, null, null,
+             null, null, null, null);
+         while (cursor.moveToNext()) {
+            UUID id = SQLiteQueryWithBlobs.uuidFromBytes(cursor.getBlob(0));
+            byte[] addressBytes = cursor.getBlob(1);
+            String addressString = cursor.getString(2);
+            Address address = new Address(addressBytes, addressString);
+            boolean isArchived = cursor.getInt(3) == 1;
+            int blockHeight = cursor.getInt(4);
+            list.add(new SingleAddressAccountContext(id, address, isArchived, blockHeight));
+         }
+         return list;
+      } finally {
+         if (cursor != null) {
+            cursor.close();
          }
       }
    }
 
    @Override
-   public boolean createSingleAddressAccountContext(SingleAddressAccountContext context) {
-      synchronized (this) {
-         beginTransaction();
-         try {
-            // Create backing tables
-            SqliteAccountBacking backing = _backings.get(context.getId());
-            if (backing == null) {
-               backing = new SqliteAccountBacking(context.getId(), _database);
-               _backings.put(context.getId(), backing);
-            }
-
-            // Create context
-            _insertOrReplaceSingleAddressAccount.bindBlob(1, uuidToBytes(context.getId()));
-            _insertOrReplaceSingleAddressAccount.bindBlob(2, context.getAddress().getAllAddressBytes());
-            _insertOrReplaceSingleAddressAccount.bindString(3, context.getAddress().toString());
-            _insertOrReplaceSingleAddressAccount.bindLong(4, context.isArchived() ? 1 : 0);
-            _insertOrReplaceSingleAddressAccount.bindLong(5, context.getBlockHeight());
-            boolean result = _insertOrReplaceSingleAddressAccount.executeInsert() != -1;
-            setTransactionSuccessful();
-            return result;
-         } catch (SQLException e) {
-            logException(e);
-            return false;
-         } finally {
-            endTransaction();
+   public synchronized boolean createSingleAddressAccountContext(SingleAddressAccountContext context) {
+      beginTransaction();
+      try {
+         // Create backing tables
+         SqliteAccountBacking backing = _backings.get(context.getId());
+         if (backing == null) {
+            backing = new SqliteAccountBacking(context.getId(), _database);
+            _backings.put(context.getId(), backing);
          }
+
+         // Create context
+         _insertOrReplaceSingleAddressAccount.bindBlob(1, uuidToBytes(context.getId()));
+         _insertOrReplaceSingleAddressAccount.bindBlob(2, context.getAddress().getAllAddressBytes());
+         _insertOrReplaceSingleAddressAccount.bindString(3, context.getAddress().toString());
+         _insertOrReplaceSingleAddressAccount.bindLong(4, context.isArchived() ? 1 : 0);
+         _insertOrReplaceSingleAddressAccount.bindLong(5, context.getBlockHeight());
+         boolean result = _insertOrReplaceSingleAddressAccount.executeInsert() != -1;
+         setTransactionSuccessful();
+         return result;
+      } catch (SQLException e) {
+         logException(e);
+         return false;
+      } finally {
+         endTransaction();
       }
    }
 
@@ -357,65 +343,59 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
    }
 
    @Override
-   public boolean deleteSingleAddressAccountContext(UUID accountId) {
-      synchronized (this) {
-         // "DELETE FROM single WHERE id = ?"
-         beginTransaction();
-         try {
-            SqliteAccountBacking sqliteAccountBacking = _backings.get(accountId);
-            if (sqliteAccountBacking == null) {
-               return false;
-            }
-            _deleteSingleAddressAccount.bindBlob(1, uuidToBytes(accountId));
-            boolean result = _deleteSingleAddressAccount.executeUpdateDelete() == 1;
-            sqliteAccountBacking.dropTables();
-            _backings.remove(accountId);
-            setTransactionSuccessful();
-            return result;
-         } catch (SQLException e) {
-            logException(e);
+   public synchronized boolean deleteSingleAddressAccountContext(UUID accountId) {
+      // "DELETE FROM single WHERE id = ?"
+      beginTransaction();
+      try {
+         SqliteAccountBacking sqliteAccountBacking = _backings.get(accountId);
+         if (sqliteAccountBacking == null) {
             return false;
-         } finally {
-            endTransaction();
          }
+         _deleteSingleAddressAccount.bindBlob(1, uuidToBytes(accountId));
+         boolean result = _deleteSingleAddressAccount.executeUpdateDelete() == 1;
+         sqliteAccountBacking.dropTables();
+         _backings.remove(accountId);
+         setTransactionSuccessful();
+         return result;
+      } catch (SQLException e) {
+         logException(e);
+         return false;
+      } finally {
+         endTransaction();
       }
    }
 
    @Override
-   public Map<Address, Long> getAllAddressCreationTimes() {
-      synchronized (this) {
-         Map<Address, Long> map = new HashMap<>();
-         Cursor cursor = _database.rawQuery("SELECT address, timestamp FROM addressTimestamp;", null);
-         while (cursor.moveToNext()) {
-            map.put(Address.fromString(cursor.getString(0)), cursor.getLong(1));
-         }
-         cursor.close();
-         return map;
+   public synchronized Map<Address, Long> getAllAddressCreationTimes() {
+      Map<Address, Long> map = new HashMap<>();
+      Cursor cursor = _database.rawQuery("SELECT address, timestamp FROM addressTimestamp;", null);
+      while (cursor.moveToNext()) {
+         map.put(Address.fromString(cursor.getString(0)), cursor.getLong(1));
       }
+      cursor.close();
+      return map;
    }
 
    @Override
-   public boolean deleteBip44AccountContext(UUID accountId) {
-      synchronized (this) {
-         // "DELETE FROM bip44 WHERE id = ?"
-         beginTransaction();
-         try {
-            SqliteAccountBacking backing = _backings.get(accountId);
-            if (backing == null) {
-               return false;
-            }
-            _deleteBip44Account.bindBlob(1, uuidToBytes(accountId));
-            boolean result = _deleteBip44Account.executeUpdateDelete() == 1;
-            backing.dropTables();
-            _backings.remove(accountId);
-            setTransactionSuccessful();
-            return result;
-         } catch (SQLException e) {
-            logException(e);
+   public synchronized boolean deleteBip44AccountContext(UUID accountId) {
+      // "DELETE FROM bip44 WHERE id = ?"
+      beginTransaction();
+      try {
+         SqliteAccountBacking backing = _backings.get(accountId);
+         if (backing == null) {
             return false;
-         } finally {
-            endTransaction();
          }
+         _deleteBip44Account.bindBlob(1, uuidToBytes(accountId));
+         boolean result = _deleteBip44Account.executeUpdateDelete() == 1;
+         backing.dropTables();
+         _backings.remove(accountId);
+         setTransactionSuccessful();
+         return result;
+      } catch (SQLException e) {
+         logException(e);
+         return false;
+      } finally {
+         endTransaction();
       }
    }
 
@@ -426,109 +406,89 @@ public class SqliteWalletManagerBacking implements WalletManagerBacking {
    }
 
    @Override
-   public Bip44AccountBacking getBip44AccountBacking(UUID accountId) {
-      synchronized (this) {
-         SqliteAccountBacking backing = _backings.get(accountId);
-         checkNotNull(backing);
-         return backing;
-      }
+   public synchronized Bip44AccountBacking getBip44AccountBacking(UUID accountId) {
+      SqliteAccountBacking backing = _backings.get(accountId);
+      checkNotNull(backing);
+      return backing;
    }
 
    @Override
-   public SingleAddressAccountBacking getSingleAddressAccountBacking(UUID accountId) {
-      synchronized (this) {
-         SqliteAccountBacking backing = _backings.get(accountId);
-         checkNotNull(backing);
-         return backing;
-      }
+   public synchronized SingleAddressAccountBacking getSingleAddressAccountBacking(UUID accountId) {
+      SqliteAccountBacking backing = _backings.get(accountId);
+      checkNotNull(backing);
+      return backing;
    }
 
    @Override
    public byte[] getValue(byte[] id) {
-      synchronized (this) {
-         return getValue(id, DEFAULT_SUB_ID);
-      }
+      return getValue(id, DEFAULT_SUB_ID);
    }
 
    @Override
-   public byte[] getValue(byte[] id, int subId) {
-      synchronized (this) {
-         Cursor cursor = null;
-         try {
-            SQLiteQueryWithBlobs blobQuery = new SQLiteQueryWithBlobs(_database);
-            blobQuery.bindBlob(1, id);
-            blobQuery.bindLong(2, (long) subId);
-            cursor = blobQuery.query(false, TABLE_KV, new String[] {"v", "checksum"}, "k = ? and subId = ?", null, null, null,
-                null, null);
-            if (cursor.moveToNext()) {
-               byte[] retVal = cursor.getBlob(0);
-               byte[] checkSumDb = cursor.getBlob(1);
+   public synchronized byte[] getValue(byte[] id, int subId) {
+      Cursor cursor = null;
+      try {
+         SQLiteQueryWithBlobs blobQuery = new SQLiteQueryWithBlobs(_database);
+         blobQuery.bindBlob(1, id);
+         blobQuery.bindLong(2, (long) subId);
+         cursor = blobQuery.query(false, TABLE_KV, new String[] {"v", "checksum"}, "k = ? and subId = ?", null, null, null,
+             null, null);
+         if (cursor.moveToNext()) {
+            byte[] retVal = cursor.getBlob(0);
+            byte[] checkSumDb = cursor.getBlob(1);
 
-               // checkSumDb might be null for older data, where we hadn't had a checksum
-               if (checkSumDb != null && !Arrays.equals(checkSumDb, calcChecksum(id, retVal))) {
-                  // mismatch in checksum - the DB might be corrupted
-                  Log.e(LOG_TAG, "Checksum failed - SqliteDB might be corrupted");
-                  throw new DbCorruptedException("Checksum failed while reading from DB. Your file storage might be corrupted");
-               }
+            // checkSumDb might be null for older data, where we hadn't had a checksum
+            if (checkSumDb != null && !Arrays.equals(checkSumDb, calcChecksum(id, retVal))) {
+               // mismatch in checksum - the DB might be corrupted
+               Log.e(LOG_TAG, "Checksum failed - SqliteDB might be corrupted");
+               throw new DbCorruptedException("Checksum failed while reading from DB. Your file storage might be corrupted");
+            }
 
-               return retVal;
-            }
-            return null;
-         } finally {
-            if (cursor != null) {
-               cursor.close();
-            }
+            return retVal;
+         }
+         return null;
+      } finally {
+         if (cursor != null) {
+            cursor.close();
          }
       }
    }
 
    @Override
-   public void setValue(byte[] key, byte[] value) {
-      synchronized (this) {
-         setValue(key, DEFAULT_SUB_ID, value);
-      }
+   public synchronized void setValue(byte[] key, byte[] value) {
+      setValue(key, DEFAULT_SUB_ID, value);
    }
 
    @Override
-   public int getMaxSubId() {
-      synchronized (this) {
-         return (int) _getMaxSubId.simpleQueryForLong();
-      }
+   public synchronized int getMaxSubId() {
+      return (int) _getMaxSubId.simpleQueryForLong();
    }
 
    @Override
-   public void setValue(byte[] key, int subId, byte[] value) {
-      synchronized (this) {
-         _insertOrReplaceKeyValue.bindBlob(1, key);
-         SQLiteQueryWithBlobs.bindBlobWithNull(_insertOrReplaceKeyValue, 2, value);
-         _insertOrReplaceKeyValue.bindBlob(3, calcChecksum(key, value));
-         _insertOrReplaceKeyValue.bindLong(4, subId);
+   public synchronized void setValue(byte[] key, int subId, byte[] value) {
+      _insertOrReplaceKeyValue.bindBlob(1, key);
+      SQLiteQueryWithBlobs.bindBlobWithNull(_insertOrReplaceKeyValue, 2, value);
+      _insertOrReplaceKeyValue.bindBlob(3, calcChecksum(key, value));
+      _insertOrReplaceKeyValue.bindLong(4, subId);
 
-         _insertOrReplaceKeyValue.executeInsert();
-      }
+      _insertOrReplaceKeyValue.executeInsert();
    }
 
-   private byte[] calcChecksum(byte[] key, byte[] value) {
-      synchronized (this) {
-         byte toHash[] = BitUtils.concatenate(key, value);
-         return HashUtils.sha256(toHash).firstNBytes(8);
-      }
+   private synchronized byte[] calcChecksum(byte[] key, byte[] value) {
+      byte toHash[] = BitUtils.concatenate(key, value);
+      return HashUtils.sha256(toHash).firstNBytes(8);
    }
 
    @Override
-   public void deleteValue(byte[] id) {
-      synchronized (this) {
-         _deleteKeyValue.bindBlob(1, id);
-         _deleteKeyValue.execute();
-      }
+   public synchronized void deleteValue(byte[] id) {
+      _deleteKeyValue.bindBlob(1, id);
+      _deleteKeyValue.execute();
    }
 
    @Override
-   public void deleteSubStorageId(int subId) {
-      synchronized (this) {
-         _deleteSubId.bindLong(1, subId);
-         _deleteSubId.execute();
-      }
+   public synchronized void deleteSubStorageId(int subId) {
+      _deleteSubId.bindLong(1, subId);
+      _deleteSubId.execute();
    }
 
    private static String uuidToTableSuffix(UUID uuid) {

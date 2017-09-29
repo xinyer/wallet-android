@@ -773,21 +773,21 @@ public class WalletManager {
       private boolean synchronize() {
          if(_useTransactionFetcher) {
             //If using SPV module, enters this condition.
-            List<Address> addresses = new ArrayList<>();
            // Get adresses from all accounts
-            for(WalletAccount walletAccount : getAllAccounts()) {
-               addresses.addAll(walletAccount.getAddresses());
-            }
-            Set<AddressWithCreationTime> addressStrings = new HashSet<>(addresses.size());
-            Map<Address, Long> creationTimes = _backing.getAllAddressCreationTimes();
-            for (Address address : addresses) {
-               Long ts = creationTimes.get(address);
-               if (ts == null) {
-                  ts = 0L; // TODO: this has to depend on the estimated address creation time and get stored back
+            for(WalletAccount account : getAllAccounts()) {
+               if(account instanceof Bip44Account) {
+                  _transactionFetcher.getTransactions(((Bip44Account) account).getAccountIndex());
+               } else {
+                  // TODO: 28.09.17 sync single address accounts using spv, too.
+                  if (!account.isArchived()) {
+                     if (!account.synchronize(syncMode)) {
+                        // We failed to sync due to API error, we will have to try
+                        // again later
+                        return false;
+                     }
+                  }
                }
-               addressStrings.add(new AddressWithCreationTime(address.toString(), ts));
             }
-            _transactionFetcher.getTransactions(addressStrings);
          } else {
             if (syncMode.onlyActiveAccount) {
                if (currentAccount != null && !currentAccount.isArchived()) {
@@ -1205,7 +1205,7 @@ public class WalletManager {
    }
 
    public interface TransactionFetcher {
-      void getTransactions(Set<AddressWithCreationTime> addresses);
+      void getTransactions(int accountId);
    }
 
    public class AddressWithCreationTime {
