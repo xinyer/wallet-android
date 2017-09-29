@@ -38,6 +38,7 @@ import java.util.Locale;
 
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.os.StrictMode;
 import android.support.multidex.MultiDexApplication;
 import android.util.Log;
 
@@ -50,10 +51,17 @@ public class WalletApplication extends MultiDexApplication implements ModuleMess
 
    @Override
    public void onCreate() {
+      if (BuildConfig.DEBUG) {
+         StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder()
+                 .detectAll()
+                 .penaltyLog()
+                 //.penaltyDeath()
+                 .build());
+      }
+      super.onCreate();
       moduleMessageReceiver = new MbwMessageReceiver(this);
       String lang = MbwManager.getInstance(this).getLanguage();
       applyLanguageChange(lang);
-      super.onCreate();
    }
 
    @Override

@@ -46,6 +46,7 @@ import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.StrictMode;
 import android.os.Vibrator;
 import android.support.annotation.Nullable;
 import android.util.DisplayMetrics;
@@ -173,7 +174,13 @@ public class MbwManager implements WalletManager.TransactionFetcher {
 
    public static synchronized MbwManager getInstance(Context context) {
       if (_instance == null) {
-         _instance = new MbwManager(context);
+         if(BuildConfig.DEBUG) {
+            StrictMode.ThreadPolicy threadPolicy = StrictMode.allowThreadDiskReads();
+            _instance = new MbwManager(context);
+            StrictMode.setThreadPolicy(threadPolicy);
+         } else {
+            _instance = new MbwManager(context);
+         }
       }
       return _instance;
    }
@@ -1081,14 +1088,14 @@ public class MbwManager implements WalletManager.TransactionFetcher {
       this._language = _language;
       SharedPreferences.Editor editor = getEditor();
       editor.putString(Constants.LANGUAGE_SETTING, _language);
-      editor.commit();
+      editor.apply();
    }
 
    public void setTorMode(ServerEndpointType.Types torMode) {
       this._torMode = torMode;
       SharedPreferences.Editor editor = getEditor();
       editor.putString(Constants.TOR_MODE, torMode.toString());
-      editor.commit();
+      editor.apply();
 
       ServerEndpointType serverEndpointType = ServerEndpointType.fromType(torMode);
       if (serverEndpointType.mightUseTor()) {
