@@ -102,7 +102,8 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     private class WalletAutosaveEventListener : WalletFiles.Listener {
         override fun onBeforeAutoSave(file: File) = Unit
 
-        override fun onAfterAutoSave(file: File) = // make wallets world accessible in test mode
+        override fun onAfterAutoSave(file: File) =
+                // make wallets world accessible in test mode
                 //if (Constants.TEST) {
                 //   Io.chmod(file, 0777);
                 //}
@@ -113,39 +114,27 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         if (walletFile!!.exists()) {
             val start = System.currentTimeMillis()
 
-            var walletStream: FileInputStream? = null
-
             try {
-                walletStream = FileInputStream(walletFile!!)
+                FileInputStream(walletFile!!).use { walletStream ->
+                    wallet = WalletProtobufSerializer().readWallet(walletStream)
+                    if (wallet!!.params != Constants.NETWORK_PARAMETERS) {
+                        throw UnreadableWalletException("bad wallet network parameters: " + wallet!!.params.id)
+                    }
 
-                wallet = WalletProtobufSerializer().readWallet(walletStream)
-
-                if (wallet!!.params != Constants.NETWORK_PARAMETERS)
-                    throw UnreadableWalletException("bad wallet network parameters: " + wallet!!.params.id)
-
-                Log.i(LOG_TAG, "wallet loaded from: '$walletFile', took ${System.currentTimeMillis() - start}ms")
+                    Log.i(LOG_TAG, "wallet loaded from: '$walletFile', took ${System.currentTimeMillis() - start}ms")
+                }
             } catch (x: FileNotFoundException) {
                 Log.e(LOG_TAG, "problem loading wallet", x)
-
                 Toast.makeText(this@SpvModuleApplication, x.javaClass.name, Toast.LENGTH_LONG).show()
-
                 wallet = restoreWalletFromBackup()
             } catch (x: UnreadableWalletException) {
                 Log.e(LOG_TAG, "problem loading wallet", x)
                 Toast.makeText(this@SpvModuleApplication, x.javaClass.name, Toast.LENGTH_LONG).show()
                 wallet = restoreWalletFromBackup()
-            } finally {
-                if (walletStream != null) {
-                    try {
-                        walletStream.close()
-                    } catch (ignore: IOException) {
-                    }
-                }
             }
 
             if (!wallet!!.isConsistent) {
-                Toast.makeText(this, "inconsistent wallet: " + walletFile!!, Toast.LENGTH_LONG).show()
-
+                Toast.makeText(this, "inconsistent wallet: $walletFile", Toast.LENGTH_LONG).show()
                 wallet = restoreWalletFromBackup()
             }
 
@@ -158,39 +147,16 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     }
 
     private fun restoreWalletFromBackup(): Wallet {
-        var stream: InputStream? = null
-
-        try {
-            stream = openFileInput(Constants.Files.WALLET_KEY_BACKUP_PROTOBUF)
-
+        openFileInput(Constants.Files.WALLET_KEY_BACKUP_PROTOBUF).use { stream ->
             val wallet = WalletProtobufSerializer().readWallet(stream, true, null)
-
             if (!wallet.isConsistent) {
                 throw Error("inconsistent backup")
             }
-
             resetBlockchain()
-
-            // Toast.makeText(this, R.string.toast_wallet_reset, Toast.LENGTH_LONG).show();
-
             Log.i(LOG_TAG, "wallet restored from backup: '${Constants.Files.WALLET_KEY_BACKUP_PROTOBUF}'")
-
             return wallet
-        } catch (x: IOException) {
-            throw Error("cannot read backup", x)
-        } catch (x: UnreadableWalletException) {
-            throw Error("cannot read backup", x)
-        } finally {
-            try {
-                if (stream != null) {
-                    stream.close()
-                }
-            } catch (ignored: IOException) {
-            }
         }
     }
-
-    private val LOG_TAG: String? = this.javaClass.canonicalName
 
     fun backupWallet() {
         val builder = WalletProtobufSerializer().walletToProto(wallet!!).toBuilder()
@@ -334,7 +300,6 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
             } catch (x: PackageManager.NameNotFoundException) {
                 throw RuntimeException(x)
             }
-
         }
 
         fun httpUserAgent(versionName: String): String {
