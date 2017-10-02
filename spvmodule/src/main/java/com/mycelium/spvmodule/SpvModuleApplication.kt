@@ -69,8 +69,8 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         bip44AccountIdleService = bip44AccountIdleService.startAsync() as Bip44AccountIdleService
     }
 
-    private val LOG_TAG: String? = this.javaClass.canonicalName
-
+        openFileInput(Constants.Files.WALLET_KEY_BACKUP_PROTOBUF).use { stream ->
+            val wallet = WalletProtobufSerializer().readWallet(stream, true, null)
     /*
     fun startBlockchainService(cancelCoinsReceived: Boolean, accountIndex: Int) {
         Handler(Looper.getMainLooper()).post {
@@ -143,7 +143,6 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
             } catch (x: PackageManager.NameNotFoundException) {
                 throw RuntimeException(x)
             }
-
         }
 
         fun httpUserAgent(versionName: String): String {

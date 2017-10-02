@@ -541,8 +541,6 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
      */
     protected void updateLastInternalIndex(Address receivingAddress) {
         Integer internalIndex = _internalAddresses.get(receivingAddress);
-        Logger.getLogger(Bip44Account.class.getCanonicalName()).info("Account ID = " + getId() + ", updateLastInternalIndex, receivingAddress = " + receivingAddress
-                + ", internalIndex = " + internalIndex);
         if (internalIndex != null) {
             // Sends coins to an internal address, update internal max index
             // if necessary

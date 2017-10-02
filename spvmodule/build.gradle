@@ -15,6 +15,10 @@ android {
         javaMaxHeapSize "4g"
     }
 
+    packagingOptions {
+        exclude 'lib/x86_64/darwin/libscrypt.dylib'
+    }
+
     defaultConfig {
         applicationId "com.mycelium.spvmodule"
         minSdkVersion 19

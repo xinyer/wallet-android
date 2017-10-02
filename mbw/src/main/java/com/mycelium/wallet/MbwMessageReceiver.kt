@@ -184,15 +184,12 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
             }
             "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW" -> {
                 val _mbwManager = MbwManager.getInstance(context)
-                val accountIndex = intent.getIntExtra(IntentContract.ACCOUNT_INDEX_EXTRA,
-                        (_mbwManager.selectedAccount as Bip44Account).accountIndex)
-                val masterSeed: Bip39.MasterSeed
-                try {
-                    masterSeed = _mbwManager.getWalletManager(false).getMasterSeed(AesKeyCipher.defaultKeyCipher())
-                } catch (invalidKeyCipher: KeyCipher.InvalidKeyCipher) {
-                    throw RuntimeException(invalidKeyCipher)
+                val accountIndex = intent.getIntExtra(IntentContract.ACCOUNT_INDEX_EXTRA, -1)
+                if (accountIndex == -19) {
+                    Log.e(TAG, "Account Index required!")
+                    return
                 }
-                //_mbwManager.getWalletManager(false).getBip44Account(0).allVisibleAddresses dsihdsohs
+                val masterSeed = _mbwManager.getWalletManager(false).getMasterSeed(AesKeyCipher.defaultKeyCipher())
 
                 val masterDeterministicKey : DeterministicKey = HDKeyDerivation.createMasterPrivateKey(masterSeed.bip32Seed)
                 val bip44LevelDeterministicKey = HDKeyDerivation.deriveChildKey(masterDeterministicKey, ChildNumber(44, true))
@@ -207,12 +204,6 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                     NetworkParameters.fromID(NetworkParameters.ID_TESTNET)!!
                 } else {
                     NetworkParameters.fromID(NetworkParameters.ID_MAINNET)!!
-                }
-                //val byteArrayToTransmitToSPVModule = accountLevelDeterministicKey.serializePrivate(networkParameters)
-
-                for (address in _mbwManager.getWalletManager(false).addresses) {
-                    Log.d(TAG, "onMessage, com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW, " +
-                            "address = $address")
                 }
 
                 //HexUtils.toHex(masterSeed.bip32Seed)
@@ -234,7 +225,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
             val newAccountUUID = walletManager.createArchivedGapFiller(AesKeyCipher.defaultKeyCipher(),
                     account.accountIndex + 1, archived)
             MbwManager.getInstance(context).metadataStorage
-                    .storeAccountLabel(newAccountUUID, "Account " + account.accountIndex + 1)
+                    .storeAccountLabel(newAccountUUID, "Account " + (account.accountIndex + 2 /** account index is zero based */))
             walletManager.startSynchronization()
         }
     }
