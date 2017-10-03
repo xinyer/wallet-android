@@ -42,7 +42,7 @@ abstract class ThrottlingWalletChangeListener constructor(private val throttleMs
     private val handler = Handler()
     private val relevant = AtomicBoolean()
 
-    override fun onWalletChanged(wallet: Wallet) {
+    override fun onWalletChanged(walletAccount: Wallet) {
         if (relevant.getAndSet(false)) {
             handler.removeCallbacksAndMessages(null)
 
@@ -50,7 +50,7 @@ abstract class ThrottlingWalletChangeListener constructor(private val throttleMs
 
             val runnable = Runnable {
                 lastMessageTime.set(System.currentTimeMillis())
-                onChanged(wallet)
+                onChanged(walletAccount)
             }
 
             if (now - lastMessageTime.get() > throttleMs)
@@ -60,27 +60,27 @@ abstract class ThrottlingWalletChangeListener constructor(private val throttleMs
         }
     }
 
-    abstract fun onChanged(wallet: Wallet)
+    abstract fun onChanged(walletAccount: Wallet)
 
-    override fun onCoinsReceived(wallet: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
+    override fun onCoinsReceived(walletAccount: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
         if (coinsRelevant) {
             relevant.set(true)
         }
     }
 
-    override fun onCoinsSent(wallet: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
+    override fun onCoinsSent(walletAccount: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
         if (coinsRelevant) {
             relevant.set(true)
         }
     }
 
-    override fun onReorganize(wallet: Wallet) {
+    override fun onReorganize(walletAccount: Wallet) {
         if (reorganizeRelevant) {
             relevant.set(true)
         }
     }
 
-    override fun onTransactionConfidenceChanged(wallet: Wallet, tx: Transaction) {
+    override fun onTransactionConfidenceChanged(walletAccount: Wallet, tx: Transaction) {
         //We should probably update info about transaction here. Documentation says we should save the wallet here.
         if (confidenceRelevant) {
             relevant.set(true)

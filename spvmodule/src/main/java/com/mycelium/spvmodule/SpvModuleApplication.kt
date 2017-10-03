@@ -69,8 +69,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         bip44AccountIdleService = bip44AccountIdleService.startAsync() as Bip44AccountIdleService
     }
 
-        openFileInput(Constants.Files.WALLET_KEY_BACKUP_PROTOBUF).use { stream ->
-            val wallet = WalletProtobufSerializer().readWallet(stream, true, null)
+
     /*
     fun startBlockchainService(cancelCoinsReceived: Boolean, accountIndex: Int) {
         Handler(Looper.getMainLooper()).post {

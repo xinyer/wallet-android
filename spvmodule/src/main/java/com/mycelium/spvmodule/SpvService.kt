@@ -72,7 +72,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
     private val walletEventListener = object
         : ThrottlingWalletChangeListener(APPWIDGET_THROTTLE_MS) {
         override fun onChanged(wallet: Wallet) {
-            notifyTransactions(wallet!!.getTransactions(true))
+            //notifyTransactions(wallet!!.getTransactions(true))
         }
 
         override fun onTransactionConfidenceChanged(wallet: Wallet, tx: Transaction) {
@@ -264,7 +264,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
     @Synchronized // TODO: why are we getting here twice in parallel???
     fun initializeBlockchainTODELETE(seedStringArray: ArrayList<String>?, creationTimeSeconds : Long) {
         serviceCreatedAtInMs = System.currentTimeMillis()
-
+/*
         try {
             unregisterReceiver(connectivityReceiver)
         } catch (e : IllegalArgumentException) {
@@ -291,6 +291,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         }
         registerReceiver(tickReceiver, IntentFilter(Intent.ACTION_TIME_TICK))
         */
+        */
     }
 
     override fun onDestroy() {
@@ -306,42 +307,32 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         }
         cursor?.close()
 
-        SpvModuleApplication.scheduleStartBlockchainService(this)
         /*try {
             unregisterReceiver(tickReceiver)
         } catch (e : IllegalArgumentException) {
             //Receiver not registered.
             //Log.e(LOG_TAG, e.localizedMessage, e)
         } */
+
+        /*
         if(wallet != null) {
             wallet!!.removeChangeEventListener(walletEventListener)
             wallet!!.removeCoinsSentEventListener(walletEventListener)
             wallet!!.removeCoinsReceivedEventListener(walletEventListener)
-        }
-
-        try {
-            unregisterReceiver(connectivityReceiver)
-        } catch (e : IllegalArgumentException) {
-            //Receiver not registered.
-            //Log.e(LOG_TAG, e.localizedMessage, e)
-        } catch (e : UninitializedPropertyAccessException) {}
-
-        if (peerGroup != null) {
-            peerGroup!!.removeDisconnectedEventListener(peerConnectivityListener!!)
-            peerGroup!!.removeConnectedEventListener(peerConnectivityListener!!)
-            peerGroup!!.removeWallet(wallet)
-            if(peerGroup!!.isRunning) {
-                peerGroup!!.stop()
-            }
-
+        }*/
+/*
             Log.i(LOG_TAG, "onDestroy, peergroup stopped")
         }
+        */
 
+        /*
         if(peerConnectivityListener != null) {
             peerConnectivityListener!!.stop()
         }
         blockStore?.close()
+*/
 
+        /*
         val start = System.currentTimeMillis()
 
         if(wallet != null) {
@@ -361,7 +352,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
             wakeLock!!.release()
             wakeLock = null
         }
-
+*/
         super.onDestroy()
         Log.i(LOG_TAG, "service was up for ${(System.currentTimeMillis() - serviceCreatedAtInMs) / 1000 / 60} minutes")
     }
@@ -395,6 +386,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
 
     private val semaphore = Semaphore(1, true)
 
+    /*
     private fun notifyTransactions(transactions: Set<Transaction>) {
         semaphore.acquire()
         if (!transactions.isEmpty()) {
@@ -404,6 +396,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         }
         semaphore.release()
     }
+    */
 
     companion object {
         private val PACKAGE_NAME = SpvService::class.java.`package`.name

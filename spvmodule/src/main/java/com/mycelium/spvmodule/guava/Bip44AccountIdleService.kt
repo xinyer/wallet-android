@@ -33,6 +33,7 @@ import java.net.InetSocketAddress
 import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 
 /**
@@ -50,8 +51,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     /**
      * Start the service.
      *
-     *
-     * By default this method does nothing.
      */
     override fun startUp() {
         //Read list of accounts indexes
@@ -60,15 +59,11 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                 Context.MODE_PRIVATE)
         accountIndexStrings = sharedPreferences.getStringSet(
                 spvModuleApplication.getString(R.string.account_index_stringset), emptySet())
-
-        initializePeergroup()
+        initialize()
     }
 
     /**
      * Stop the service. This is guaranteed not to run concurrently with [.runOneIteration].
-     *
-     *
-     * By default this method does nothing.
      */
     override fun shutDown() {
         stopPeergroup()
@@ -87,7 +82,18 @@ class Bip44AccountIdleService : AbstractScheduledService() {
      * longer be called.
      */
     override fun runOneIteration() {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        if(!peerGroup!!.isRunning) {
+            for (walletAccount in walletsAccounts.values) {
+                peerGroup!!.addWallet(walletAccount)
+            }
+
+            //Starting peerGroup;
+            peerGroup!!.startAsync()
+            //Start download blockchain
+            peerGroup!!.downloadBlockChain()
+            //Stop the peergroup after having downloaded the blockchain.
+            stopPeergroup()
+        }
     }
 
     private lateinit var peerConnectivityListener: PeerConnectivityListener
@@ -95,63 +101,88 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     private var spvModuleApplication = SpvModuleApplication.getApplication()
     private val configuration = spvModuleApplication.configuration
     val notificationManager = spvModuleApplication.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    private lateinit var blockStore : BlockStore
 
 
-    private fun initializePeergroup() {
+    private fun initialize() {
         val blockChainFile = File(spvModuleApplication.getDir("blockstore", Context.MODE_PRIVATE),
                 Constants.Files.BLOCKCHAIN_FILENAME)
-        val blockStore : BlockStore
+
         try {
             blockStore = SPVBlockStore(Constants.NETWORK_PARAMETERS, blockChainFile)
             blockStore.chainHead // detect corruptions as early as possible
-
-            for (accountIndexString in accountIndexStrings) {
-                val accountIndex: Int = accountIndexString.toInt()
-                val walletAccount = getAccountWallet(accountIndex);
-                if (walletAccount != null) {
-                    walletsAccounts.put(accountIndex, walletAccount)
-                }
-            }
-            var earliestKeyCreationTime = 0L
-            for (walletAccount in walletsAccounts.values) {
-                if(earliestKeyCreationTime != 0L) {
-                    if (walletAccount.earliestKeyCreationTime < earliestKeyCreationTime) {
-                        earliestKeyCreationTime = walletAccount.earliestKeyCreationTime
-                    }
-                } else {
-                    earliestKeyCreationTime = walletAccount.earliestKeyCreationTime
-                }
-            }
-
+            initializeWalletsAccounts()
+            val earliestKeyCreationTime = initializeEarliestKeyCreationTime()
             if (earliestKeyCreationTime > 0L) {
-                try {
-                    val start = System.currentTimeMillis()
-                    val checkpointsInputStream = spvModuleApplication.assets.open(Constants.Files.CHECKPOINTS_FILENAME)
-                    //earliestKeyCreationTime = 1477958400L //Should be earliestKeyCreationTime, testing something.
-                    CheckpointManager.checkpoint(Constants.NETWORK_PARAMETERS, checkpointsInputStream,
-                            blockStore, earliestKeyCreationTime)
-                    Log.i(LOG_TAG, "checkpoints loaded from '${Constants.Files.CHECKPOINTS_FILENAME}',"
-                            + " took ${System.currentTimeMillis() - start}ms, "
-                            + "earliestKeyCreationTime = '$earliestKeyCreationTime'")
-                } catch (x: IOException) {
-                    Log.e(LOG_TAG, "problem reading checkpoints, continuing without", x)
-                }
-
+                initializeCheckpoint(earliestKeyCreationTime)
             }
-        } catch (x: BlockStoreException) {
-            blockChainFile.delete()
-            val msg = "blockstore cannot be created"
-            throw Error(msg, x)
-        }
-
-
-        try {
             blockChain = BlockChain(Constants.NETWORK_PARAMETERS, walletsAccounts.values.toList(),
                     blockStore)
         } catch (x: BlockStoreException) {
-            throw Error("blockchain cannot be created", x)
+            blockChainFile.delete()
+            throw Error(x.localizedMessage, x)
         }
+        initializePeergroup()
 
+        val intentFilter = IntentFilter()
+        intentFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION)
+        intentFilter.addAction(Intent.ACTION_DEVICE_STORAGE_LOW)
+        intentFilter.addAction(Intent.ACTION_DEVICE_STORAGE_OK)
+
+        Log.d(LOG_TAG, "initializeBlockchain, registering ConnectivityReceiver")
+        spvModuleApplication.registerReceiver(connectivityReceiver, intentFilter) // implicitly start PeerGroup
+        initializeWalletAccountsListeners()
+    }
+
+    private fun initializeWalletAccountsListeners() {
+        for (walletAccount in walletsAccounts.values) {
+            walletAccount.addCoinsReceivedEventListener(Threading.SAME_THREAD, walletEventListener)
+            walletAccount.addCoinsSentEventListener(Threading.SAME_THREAD, walletEventListener)
+            walletAccount.addChangeEventListener(Threading.SAME_THREAD, walletEventListener)
+            walletAccount.addTransactionConfidenceEventListener(Threading.SAME_THREAD, walletEventListener)
+        }
+    }
+
+    private fun initializeWalletsAccounts() {
+        for (accountIndexString in accountIndexStrings) {
+            val accountIndex: Int = accountIndexString.toInt()
+            val walletAccount = getAccountWallet(accountIndex);
+            if (walletAccount != null) {
+                walletsAccounts.put(accountIndex, walletAccount)
+            }
+        }
+    }
+
+    private fun initializeEarliestKeyCreationTime(): Long {
+        var earliestKeyCreationTime = 0L
+        for (walletAccount in walletsAccounts.values) {
+            if (earliestKeyCreationTime != 0L) {
+                if (walletAccount.earliestKeyCreationTime < earliestKeyCreationTime) {
+                    earliestKeyCreationTime = walletAccount.earliestKeyCreationTime
+                }
+            } else {
+                earliestKeyCreationTime = walletAccount.earliestKeyCreationTime
+            }
+        }
+        return earliestKeyCreationTime
+    }
+
+    private fun initializeCheckpoint(earliestKeyCreationTime: Long) {
+        try {
+            val start = System.currentTimeMillis()
+            val checkpointsInputStream = spvModuleApplication.assets.open(Constants.Files.CHECKPOINTS_FILENAME)
+            //earliestKeyCreationTime = 1477958400L //Should be earliestKeyCreationTime, testing something.
+            CheckpointManager.checkpoint(Constants.NETWORK_PARAMETERS, checkpointsInputStream,
+                    blockStore, earliestKeyCreationTime)
+            Log.i(LOG_TAG, "checkpoints loaded from '${Constants.Files.CHECKPOINTS_FILENAME}',"
+                    + " took ${System.currentTimeMillis() - start}ms, "
+                    + "earliestKeyCreationTime = '$earliestKeyCreationTime'")
+        } catch (x: IOException) {
+            Log.e(LOG_TAG, "problem reading checkpoints, continuing without", x)
+        }
+    }
+
+    private fun initializePeergroup() {
         peerGroup = PeerGroup(Constants.NETWORK_PARAMETERS, blockChain)
         peerGroup!!.setDownloadTxDependencies(0) // recursive implementation causes StackOverflowError
 
@@ -165,7 +196,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         val trustedPeerHost = configuration!!.trustedPeerHost
         val hasTrustedPeer = trustedPeerHost != null
 
-        val connectTrustedPeerOnly = hasTrustedPeer && configuration!!.trustedPeerOnly
+        val connectTrustedPeerOnly = hasTrustedPeer && configuration.trustedPeerOnly
         peerGroup!!.maxConnections = if (connectTrustedPeerOnly) 1 else spvModuleApplication.maxConnectedPeers()
         peerGroup!!.setConnectTimeoutMillis(Constants.PEER_TIMEOUT_MS)
         peerGroup!!.setPeerDiscoveryTimeoutMillis(Constants.PEER_DISCOVERY_TIMEOUT_MS.toLong())
@@ -209,20 +240,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                 normalPeerDiscovery.shutdown()
             }
         })
-
-        val intentFilter = IntentFilter()
-        intentFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION)
-        intentFilter.addAction(Intent.ACTION_DEVICE_STORAGE_LOW)
-        intentFilter.addAction(Intent.ACTION_DEVICE_STORAGE_OK)
-
-        Log.d(LOG_TAG, "initializeBlockchain, registering ConnectivityReceiver")
-        spvModuleApplication.registerReceiver(connectivityReceiver, intentFilter) // implicitly start PeerGroup
-        for (walletAccount in walletsAccounts.values) {
-            walletAccount.addCoinsReceivedEventListener(Threading.SAME_THREAD, walletEventListener)
-            walletAccount.addCoinsSentEventListener(Threading.SAME_THREAD, walletEventListener)
-            walletAccount.addChangeEventListener(Threading.SAME_THREAD, walletEventListener)
-            walletAccount.addTransactionConfidenceEventListener(Threading.SAME_THREAD, walletEventListener)
-        }
     }
 
     private fun stopPeergroup() {
@@ -233,6 +250,22 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         }
         peerGroup!!.stopAsync()
         peerGroup = null
+
+        try {
+            spvModuleApplication.unregisterReceiver(connectivityReceiver)
+        } catch (e : IllegalArgumentException) {
+            //Receiver not registered.
+            //Log.e(LOG_TAG, e.localizedMessage, e)
+        } catch (e : UninitializedPropertyAccessException) {}
+
+        peerConnectivityListener.stop()
+
+        for (walletAccountIndexMapItem in walletsAccounts) {
+            val walletFile = spvModuleApplication.getFileStreamPath(Constants.Files.WALLET_FILENAME_PROTOBUF
+                    + "_${walletAccountIndexMapItem.key}")
+            walletAccountIndexMapItem.value.saveToFile(walletFile)
+        }
+        blockStore.close()
     }
 
     private fun getAccountWallet(accountIndex: Int) : Wallet? {
@@ -296,30 +329,15 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private fun restoreWalletFromBackup(accountIndex: Int): Wallet {
-        var stream: InputStream? = null
-
-        try {
-            stream = spvModuleApplication.openFileInput(
-                    Constants.Files.WALLET_KEY_BACKUP_PROTOBUF + accountIndex)
-
+        spvModuleApplication.openFileInput(Constants.Files.WALLET_KEY_BACKUP_PROTOBUF + accountIndex).use { stream ->
             val walletAccount = WalletProtobufSerializer().readWallet(stream, true, null)
-
             if (!walletAccount.isConsistent) {
-                throw Error("Inconsistent backup.")
+                throw Error("inconsistent backup")
             }
-            Log.i(LOG_TAG, "Wallet restored from backup: '${Constants.Files.WALLET_KEY_BACKUP_PROTOBUF}'")
+            //TODO : Reset Blockchain ?
+            Log.i(LOG_TAG, "wallet/account restored from backup: "
+                    + "'${Constants.Files.WALLET_KEY_BACKUP_PROTOBUF + accountIndex}'")
             return walletAccount
-        } catch (x: IOException) {
-            throw Error("cannot read backup", x)
-        } catch (x: UnreadableWalletException) {
-            throw Error("cannot read backup", x)
-        } finally {
-            try {
-                if (stream != null) {
-                    stream.close()
-                }
-            } catch (ignored: IOException) {
-            }
         }
     }
 
@@ -547,11 +565,13 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         SpvMessageSender.send(CommunicationManager.getInstance(spvModuleApplication), securedMulticastIntent)
     }
 
+    private val transactionsReceived = AtomicInteger()
+
     private val walletEventListener = object
         : ThrottlingWalletChangeListener(APPWIDGET_THROTTLE_MS) {
 
         override fun onChanged(walletAccount: Wallet) {
-            notifyTransactions(walletAccount.getTransactions(true))
+            notifyTransactions(walletAccount.getTransactions(true), walletAccount.unspents.toSet())
         }
 
         override fun onTransactionConfidenceChanged(walletAccount: Wallet, tx: Transaction) {
@@ -570,6 +590,14 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         override fun onCoinsSent(walletAccount: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
             transactionsReceived.incrementAndGet()
             super.onCoinsSent(walletAccount, tx, prevBalance, newBalance)
+        }
+    }
+
+    @Synchronized
+    private fun notifyTransactions(transactions: Set<Transaction>, utxos: Set<TransactionOutput> ) {
+        if (!transactions.isEmpty()) {
+            // send the new transaction and the *complete* utxo set of the wallet
+            SpvMessageSender.sendTransactions(CommunicationManager.getInstance(spvModuleApplication), transactions, utxos)
         }
     }
 
