@@ -586,31 +586,32 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         SpvMessageSender.send(CommunicationManager.getInstance(spvModuleApplication), securedMulticastIntent)
     }
 
-    private val transactionsReceived = AtomicInteger()
-
     private val walletEventListener = object
         : ThrottlingWalletChangeListener(APPWIDGET_THROTTLE_MS) {
+        override fun onReorganize(p0: Wallet?) {
+            //Do nothing.
+        }
 
         override fun onChanged(walletAccount: Wallet) {
             notifyTransactions(walletAccount.getTransactions(true), walletAccount.unspents.toSet())
         }
 
         override fun onTransactionConfidenceChanged(walletAccount: Wallet, tx: Transaction) {
+            //Do nothing.
+            /*
             if(tx.confidence?.depthInBlocks?:0 > 7) {
                 // don't update on all transactions individually just because we found a new block
                 return
             }
-            super.onTransactionConfidenceChanged(walletAccount, tx)
+            */
         }
 
         override fun onCoinsReceived(walletAccount: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
-            transactionsReceived.incrementAndGet()
-            super.onCoinsReceived(walletAccount, tx, prevBalance, newBalance)
+            //Do nothing.
         }
 
         override fun onCoinsSent(walletAccount: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
-            transactionsReceived.incrementAndGet()
-            super.onCoinsSent(walletAccount, tx, prevBalance, newBalance)
+            //Do nothing.
         }
     }
 
@@ -648,10 +649,12 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         override fun doneDownload() {
             Log.d(LOG_TAG, "doneDownload(), Blockchain is fully downloaded.")
             super.doneDownload()
+            /*
             if(peerGroup!!.isRunning) {
                 Log.i(LOG_TAG, "doneDownload(), stopping peergroup")
                 peerGroup!!.stopAsync()
             }
+            */
         }
 
         private val runnable = Runnable {

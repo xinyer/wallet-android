@@ -32,60 +32,29 @@ import org.bitcoinj.wallet.listeners.WalletReorganizeEventListener
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
-abstract class ThrottlingWalletChangeListener constructor(private val throttleMs : Long = DEFAULT_THROTTLE_MS,
-                                                          private val coinsRelevant: Boolean = true,
-                                                          private val reorganizeRelevant: Boolean = true,
-                                                          private val confidenceRelevant: Boolean = true)
+abstract class ThrottlingWalletChangeListener constructor(private val throttleMs : Long = DEFAULT_THROTTLE_MS)
     : WalletChangeEventListener, WalletCoinsSentEventListener, WalletCoinsReceivedEventListener,
         WalletReorganizeEventListener, TransactionConfidenceEventListener {
     private val lastMessageTime = AtomicLong(0)
     private val handler = Handler()
-    private val relevant = AtomicBoolean()
 
     override fun onWalletChanged(walletAccount: Wallet) {
-        if (relevant.getAndSet(false)) {
-            handler.removeCallbacksAndMessages(null)
+        handler.removeCallbacksAndMessages(null)
 
-            val now = System.currentTimeMillis()
+        val now = System.currentTimeMillis()
 
-            val runnable = Runnable {
-                lastMessageTime.set(System.currentTimeMillis())
-                onChanged(walletAccount)
-            }
-
-            if (now - lastMessageTime.get() > throttleMs)
-                handler.post(runnable)
-            else
-                handler.postDelayed(runnable, throttleMs)
+        val runnable = Runnable {
+            lastMessageTime.set(System.currentTimeMillis())
+            onChanged(walletAccount)
         }
+
+        if (now - lastMessageTime.get() > throttleMs)
+            handler.post(runnable)
+        else
+            handler.postDelayed(runnable, throttleMs)
     }
 
     abstract fun onChanged(walletAccount: Wallet)
-
-    override fun onCoinsReceived(walletAccount: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
-        if (coinsRelevant) {
-            relevant.set(true)
-        }
-    }
-
-    override fun onCoinsSent(walletAccount: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
-        if (coinsRelevant) {
-            relevant.set(true)
-        }
-    }
-
-    override fun onReorganize(walletAccount: Wallet) {
-        if (reorganizeRelevant) {
-            relevant.set(true)
-        }
-    }
-
-    override fun onTransactionConfidenceChanged(walletAccount: Wallet, tx: Transaction) {
-        //We should probably update info about transaction here. Documentation says we should save the wallet here.
-        if (confidenceRelevant) {
-            relevant.set(true)
-        }
-    }
 
     companion object {
         private val DEFAULT_THROTTLE_MS: Long = 500
