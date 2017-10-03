@@ -15,10 +15,19 @@ So far, restoring the wallet from masterseed has never been necessary, but we of
 Building
 ========
 
-To build everything from source, simply checkout the source and build using gradle
-on the build system you need.
+To build everything from source, simply checkout the source and build using gradle.
+On the build system you need:
 
  * JDK 1.7
+ * uniquid's BIP44 supporting version of bitcoinJ:
+ 
+     ````
+     git clone git@github.com:uniquid/bitcoinj.git
+     cd bitcoinj
+     git checkout master-uniquid
+     git pull
+     mvn clean install  -DskipTests
+     ````
 
 Then you need to use the Android SDK manager to install the following components:
 
