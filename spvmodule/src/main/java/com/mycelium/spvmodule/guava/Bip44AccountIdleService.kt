@@ -36,11 +36,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
-/**
- * Created by Nelson on 27/09/2017.
- */
 class Bip44AccountIdleService : AbstractScheduledService() {
-
     private var LOG_TAG = this.javaClass.canonicalName
     private val walletsAccounts: MutableMap<Int, Wallet> = mutableMapOf()
     private lateinit var accountIndexStrings: MutableSet<String>
@@ -49,9 +45,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     private lateinit var connectivityReceiver : ConnectivityReceiver
     private var wakeLock: PowerManager.WakeLock? = null
 
-    /**
-     * {@inheritDoc}
-     */
     override fun startUp() {
         //Read list of accounts indexes
         sharedPreferences = spvModuleApplication.getSharedPreferences(
@@ -62,22 +55,13 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         initialize()
     }
 
-    /**
-     * {@inheritDoc}
-     */
     override fun shutDown() {
         stopPeergroup()
     }
 
-    /**
-     * {@inheritDoc}
-     */
     override fun scheduler(): Scheduler =
             AbstractScheduledService.Scheduler.newFixedDelaySchedule(0, 1, TimeUnit.MINUTES)
 
-    /**
-     * {@inheritDoc}
-     */
     override fun runOneIteration() {
         if(!peerGroup!!.isRunning) {
             if(wakeLock == null) {
@@ -215,9 +199,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         peerGroup!!.addPeerDiscovery(object : PeerDiscovery {
             private val normalPeerDiscovery = MultiplexingDiscovery.forServices(Constants.NETWORK_PARAMETERS, 0)
 
-            /**
-             * {@inheritDoc}
-             */
             @Throws(PeerDiscoveryException::class)
             override fun getPeers(services: Long, timeoutValue: Long, timeoutUnit: TimeUnit)
                     : Array<InetSocketAddress> {
@@ -250,9 +231,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                 return peers.toTypedArray()
             }
 
-            /**
-             * {@inheritDoc}
-             */
             override fun shutdown() {
                 normalPeerDiscovery.shutdown()
             }
@@ -442,14 +420,8 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             notificationManager.cancel(Constants.NOTIFICATION_ID_CONNECTED)
         }
 
-        /**
-         * {@inheritDoc}
-         */
         override fun onPeerConnected(peer: Peer, peerCount: Int) = onPeerChanged(peerCount)
 
-        /**
-         * {@inheritDoc}
-         */
         override fun onPeerDisconnected(peer: Peer, peerCount: Int) = onPeerChanged(peerCount)
 
         private fun onPeerChanged(peerCount: Int) {
@@ -457,9 +429,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             changed()
         }
 
-        /**
-         * {@inheritDoc}
-         */
         override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {
             if (Configuration.PREFS_KEY_CONNECTIVITY_NOTIFICATION == key) {
                 changed()
@@ -598,23 +567,14 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     private val walletEventListener = object
         : ThrottlingWalletChangeListener(APPWIDGET_THROTTLE_MS) {
 
-        /**
-         * {@inheritDoc}
-         */
         override fun onReorganize(p0: Wallet?) {
             //Do nothing.
         }
 
-        /**
-         * {@inheritDoc}
-         */
         override fun onChanged(walletAccount: Wallet) {
             notifyTransactions(walletAccount.getTransactions(true), walletAccount.unspents.toSet())
         }
 
-        /**
-         * {@inheritDoc}
-         */
         override fun onTransactionConfidenceChanged(walletAccount: Wallet, tx: Transaction) {
             //Do nothing.
             /*
@@ -625,16 +585,10 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             */
         }
 
-        /**
-         * {@inheritDoc}
-         */
         override fun onCoinsReceived(walletAccount: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
             //Do nothing.
         }
 
-        /**
-         * {@inheritDoc}
-         */
         override fun onCoinsSent(walletAccount: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
             //Do nothing.
         }
@@ -649,10 +603,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     inner class DownloadProgressTrackerExt : DownloadProgressTracker() {
-
-        /**
-         * {@inheritDoc}
-         */
         override fun onChainDownloadStarted(peer: Peer?, blocksLeft: Int) {
             Log.d(LOG_TAG, "onChainDownloadStarted(), Blockchain's download is starting. " +
                     "Blocks left to download is $blocksLeft, peer = $peer")
@@ -661,9 +611,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
         private val lastMessageTime = AtomicLong(0)
 
-        /**
-         * {@inheritDoc}
-         */
         override fun onBlocksDownloaded(peer: Peer, block: Block, filteredBlock: FilteredBlock?, blocksLeft: Int) {
             if(BuildConfig.DEBUG) {
                 //Log.d(LOG_TAG, "onBlocksDownloaded, blocks left + $blocksLeft")
@@ -677,9 +624,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             super.onBlocksDownloaded(peer, block, filteredBlock, blocksLeft)
         }
 
-        /**
-         * {@inheritDoc}
-         */
         override fun doneDownload() {
             Log.d(LOG_TAG, "doneDownload(), Blockchain is fully downloaded.")
             super.doneDownload()
@@ -700,10 +644,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     inner class ConnectivityReceiver : BroadcastReceiver() {
-
-        /**
-         * {@inheritDoc}
-         */
         override fun onReceive(context: Context, intent: Intent) {
             val action = intent.action
 
@@ -757,14 +697,8 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private class WalletAutosaveEventListener : WalletFiles.Listener {
-        /**
-         * {@inheritDoc}
-         */
         override fun onBeforeAutoSave(file: File) = Unit
 
-        /**
-         * {@inheritDoc}
-         */
         override fun onAfterAutoSave(file: File) = // make walletsAccounts world accessible in test mode
                 //if (Constants.TEST) {
                 //   Io.chmod(file, 0777);
