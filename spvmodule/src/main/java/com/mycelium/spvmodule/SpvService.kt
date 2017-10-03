@@ -52,7 +52,7 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantLock
 
 class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cursor> {
-    private var application: SpvModuleApplication? = null
+    private var application: SpvModuleApplication = SpvModuleApplication.getApplication()
 
     private var notificationManager: NotificationManager? = null
     private var serviceCreatedAtInMs: Long = 0
@@ -93,7 +93,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                 ACTION_ADD_ACCOUNT -> {
                     val bip39Passphrase = intent.getStringArrayListExtra("bip39Passphrase")
                     val creationTimeSeconds = intent.getLongExtra("creationTimeSeconds", 0)
-                    application!!.addAccountWalletWithExtendedKey(bip39Passphrase,
+                    application.addAccountWalletWithExtendedKey(bip39Passphrase,
                             creationTimeSeconds, accountIndex)
                     Log.d(LOG_TAG, "onHandleIntent(), ACTION_ADD_ACCOUNT, setting futureSpvService to 0")
                 }
@@ -103,7 +103,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                     Log.i(LOG_TAG, "onHandleIntent: ACTION_BROADCAST_TRANSACTION,  TX = " + transaction)
                     transaction.getConfidence().setSource(TransactionConfidence.Source.SELF);
                     transaction.setPurpose(Transaction.Purpose.USER_PAYMENT);
-                    application!!.broadcastTransaction(transaction, accountIndex)
+                    application.broadcastTransaction(transaction, accountIndex)
                 }
                 ACTION_SEND_FUNDS -> {
                     val rawAddress = intent.getStringExtra(IntentContract.SendFunds.ADDRESS_EXTRA)
@@ -119,7 +119,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                     if (feePerKb > 0) {
                         sendRequest.feePerKb = Coin.valueOf(feePerKb)
                     }
-                    application!!.broadcastTransaction(sendRequest, accountIndex)
+                    application.broadcastTransaction(sendRequest, accountIndex)
                 }
                 ACTION_RECEIVE_TRANSACTIONS -> {
                     //Not relevant anymore.
@@ -147,10 +147,10 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         Log.i(LOG_TAG, "onTrimMemory($level)")
 
         if (level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND) {
-            Log.w(LOG_TAG, "low memory detected, stopping service")
+            // TODO: stop service
+            Log.e(LOG_TAG, "low memory detected, not stopping service")
         }
     }
-
 
     private var cursor: Cursor? = null
     /**

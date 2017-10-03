@@ -37,23 +37,23 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
 class Bip44AccountIdleService : AbstractScheduledService() {
-    private var LOG_TAG = this.javaClass.canonicalName
     private val walletsAccounts: MutableMap<Int, Wallet> = mutableMapOf()
-    private lateinit var accountIndexStrings: MutableSet<String>
-    private lateinit var sharedPreferences:SharedPreferences
     private lateinit var downloadProgressTracker: DownloadProgressTracker
     private lateinit var connectivityReceiver : ConnectivityReceiver
     private var wakeLock: PowerManager.WakeLock? = null
+    private var peerGroup: PeerGroup? = null
 
-    override fun startUp() {
-        //Read list of accounts indexes
-        sharedPreferences = spvModuleApplication.getSharedPreferences(
+    private val spvModuleApplication = SpvModuleApplication.getApplication()
+    private val sharedPreferences:SharedPreferences = spvModuleApplication.getSharedPreferences(
                 spvModuleApplication.getString(R.string.sharedpreferences_file_name),
                 Context.MODE_PRIVATE)
-        accountIndexStrings = sharedPreferences.getStringSet(
-                spvModuleApplication.getString(R.string.account_index_stringset), emptySet())
-        initialize()
-    }
+    //Read list of accounts indexes
+    private val accountIndexStrings: MutableSet<String> = sharedPreferences.getStringSet(
+            spvModuleApplication.getString(R.string.account_index_stringset), emptySet())
+    private val configuration = spvModuleApplication.configuration!!
+    private val peerConnectivityListener: PeerConnectivityListener = PeerConnectivityListener()
+    private val notificationManager = spvModuleApplication.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    private lateinit var blockStore : BlockStore
 
     override fun shutDown() {
         stopPeergroup()
@@ -91,15 +91,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         }
     }
 
-    private lateinit var peerConnectivityListener: PeerConnectivityListener
-    private var peerGroup: PeerGroup? = null
-    private var spvModuleApplication = SpvModuleApplication.getApplication()
-    private val configuration = spvModuleApplication.configuration
-    val notificationManager = spvModuleApplication.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    private lateinit var blockStore : BlockStore
-
-
-    private fun initialize() {
+    override fun startUp() {
         val blockChainFile = File(spvModuleApplication.getDir("blockstore", Context.MODE_PRIVATE),
                 Constants.Files.BLOCKCHAIN_FILENAME)
 
@@ -141,7 +133,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     private fun initializeWalletsAccounts() {
         for (accountIndexString in accountIndexStrings) {
             val accountIndex: Int = accountIndexString.toInt()
-            val walletAccount = getAccountWallet(accountIndex);
+            val walletAccount = getAccountWallet(accountIndex)
             if (walletAccount != null) {
                 walletsAccounts.put(accountIndex, walletAccount)
             }
@@ -182,8 +174,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         peerGroup!!.setDownloadTxDependencies(0) // recursive implementation causes StackOverflowError
 
         peerGroup!!.setUserAgent(Constants.USER_AGENT, spvModuleApplication.packageInfo!!.versionName)
-
-        peerConnectivityListener = PeerConnectivityListener()
 
         peerGroup!!.addConnectedEventListener(peerConnectivityListener)
         peerGroup!!.addDisconnectedEventListener(peerConnectivityListener)
@@ -437,7 +427,9 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
         private fun changed() {
             if(!stopped.get()) {
-                AsyncTask.execute(Runnable { this@Bip44AccountIdleService.changed() })
+                AsyncTask.execute {
+                    this@Bip44AccountIdleService.changed()
+                }
             }
         }
     }
@@ -479,7 +471,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             if(blockchainState.impediments.size > 0) {
                 // TODO: this is potentially unreachable as the service stops when offline.
                 // Not sure if impediment STORAGE ever shows. Probably both should show.
-                val impedimentsString = blockchainState.impediments.map {it.toString()}.joinToString()
+                val impedimentsString = blockchainState.impediments.joinToString {it.toString()}
                 contentText += " " +  spvModuleApplication.getString(R.string.notification_chain_status_impediment, impedimentsString)
             }
             notification.setContentText(contentText)
@@ -546,7 +538,11 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     fun broadcastTransaction(sendRequest: SendRequest, accountIndex: Int) {
-        val transaction = walletsAccounts.get(accountIndex)!!.sendCoinsOffline(sendRequest)
+        val transaction = walletsAccounts[accountIndex]?.sendCoinsOffline(sendRequest)
+        if(transaction == null) {
+            Log.e(LOG_TAG, "broadcasting failed")
+            return
+        }
         broadcastTransaction(transaction, accountIndex)
     }
 
@@ -707,6 +703,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     companion object {
+        private val LOG_TAG = Bip44AccountIdleService::class.simpleName
         private val BLOCKCHAIN_STATE_BROADCAST_THROTTLE_MS = DateUtils.SECOND_IN_MILLIS
         private val APPWIDGET_THROTTLE_MS = DateUtils.SECOND_IN_MILLIS
     }
