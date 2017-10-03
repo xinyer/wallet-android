@@ -5,8 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
-import android.os.Handler
-import android.os.Looper
 import android.os.StrictMode
 import android.preference.PreferenceManager
 import android.util.Log
@@ -96,8 +94,6 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
                 6
             }
 
-
-
     companion object {
         private var INSTANCE: SpvModuleApplication? = null
 
@@ -120,7 +116,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         }
 
         private val LOG_TAG: String? = this::class.java.canonicalName
-        
+
         fun getMbwModuleName(): String = when (BuildConfig.APPLICATION_ID) {
             "com.mycelium.spvmodule_testrelease" -> "com.mycelium.testnetwallet_spore"
             "com.mycelium.spvmodule.test" -> "com.mycelium.devwallet_spore"
