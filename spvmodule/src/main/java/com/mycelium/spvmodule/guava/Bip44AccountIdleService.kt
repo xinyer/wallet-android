@@ -7,6 +7,7 @@ import android.content.*
 import android.content.Context
 import android.net.ConnectivityManager
 import android.os.AsyncTask
+import android.os.PowerManager
 import android.support.v4.content.LocalBroadcastManager
 import android.text.format.DateUtils
 import android.util.Log
@@ -47,6 +48,8 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     private lateinit var sharedPreferences:SharedPreferences
     private lateinit var downloadProgressTracker: DownloadProgressTracker
     private lateinit var connectivityReceiver : ConnectivityReceiver
+    private var wakeLock: PowerManager.WakeLock? = null
+
 
     /**
      * Start the service.
@@ -83,6 +86,15 @@ class Bip44AccountIdleService : AbstractScheduledService() {
      */
     override fun runOneIteration() {
         if(!peerGroup!!.isRunning) {
+            if(wakeLock == null) {
+                // if we still hold a wakelock, we don't leave it dangling to block until later.
+                val powerManager = spvModuleApplication.getSystemService(Context.POWER_SERVICE) as PowerManager
+                wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
+                        "${spvModuleApplication.packageName} blockchain sync")
+            }
+            if(!wakeLock!!.isHeld) {
+                wakeLock!!.acquire()
+            }
             for (walletAccount in walletsAccounts.values) {
                 peerGroup!!.addWallet(walletAccount)
             }
@@ -93,6 +105,11 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             peerGroup!!.downloadBlockChain()
             //Stop the peergroup after having downloaded the blockchain.
             stopPeergroup()
+            //Release wakelock
+            if (wakeLock != null && wakeLock!!.isHeld) {
+                wakeLock!!.release()
+                wakeLock = null
+            }
         }
     }
 
@@ -264,6 +281,10 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             val walletFile = spvModuleApplication.getFileStreamPath(Constants.Files.WALLET_FILENAME_PROTOBUF
                     + "_${walletAccountIndexMapItem.key}")
             walletAccountIndexMapItem.value.saveToFile(walletFile)
+            walletAccountIndexMapItem.value.removeChangeEventListener(walletEventListener)
+            walletAccountIndexMapItem.value.removeCoinsSentEventListener(walletEventListener)
+            walletAccountIndexMapItem.value.removeCoinsReceivedEventListener(walletEventListener)
+            walletAccountIndexMapItem.value.removeTransactionConfidenceEventListener(walletEventListener)
         }
         blockStore.close()
     }

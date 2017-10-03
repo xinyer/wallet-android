@@ -53,109 +53,11 @@ import java.util.concurrent.locks.ReentrantLock
 
 class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cursor> {
     private var application: SpvModuleApplication? = null
-    private var config: Configuration? = null
-
-
-    private val handler = Handler()
-    private var wakeLock: WakeLock? = null
 
     private var notificationManager: NotificationManager? = null
-    private val transactionsReceived = AtomicInteger()
     private var serviceCreatedAtInMs: Long = 0
-    private var resetBlockchainOnShutdown = false
-
-    private var cursorLoader: CursorLoader? = null
-
-
-
-
-    private val walletEventListener = object
-        : ThrottlingWalletChangeListener(APPWIDGET_THROTTLE_MS) {
-        override fun onChanged(wallet: Wallet) {
-            //notifyTransactions(wallet!!.getTransactions(true))
-        }
-
-        override fun onTransactionConfidenceChanged(wallet: Wallet, tx: Transaction) {
-            if(tx.confidence?.depthInBlocks?:0 > 7) {
-                // don't update on all transactions individually just because we found a new block
-                return
-            }
-            super.onTransactionConfidenceChanged(wallet, tx)
-        }
-
-        override fun onCoinsReceived(wallet: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
-            transactionsReceived.incrementAndGet()
-            super.onCoinsReceived(wallet, tx, prevBalance, newBalance)
-        }
-
-        override fun onCoinsSent(wallet: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
-            transactionsReceived.incrementAndGet()
-            super.onCoinsSent(wallet, tx, prevBalance, newBalance)
-        }
-    }
-
     private val LOG_TAG: String? = this::class.java.canonicalName
-
-    /*
-    private val tickReceiver = TickReceiver()
-    inner class TickReceiver : BroadcastReceiver() {
-        private var lastChainHeight = 0
-        private val activityHistory = LinkedList<ActivityHistoryEntry>()
-
-        override fun onReceive(context: Context, intent: Intent) {
-            val chainHeight = blockChain!!.bestChainHeight
-
-            if (lastChainHeight > 0) {
-                val numBlocksDownloaded = chainHeight - lastChainHeight
-                val numTransactionsReceived = transactionsReceived.getAndSet(0)
-
-                // push history
-                activityHistory.add(0, ActivityHistoryEntry(numTransactionsReceived, numBlocksDownloaded))
-
-                // trim
-                while (activityHistory.size > MAX_HISTORY_SIZE)
-                    activityHistory.removeAt(activityHistory.size - 1)
-
-                // print
-                val builder = StringBuilder()
-                for (entry in activityHistory) {
-                    if (builder.isNotEmpty()) {
-                        builder.append(", ")
-                    }
-                    builder.append(entry)
-                }
-                Log.i(LOG_TAG, "History of transactions/blocks: " + builder)
-
-                // determine if block and transaction activity is idling
-                var isIdle = false
-                if (activityHistory.size >= MIN_COLLECT_HISTORY) {
-                    isIdle = true
-                    for (i in activityHistory.indices) {
-                        val entry = activityHistory[i]
-                        val blocksActive = entry.numBlocksDownloaded > 0 && i <= IDLE_BLOCK_TIMEOUT_MIN
-                        val transactionsActive = entry.numTransactionsReceived > 0 && i <= IDLE_TRANSACTION_TIMEOUT_MIN
-
-                        if (blocksActive || transactionsActive) {
-                            isIdle = false
-                            break
-                        }
-                    }
-                }
-
-                // if idling, shutdown service
-                if (isIdle) {
-                    Log.i(LOG_TAG, "Think that idling is detected, would have tried to stop service")
-                }
-            }
-
-            lastChainHeight = chainHeight
-        }
-    }
-    */
-
     private val LOADER_ID_NETWORK: Int = 0
-
-    //private var futureSpvService : SettableFuture<Long>? = null
     private var reentrantLock = ReentrantLock(true)
 
     private var accountIndex: Int = -1
@@ -183,20 +85,6 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                 return
             }
 
-            //futureSpvService = SettableFuture.create<Long>();
-
-            if(wakeLock == null) {
-                // if we still hold a wakelock, we don't leave it dangling to block until later.
-                val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-                wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "$packageName blockchain sync")
-            } else {
-                Log.d(LOG_TAG, "recycling wakeLock")
-            }
-            if(!wakeLock!!.isHeld) {
-                wakeLock!!.acquire()
-            } else {
-                Log.d(LOG_TAG, "already held wakeLock")
-            }
 
             when (intent.action) {
                 ACTION_CANCEL_COINS_RECEIVED -> {
@@ -234,21 +122,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                     application!!.broadcastTransaction(sendRequest, accountIndex)
                 }
                 ACTION_RECEIVE_TRANSACTIONS -> {
-                    /*
-                    val tmpWallet = SpvModuleApplication.getWallet(accountIndex)
-                    if(tmpWallet == null || tmpWallet.keyChainGroupSize == 0) {
-                        // Ask for private Key
-                        SpvMessageSender.requestPrivateKey(CommunicationManager.getInstance(this), accountIndex)
-                        return
-                    }
-                    initializeBlockchain(null, 0)
-                    Log.d(LOG_TAG, "com.mycelium.wallet.receiveTransactions,  accountIndex = $accountIndex")
-                    val transactionSet = wallet!!.getTransactions(false)
-                    val utxos = wallet!!.unspents.toHashSet()
-                    if(!transactionSet.isEmpty() || !utxos.isEmpty()) {
-                        SpvMessageSender.sendTransactions(CommunicationManager.getInstance(this), transactionSet, utxos)
-                    }
-                    */
+                    //Not relevant anymore.
                 }
                 else -> {
                     Log.e(LOG_TAG,
@@ -261,98 +135,10 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         }
     }
 
-    @Synchronized // TODO: why are we getting here twice in parallel???
-    fun initializeBlockchainTODELETE(seedStringArray: ArrayList<String>?, creationTimeSeconds : Long) {
-        serviceCreatedAtInMs = System.currentTimeMillis()
-/*
-        try {
-            unregisterReceiver(connectivityReceiver)
-        } catch (e : IllegalArgumentException) {
-            //Receiver not registered.
-            //Log.e(LOG_TAG, e.localizedMessage, e)
-            // TODO TEMP FIX // DEBUG THAT
-
-        } catch (e : UninitializedPropertyAccessException) {}
-
-        connectivityReceiver = ConnectivityReceiver()
-        Log.d(LOG_TAG, "initializeBlockchain, registering ConnectivityReceiver")
-        registerReceiver(connectivityReceiver, intentFilter) // implicitly start PeerGroup
-        wallet!!.addCoinsReceivedEventListener(Threading.SAME_THREAD, walletEventListener)
-        wallet!!.addCoinsSentEventListener(Threading.SAME_THREAD, walletEventListener)
-        wallet!!.addChangeEventListener(Threading.SAME_THREAD, walletEventListener)
-        wallet!!.addTransactionConfidenceEventListener(Threading.SAME_THREAD, walletEventListener)
-/*
-        try {
-            unregisterReceiver(tickReceiver)
-        } catch (e : IllegalArgumentException) {
-            //Receiver not registered.
-            //Log.e(LOG_TAG, e.localizedMessage, e)
-            // TODO TEMP FIX // DEBUG THAT
-        }
-        registerReceiver(tickReceiver, IntentFilter(Intent.ACTION_TIME_TICK))
-        */
-        */
-    }
-
     override fun onDestroy() {
         Log.d(LOG_TAG, ".onDestroy()")
 
         intentsQueue.clear()
-
-        // Stop the cursor loader
-        if (cursorLoader != null) {
-            cursorLoader!!.unregisterListener(this)
-            cursorLoader!!.cancelLoad()
-            cursorLoader!!.stopLoading()
-        }
-        cursor?.close()
-
-        /*try {
-            unregisterReceiver(tickReceiver)
-        } catch (e : IllegalArgumentException) {
-            //Receiver not registered.
-            //Log.e(LOG_TAG, e.localizedMessage, e)
-        } */
-
-        /*
-        if(wallet != null) {
-            wallet!!.removeChangeEventListener(walletEventListener)
-            wallet!!.removeCoinsSentEventListener(walletEventListener)
-            wallet!!.removeCoinsReceivedEventListener(walletEventListener)
-        }*/
-/*
-            Log.i(LOG_TAG, "onDestroy, peergroup stopped")
-        }
-        */
-
-        /*
-        if(peerConnectivityListener != null) {
-            peerConnectivityListener!!.stop()
-        }
-        blockStore?.close()
-*/
-
-        /*
-        val start = System.currentTimeMillis()
-
-        if(wallet != null) {
-            val walletFile = getFileStreamPath(Constants.Files.WALLET_FILENAME_PROTOBUF + "_$accountIndex")
-            wallet!!.saveToFile(walletFile)
-            Log.d(LOG_TAG, "wallet saved to: $walletFile', took ${System.currentTimeMillis() - start}ms")
-        }
-
-        if (resetBlockchainOnShutdown && blockChainFile != null) {
-            Log.i(LOG_TAG, "removing blockchain, reset blockchain on shutdown")
-            blockChainFile!!.delete()
-            resetBlockchainOnShutdown = false
-        }
-
-        if (wakeLock != null && wakeLock!!.isHeld) {
-            Log.d(LOG_TAG, "wakelock still held, releasing")
-            wakeLock!!.release()
-            wakeLock = null
-        }
-*/
         super.onDestroy()
         Log.i(LOG_TAG, "service was up for ${(System.currentTimeMillis() - serviceCreatedAtInMs) / 1000 / 60} minutes")
     }
