@@ -571,9 +571,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         val walletAccountFile = spvModuleApplication.getFileStreamPath(
                 Constants.Files.WALLET_FILENAME_PROTOBUF + "_$accountIndex")
         walletAccount.saveToFile(walletAccountFile)
-        for (walletAccount in walletsAccountsMap.values) {
-            peerGroup!!.removeWallet(walletAccount)
-        }
         /*
         val broadcast = Intent(SpvModuleApplication.ACTION_WALLET_REFERENCE_CHANGED) //TODO Investigate utility of this.
         broadcast.`package` = packageName
