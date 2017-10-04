@@ -23,6 +23,7 @@ import android.content.*
 import android.database.Cursor
 import android.text.format.DateUtils
 import android.util.Log
+import com.mycelium.modularizationtools.CommunicationManager
 import org.bitcoinj.core.*
 import org.bitcoinj.wallet.SendRequest
 import java.util.*

@@ -311,7 +311,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private fun getAccountWallet(accountIndex: Int) : Wallet? {
-        Log.d(LOG_TAG, "getAccountWallet, accountIndex = $accountIndex")
         var walletAccount : Wallet? = null
         val walletAccountFile = spvModuleApplication.getFileStreamPath(
                 Constants.Files.WALLET_FILENAME_PROTOBUF + "_$accountIndex")
