@@ -687,6 +687,9 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
         override fun doneDownload() {
             Log.d(LOG_TAG, "doneDownload(), Blockchain is fully downloaded.")
+            for (walletAccount in walletsAccountsMap.values) {
+                peerGroup!!.removeWallet(walletAccount)
+            }
             super.doneDownload()
             /*
             if(peerGroup!!.isRunning) {
