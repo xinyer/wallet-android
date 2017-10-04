@@ -318,7 +318,10 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private fun getAccountWallet(accountIndex: Int) : Wallet? {
-        var walletAccount : Wallet? = null
+        var walletAccount : Wallet? = walletsAccountsMap.get(accountIndex)
+        if(walletAccount != null) {
+            return walletAccount
+        }
         val walletAccountFile = spvModuleApplication.getFileStreamPath(
                 Constants.Files.WALLET_FILENAME_PROTOBUF + "_$accountIndex")
         if (walletAccountFile.exists()) {
@@ -611,9 +614,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private fun broadcastBlockchainState() {
-        if(BuildConfig.DEBUG) {
-            Log.d(LOG_TAG, "broadcastBlockchainState")
-        }
         val localBroadcast = Intent(SpvService.ACTION_BLOCKCHAIN_STATE)
         localBroadcast.`package` = spvModuleApplication.packageName
         blockchainState.putExtras(localBroadcast)
