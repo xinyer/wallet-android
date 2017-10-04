@@ -39,7 +39,8 @@ import java.util.concurrent.atomic.AtomicLong
 class Bip44AccountIdleService : AbstractScheduledService() {
     private val walletsAccountsMap: MutableMap<Int, Wallet> = mutableMapOf()
     private var downloadProgressTracker: DownloadProgressTracker? = null
-    private lateinit var connectivityReceiver : ConnectivityReceiver
+    private val connectivityReceiver = ConnectivityReceiver()
+
     private var wakeLock: PowerManager.WakeLock? = null
     private var peerGroup: PeerGroup? = null
 
@@ -90,7 +91,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         }
 
         Log.d(LOG_TAG, "initializeBlockchain, registering ConnectivityReceiver")
-        //spvModuleApplication.applicationContext.registerReceiver(connectivityReceiver, intentFilter)
+        spvModuleApplication.applicationContext.registerReceiver(connectivityReceiver, intentFilter)
 
         val blockChainFile = File(spvModuleApplication.getDir("blockstore", Context.MODE_PRIVATE),
                 Constants.Files.BLOCKCHAIN_FILENAME)
