@@ -14,7 +14,7 @@ import com.mycelium.spvmodule.providers.data.DatabaseContract.TransactionOutput
 class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DatabaseHelper.DATABASE_NAME,
         null, DatabaseHelper.DATABASE_VERSION) {
 
-    private val LOG_TAG: String? = this::class.java.canonicalName
+    private val LOG_TAG: String? = this::class.java.simpleName
 
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL("DROP TABLE IF EXISTS ${Address.TABLE_NAME};")

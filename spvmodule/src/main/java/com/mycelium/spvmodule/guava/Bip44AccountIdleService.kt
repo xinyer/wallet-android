@@ -241,12 +241,12 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             Log.d(LOG_TAG, "stopPeergroup")
         }
         if(peerGroup != null) {
+            peerGroup!!.stopAsync()
             peerGroup!!.removeDisconnectedEventListener(peerConnectivityListener)
             peerGroup!!.removeConnectedEventListener(peerConnectivityListener)
             for (walletAccount in walletsAccountsMap.values) {
                 peerGroup!!.removeWallet(walletAccount)
             }
-            peerGroup!!.stopAsync()
         }
 
         try {
@@ -347,7 +347,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                 throw UnreadableWalletException("bad wallet network parameters: "
                         + walletAccount!!.params.id)
 
-            Log.i(LOG_TAG, "wallet loaded from: '$walletAccountFile', took ${System.currentTimeMillis() - start}ms")
+            //Log.i(LOG_TAG, "wallet loaded from: '$walletAccountFile', took ${System.currentTimeMillis() - start}ms")
         } catch (x: FileNotFoundException) {
             Log.e(LOG_TAG, "problem loading wallet", x)
 
@@ -647,11 +647,27 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         }
 
         override fun onCoinsReceived(walletAccount: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
-            //Do nothing.
+            //If this is the first transaction found on that wallet/account, stop the download of the blockchain.
+            //MBW will request to add a new account.
+            if(walletAccount.getRecentTransactions(0, true).size == 1) {
+                if(BuildConfig.DEBUG) {
+                    Log.d(LOG_TAG, "onCoinsReceived, first transaction found on that wallet/account," +
+                            " stop the download of the blockchain")
+                }
+                stopAsync()
+            }
         }
 
         override fun onCoinsSent(walletAccount: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
-            //Do nothing.
+            //If this is the first transaction found on that wallet/account, stop the download of the blockchain.
+            //MBW will request to add a new account.
+            if(walletAccount.getRecentTransactions(0, true).size == 1) {
+                if(BuildConfig.DEBUG) {
+                    Log.d(LOG_TAG, "onCoinsSent, first transaction found on that wallet/account," +
+                            " stop the download of the blockchain")
+                }
+                stopAsync()
+            }
         }
     }
 
@@ -746,13 +762,13 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     companion object {
-        private val LOG_TAG = Bip44AccountIdleService::class.java.canonicalName
+        private val LOG_TAG = Bip44AccountIdleService::class.java.simpleName
         private val BLOCKCHAIN_STATE_BROADCAST_THROTTLE_MS = DateUtils.SECOND_IN_MILLIS
         private val APPWIDGET_THROTTLE_MS = DateUtils.SECOND_IN_MILLIS
     }
 
     fun doesWalletAccountExist(accountIndex: Int): Boolean {
-        val tmpWallet = getAccountWallet(accountIndex)
+        val tmpWallet = walletsAccountsMap.get(accountIndex)
         return !(tmpWallet == null || tmpWallet.keyChainGroupSize == 0)
     }
 }

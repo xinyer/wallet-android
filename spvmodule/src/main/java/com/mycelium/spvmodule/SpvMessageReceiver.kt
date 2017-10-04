@@ -111,5 +111,5 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
         }).start()
     }
 
-    private val LOG_TAG: String = this.javaClass.canonicalName
+    private val LOG_TAG: String = this.javaClass.simpleName
 }

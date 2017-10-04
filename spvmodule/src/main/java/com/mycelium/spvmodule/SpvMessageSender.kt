@@ -14,7 +14,7 @@ import kotlin.collections.ArrayList
 
 class SpvMessageSender {
     companion object {
-        private val LOG_TAG: String = SpvMessageSender::class.java.canonicalName
+        private val LOG_TAG: String = SpvMessageSender::class.java.simpleName
 
         fun sendTransactions(communicationManager: CommunicationManager,
                              transactionSet: Set<Transaction>,

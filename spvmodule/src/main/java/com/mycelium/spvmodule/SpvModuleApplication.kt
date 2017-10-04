@@ -118,7 +118,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
             return versionMessage.subVer
         }
 
-        private val LOG_TAG: String? = this::class.java.canonicalName
+        private val LOG_TAG: String? = this::class.java.simpleName
 
         fun getMbwModuleName(): String = when (BuildConfig.APPLICATION_ID) {
             "com.mycelium.spvmodule_testrelease" -> "com.mycelium.testnetwallet_spore"
@@ -130,7 +130,6 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
                 INSTANCE!!.doesWalletAccountExist(accountIndex)
     }
 
-    private fun doesWalletAccountExist(accountIndex: Int): Boolean {
-        return bip44AccountIdleService.doesWalletAccountExist(accountIndex)
-    }
+    private fun doesWalletAccountExist(accountIndex: Int): Boolean =
+            bip44AccountIdleService.doesWalletAccountExist(accountIndex)
 }
