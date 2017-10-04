@@ -121,7 +121,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
 
         intentsQueue.clear()
         super.onDestroy()
-        Log.i(LOG_TAG, "service was up for ${(System.currentTimeMillis() - serviceCreatedAtMillis) / 1000 / 60} minutes")
+        Log.i(LOG_TAG, "service was up for ${(System.currentTimeMillis() - serviceCreatedAtMillis) / 1000 }s")
     }
 
     override fun onTrimMemory(level: Int) {

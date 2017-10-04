@@ -21,8 +21,6 @@ open class PairingProvider : ContentProvider() {
         return true
     }
 
-    private val LOG_TAG: String? = this::class.java.canonicalName
-
     /**
      * Heavy hack ahead! Sorry!
      *
@@ -46,4 +44,8 @@ open class PairingProvider : ContentProvider() {
     override fun delete(uri: Uri, where: String?, whereArgs: Array<String>?): Int = throw UnsupportedOperationException("not implemented")
 
     override fun update(uri: Uri, values: ContentValues?, where: String?, whereArgs: Array<String>?): Int = throw UnsupportedOperationException("not implemented")
+
+    companion object {
+        private val LOG_TAG = PairingProvider::class.java.canonicalName
+    }
 }
