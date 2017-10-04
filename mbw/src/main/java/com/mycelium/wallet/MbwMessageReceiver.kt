@@ -164,24 +164,18 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 val bestChainHeight = intent.getIntExtra("best_chain_height", 0)
                 // val replaying = intent.getBooleanExtra("replaying", true)
                 // val impediments = intent.getStringArrayExtra("impediment")
-                val accountIndex = intent.getIntExtra(IntentContract.ACCOUNT_INDEX_EXTRA, -1)
-                if(accountIndex != -1) {
-                    walletManager.activeAccounts
-                            .filterIsInstance<Bip44Account>()
-                            .forEach {
-                                if (it.accountIndex == accountIndex) {
-                                    it.blockChainHeight = bestChainHeight
-                                }
-                            }
-                    // Defines a Handler object that's attached to the UI thread
-                    val runnable = Runnable {
-                        eventBus.post(SpvSyncChanged(Date(bestChainDate), bestChainHeight.toLong(),
-                                accountIndex))
-                    }
-                    Handler(Looper.getMainLooper()).post(runnable)
+                walletManager.activeAccounts
+                        .filterIsInstance<Bip44Account>()
+                        .forEach {
+                            it.blockChainHeight = bestChainHeight
+                        }
+                // Defines a Handler object that's attached to the UI thread
+                val runnable = Runnable {
+                    eventBus.post(SpvSyncChanged(Date(bestChainDate), bestChainHeight.toLong()))
                 }
-
+                Handler(Looper.getMainLooper()).post(runnable)
             }
+
             "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW" -> {
                 val _mbwManager = MbwManager.getInstance(context)
                 val accountIndex = intent.getIntExtra(IntentContract.ACCOUNT_INDEX_EXTRA, -1)
