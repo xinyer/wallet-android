@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
 class Bip44AccountIdleService : AbstractScheduledService() {
-    private val walletsAccounts: MutableMap<Int, Wallet> = mutableMapOf()
+    private val walletsAccountsMap: MutableMap<Int, Wallet> = mutableMapOf()
     private lateinit var downloadProgressTracker: DownloadProgressTracker
     private lateinit var connectivityReceiver : ConnectivityReceiver
     private var wakeLock: PowerManager.WakeLock? = null
@@ -56,17 +56,26 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     private lateinit var blockStore : BlockStore
 
     override fun shutDown() {
+        if(BuildConfig.DEBUG) {
+            Log.d(LOG_TAG, "shutDown")
+        }
         stopPeergroup()
     }
 
     override fun scheduler(): Scheduler =
-            AbstractScheduledService.Scheduler.newFixedDelaySchedule(0, 1, TimeUnit.MINUTES)
+            AbstractScheduledService.Scheduler.newFixedRateSchedule(0, 1, TimeUnit.MINUTES)
 
     override fun runOneIteration() {
+        if(BuildConfig.DEBUG) {
+            Log.d(LOG_TAG, "runOneIteration")
+        }
         checkImpediments()
     }
 
     override fun startUp() {
+        if(BuildConfig.DEBUG) {
+            Log.d(LOG_TAG, "startUp")
+        }
         val blockChainFile = File(spvModuleApplication.getDir("blockstore", Context.MODE_PRIVATE),
                 Constants.Files.BLOCKCHAIN_FILENAME)
 
@@ -78,7 +87,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             if (earliestKeyCreationTime > 0L) {
                 initializeCheckpoint(earliestKeyCreationTime)
             }
-            blockChain = BlockChain(Constants.NETWORK_PARAMETERS, walletsAccounts.values.toList(),
+            blockChain = BlockChain(Constants.NETWORK_PARAMETERS, walletsAccountsMap.values.toList(),
                     blockStore)
         } catch (x: BlockStoreException) {
             blockChainFile.delete()
@@ -97,7 +106,10 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private fun initializeWalletAccountsListeners() {
-        for (walletAccount in walletsAccounts.values) {
+        if(BuildConfig.DEBUG) {
+            Log.d(LOG_TAG, "initializeWalletAccountsListeners, number of accounts = ${walletsAccountsMap.values.size}")
+        }
+        for (walletAccount in walletsAccountsMap.values) {
             walletAccount.addCoinsReceivedEventListener(Threading.SAME_THREAD, walletEventListener)
             walletAccount.addCoinsSentEventListener(Threading.SAME_THREAD, walletEventListener)
             walletAccount.addChangeEventListener(Threading.SAME_THREAD, walletEventListener)
@@ -106,18 +118,24 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private fun initializeWalletsAccounts() {
+        if(BuildConfig.DEBUG) {
+            Log.d(LOG_TAG, "initializeWalletsAccounts, number of accounts = ${accountIndexStrings.size}")
+        }
         for (accountIndexString in accountIndexStrings) {
             val accountIndex: Int = accountIndexString.toInt()
             val walletAccount = getAccountWallet(accountIndex)
             if (walletAccount != null) {
-                walletsAccounts.put(accountIndex, walletAccount)
+                walletsAccountsMap.put(accountIndex, walletAccount)
             }
         }
     }
 
     private fun initializeEarliestKeyCreationTime(): Long {
+        if(BuildConfig.DEBUG) {
+            Log.d(LOG_TAG, "initializeEarliestKeyCreationTime")
+        }
         var earliestKeyCreationTime = 0L
-        for (walletAccount in walletsAccounts.values) {
+        for (walletAccount in walletsAccountsMap.values) {
             if (earliestKeyCreationTime != 0L) {
                 if (walletAccount.earliestKeyCreationTime < earliestKeyCreationTime) {
                     earliestKeyCreationTime = walletAccount.earliestKeyCreationTime
@@ -130,6 +148,9 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private fun initializeCheckpoint(earliestKeyCreationTime: Long) {
+        if(BuildConfig.DEBUG) {
+            Log.d(LOG_TAG, "initializeCheckpoint, earliestKeyCreationTime = $earliestKeyCreationTime")
+        }
         try {
             val start = System.currentTimeMillis()
             val checkpointsInputStream = spvModuleApplication.assets.open(Constants.Files.CHECKPOINTS_FILENAME)
@@ -145,6 +166,9 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private fun initializePeergroup() {
+        if(BuildConfig.DEBUG) {
+            Log.d(LOG_TAG, "initializePeergroup")
+        }
         peerGroup = PeerGroup(Constants.NETWORK_PARAMETERS, blockChain)
         peerGroup!!.setDownloadTxDependencies(0) // recursive implementation causes StackOverflowError
 
@@ -203,9 +227,12 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private fun stopPeergroup() {
+        if(BuildConfig.DEBUG) {
+            Log.d(LOG_TAG, "stopPeergroup")
+        }
         peerGroup!!.removeDisconnectedEventListener(peerConnectivityListener)
         peerGroup!!.removeConnectedEventListener(peerConnectivityListener)
-        for (walletAccount in walletsAccounts.values) {
+        for (walletAccount in walletsAccountsMap.values) {
             peerGroup!!.removeWallet(walletAccount)
         }
         peerGroup!!.stopAsync()
@@ -220,7 +247,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
         peerConnectivityListener.stop()
 
-        for (walletAccountIndexMapItem in walletsAccounts) {
+        for (walletAccountIndexMapItem in walletsAccountsMap) {
             val walletFile = spvModuleApplication.getFileStreamPath(Constants.Files.WALLET_FILENAME_PROTOBUF
                     + "_${walletAccountIndexMapItem.key}")
             walletAccountIndexMapItem.value.saveToFile(walletFile)
@@ -234,6 +261,9 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
     @Synchronized
     private fun checkImpediments() {
+        if(BuildConfig.DEBUG) {
+            Log.d(LOG_TAG, "checkImpediments, peergroup.isRunning = ${peerGroup!!.isRunning}")
+        }
         if(!peerGroup!!.isRunning) {
             if (wakeLock == null) {
                 // if we still hold a wakelock, we don't leave it dangling to block until later.
@@ -244,7 +274,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             if (!wakeLock!!.isHeld) {
                 wakeLock!!.acquire()
             }
-            for (walletAccount in walletsAccounts.values) {
+            for (walletAccount in walletsAccountsMap.values) {
                 peerGroup!!.addWallet(walletAccount)
             }
             if (impediments.isEmpty() && peerGroup == null) {
@@ -523,7 +553,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                 accountIndexStrings)
         editor.commit()
 
-        walletsAccounts.put(accountIndex, walletAccount)
+        walletsAccountsMap.put(accountIndex, walletAccount)
         walletAccount.shutdownAutosaveAndWait()
         configuration!!.maybeIncrementBestChainHeightEver(walletAccount.lastBlockSeenHeight)
         afterLoadWallet(walletAccount, accountIndex)
@@ -537,7 +567,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
     @Synchronized
     fun broadcastTransaction(transaction: Transaction, accountIndex: Int) {
-        val walletAccount = walletsAccounts.get(accountIndex)
+        val walletAccount = walletsAccountsMap.get(accountIndex)
         walletAccount!!.commitTx(transaction)
         val walletAccountFile = spvModuleApplication.getFileStreamPath(
                 Constants.Files.WALLET_FILENAME_PROTOBUF + "_$accountIndex")
@@ -554,7 +584,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     fun broadcastTransaction(sendRequest: SendRequest, accountIndex: Int) {
-        val transaction = walletsAccounts[accountIndex]?.sendCoinsOffline(sendRequest)
+        val transaction = walletsAccountsMap[accountIndex]?.sendCoinsOffline(sendRequest)
         if(transaction == null) {
             Log.e(LOG_TAG, "broadcasting failed")
             return
@@ -694,7 +724,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     companion object {
-        private val LOG_TAG = Bip44AccountIdleService::class.simpleName
+        private val LOG_TAG = this::class.java.canonicalName
         private val BLOCKCHAIN_STATE_BROADCAST_THROTTLE_MS = DateUtils.SECOND_IN_MILLIS
         private val APPWIDGET_THROTTLE_MS = DateUtils.SECOND_IN_MILLIS
     }
