@@ -122,7 +122,12 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                     application.broadcastTransaction(sendRequest, accountIndex)
                 }
                 ACTION_RECEIVE_TRANSACTIONS -> {
-                    //Not relevant anymore.
+                    if (!SpvModuleApplication.doesWalletAccountExist(accountIndex)) {
+                        // Ask for private Key
+                        SpvMessageSender.requestPrivateKey(CommunicationManager.getInstance(this), accountIndex)
+                        return
+                    }
+
                 }
                 else -> {
                     Log.e(LOG_TAG,

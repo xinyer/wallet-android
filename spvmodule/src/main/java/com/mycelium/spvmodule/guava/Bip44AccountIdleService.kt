@@ -49,7 +49,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                 Context.MODE_PRIVATE)
     //Read list of accounts indexes
     private val accountIndexStrings: MutableSet<String> = sharedPreferences.getStringSet(
-            spvModuleApplication.getString(R.string.account_index_stringset), emptySet())
+            spvModuleApplication.getString(R.string.account_index_stringset), mutableSetOf())
     private val configuration = spvModuleApplication.configuration!!
     private val peerConnectivityListener: PeerConnectivityListener = PeerConnectivityListener()
     private val notificationManager = spvModuleApplication.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -63,14 +63,16 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     override fun scheduler(): Scheduler =
-            AbstractScheduledService.Scheduler.newFixedRateSchedule(0, 20, TimeUnit.SECONDS)
+            AbstractScheduledService.Scheduler.newFixedRateSchedule(0, 1, TimeUnit.MINUTES)
 
     override fun runOneIteration() {
         if(BuildConfig.DEBUG) {
             Log.d(LOG_TAG, "runOneIteration")
         }
         try {
-            checkImpediments()
+            if(walletsAccountsMap.size > 0) {
+                checkImpediments()
+            }
         } catch (e: Throwable) {
             Log.e(LOG_TAG, e.localizedMessage, e)
             throw e
@@ -230,7 +232,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             }
         })
         //Starting peerGroup;
-        Log.i(LOG_TAG, "checkImpediments, peergroup startAsync")
+        Log.i(LOG_TAG, "initializePeergroup, peergroup startAsync")
         peerGroup!!.startAsync()
     }
 
@@ -309,7 +311,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private fun getAccountWallet(accountIndex: Int) : Wallet? {
-        Log.d(LOG_TAG, "switchAccount, accountIndex = $accountIndex")
+        Log.d(LOG_TAG, "getAccountWallet, accountIndex = $accountIndex")
         var walletAccount : Wallet? = null
         val walletAccountFile = spvModuleApplication.getFileStreamPath(
                 Constants.Files.WALLET_FILENAME_PROTOBUF + "_$accountIndex")
@@ -548,7 +550,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         if(BuildConfig.DEBUG) {
             Log.d(LOG_TAG, "addWalletAccount, accountIndex = $accountIndex")
         }
-        stopAsync()
         val walletAccount = Wallet.fromSeed(
                 Constants.NETWORK_PARAMETERS,
                 DeterministicSeed(bip39Passphrase, null, "", creationTimeSeconds),
@@ -565,11 +566,8 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         editor.commit()
 
         walletsAccountsMap.put(accountIndex, walletAccount)
-        walletAccount.shutdownAutosaveAndWait()
         configuration.maybeIncrementBestChainHeightEver(walletAccount.lastBlockSeenHeight)
-        //afterLoadWallet(walletAccount, accountIndex)
-
-        startAsync()
+        afterLoadWallet(walletAccount, accountIndex)
 
         /*
         val broadcast = Intent(SpvModuleApplication.ACTION_WALLET_REFERENCE_CHANGED) //TODO Investigate utility of this.
@@ -740,5 +738,10 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         private val LOG_TAG = this::class.java.canonicalName
         private val BLOCKCHAIN_STATE_BROADCAST_THROTTLE_MS = DateUtils.SECOND_IN_MILLIS
         private val APPWIDGET_THROTTLE_MS = DateUtils.SECOND_IN_MILLIS
+    }
+
+    fun doesWalletAccountExist(accountIndex: Int): Boolean {
+        val tmpWallet = getAccountWallet(accountIndex)
+        return !(tmpWallet == null || tmpWallet.keyChainGroupSize == 0)
     }
 }

@@ -73,6 +73,9 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     fun addAccountWalletWithExtendedKey(bip39Passphrase: ArrayList<String>, creationTimeSeconds: Long,
                                         accountIndex: Int) {
         bip44AccountIdleService.addWalletAccount(bip39Passphrase, creationTimeSeconds, accountIndex)
+        bip44AccountIdleService.stopAsync()
+        bip44AccountIdleService.awaitTerminated()
+        bip44AccountIdleService = Bip44AccountIdleService().startAsync() as Bip44AccountIdleService
     }
 
     fun broadcastTransaction(tx: Transaction, accountIndex: Int) {
@@ -122,5 +125,12 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
             "com.mycelium.spvmodule.test" -> "com.mycelium.devwallet_spore"
             else -> throw RuntimeException("No mbw module defined for BuildConfig " + BuildConfig.APPLICATION_ID)
         }
+
+        fun doesWalletAccountExist(accountIndex: Int): Boolean =
+                INSTANCE!!.doesWalletAccountExist(accountIndex)
+    }
+
+    private fun doesWalletAccountExist(accountIndex: Int): Boolean {
+        return bip44AccountIdleService.doesWalletAccountExist(accountIndex)
     }
 }
