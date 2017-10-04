@@ -18,6 +18,7 @@
 package com.mycelium.spvmodule
 
 import android.os.Handler
+import android.os.Looper
 import android.util.Log
 
 import org.bitcoinj.core.Coin
@@ -36,7 +37,7 @@ abstract class ThrottlingWalletChangeListener constructor(private val throttleMs
     : WalletChangeEventListener, WalletCoinsSentEventListener, WalletCoinsReceivedEventListener,
         WalletReorganizeEventListener, TransactionConfidenceEventListener {
     private val lastMessageTime = AtomicLong(0)
-    private val handler = Handler()
+    private val handler = Handler(Looper.getMainLooper())
 
     override fun onWalletChanged(walletAccount: Wallet) {
         handler.removeCallbacksAndMessages(null)

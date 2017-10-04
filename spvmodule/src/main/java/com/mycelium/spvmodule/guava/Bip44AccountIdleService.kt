@@ -109,6 +109,8 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         if(BuildConfig.DEBUG) {
             Log.d(LOG_TAG, "initializeWalletAccountsListeners, number of accounts = ${walletsAccountsMap.values.size}")
         }
+        walletEventListener = ThrottlingWalletChangeListenerImp()
+
         for (walletAccount in walletsAccountsMap.values) {
             walletAccount.addCoinsReceivedEventListener(Threading.SAME_THREAD, walletEventListener)
             walletAccount.addCoinsSentEventListener(Threading.SAME_THREAD, walletEventListener)
@@ -563,11 +565,12 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         editor.putStringSet(spvModuleApplication.getString(R.string.account_index_stringset),
                 accountIndexStrings)
         editor.commit()
-
-        walletsAccountsMap.put(accountIndex, walletAccount)
         configuration.maybeIncrementBestChainHeightEver(walletAccount.lastBlockSeenHeight)
-        afterLoadWallet(walletAccount, accountIndex)
 
+
+        val walletAccountFile = spvModuleApplication.getFileStreamPath(
+                Constants.Files.WALLET_FILENAME_PROTOBUF + "_$accountIndex")
+        walletAccount.saveToFile(walletAccountFile)
         /*
         val broadcast = Intent(SpvModuleApplication.ACTION_WALLET_REFERENCE_CHANGED) //TODO Investigate utility of this.
         broadcast.`package` = packageName
@@ -603,6 +606,9 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private fun broadcastBlockchainState() {
+        if(BuildConfig.DEBUG) {
+            //Log.d(LOG_TAG, "broadcastBlockchainState")
+        }
         val localBroadcast = Intent(SpvService.ACTION_BLOCKCHAIN_STATE)
         localBroadcast.`package` = spvModuleApplication.packageName
         blockchainState.putExtras(localBroadcast)
@@ -616,8 +622,11 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         SpvMessageSender.send(CommunicationManager.getInstance(spvModuleApplication), securedMulticastIntent)
     }
 
-    private val walletEventListener = object
-        : ThrottlingWalletChangeListener(APPWIDGET_THROTTLE_MS) {
+
+
+    private lateinit var walletEventListener: ThrottlingWalletChangeListener
+
+    inner class ThrottlingWalletChangeListenerImp : ThrottlingWalletChangeListener(APPWIDGET_THROTTLE_MS) {
 
         override fun onReorganize(p0: Wallet?) {
             //Do nothing.
