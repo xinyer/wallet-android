@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 class Bip44AccountIdleService : AbstractScheduledService() {
     private val walletsAccountsMap: MutableMap<Int, Wallet> = mutableMapOf()
-    private lateinit var downloadProgressTracker: DownloadProgressTracker
+    private var downloadProgressTracker: DownloadProgressTracker? = null
     private lateinit var connectivityReceiver : ConnectivityReceiver
     private var wakeLock: PowerManager.WakeLock? = null
     private var peerGroup: PeerGroup? = null
@@ -279,9 +279,14 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     @Synchronized
     private fun checkImpediments() {
         if(BuildConfig.DEBUG) {
-            Log.d(LOG_TAG, "checkImpediments, peergroup.isRunning = ${peerGroup!!.isRunning}")
+            Log.d(LOG_TAG, "checkImpediments, peergroup.isRunning = ${peerGroup!!.isRunning},"
+                    + "downloadProgressTracker condition is "
+                    + "${(downloadProgressTracker == null || downloadProgressTracker!!.future.isDone)}")
         }
-        if(peerGroup!!.isRunning) {
+        //Second condition (downloadProgressTracker) prevent the case where the peergroup is
+        // currently downloading the blockchain.
+        if(peerGroup!!.isRunning
+                && (downloadProgressTracker == null || downloadProgressTracker!!.future.isDone)) {
             if (wakeLock == null) {
                 // if we still hold a wakelock, we don't leave it dangling to block until later.
                 val powerManager = spvModuleApplication.getSystemService(Context.POWER_SERVICE) as PowerManager
