@@ -23,7 +23,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         private set
     private var activityManager: ActivityManager? = null
 
-    private var blockchainServiceIntent: Intent? = null
+    private var spvServiceIntent: Intent? = null
     private var blockchainServiceCancelCoinsReceivedIntent: Intent? = null
     private var blockchainServiceResetBlockchainIntent: Intent? = null
 
@@ -59,7 +59,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         configuration = Configuration(PreferenceManager.getDefaultSharedPreferences(this))
         activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
 
-        blockchainServiceIntent = Intent(this, SpvService::class.java)
+        spvServiceIntent = Intent(this, SpvService::class.java)
         blockchainServiceCancelCoinsReceivedIntent = Intent(SpvService.ACTION_CANCEL_COINS_RECEIVED, null, this,
                 SpvService::class.java)
         blockchainServiceResetBlockchainIntent = Intent(SpvService.ACTION_ADD_ACCOUNT, null, this, SpvService::class.java)
@@ -67,7 +67,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     }
 
     fun stopBlockchainService() {
-        stopService(blockchainServiceIntent)
+        stopService(spvServiceIntent)
     }
 
     fun addAccountWalletWithExtendedKey(bip39Passphrase: ArrayList<String>, creationTimeSeconds: Long,
@@ -86,10 +86,6 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         bip44AccountIdleService.broadcastTransaction(sendRequest, accountIndex)
     }
 
-    fun packageInfo(): PackageInfo = packageInfo!!
-
-    fun httpUserAgent(): String = httpUserAgent(packageInfo().versionName)
-
     fun maxConnectedPeers(): Int =
             if (activityManager!!.memoryClass <= Constants.MEMORY_CLASS_LOWEND) {
                 4
@@ -100,8 +96,6 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     companion object {
         private var INSTANCE: SpvModuleApplication? = null
 
-        val ACTION_WALLET_REFERENCE_CHANGED = SpvModuleApplication::class.java.`package`.name + ".wallet_reference_changed"
-
         fun getApplication(): SpvModuleApplication = INSTANCE!!
 
         fun packageInfoFromContext(context: Context): PackageInfo {
@@ -110,12 +104,6 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
             } catch (x: PackageManager.NameNotFoundException) {
                 throw RuntimeException(x)
             }
-        }
-
-        fun httpUserAgent(versionName: String): String {
-            val versionMessage = VersionMessage(Constants.NETWORK_PARAMETERS, 0)
-            versionMessage.appendToSubVer(Constants.USER_AGENT, versionName, null)
-            return versionMessage.subVer
         }
 
         private val LOG_TAG: String? = this::class.java.simpleName

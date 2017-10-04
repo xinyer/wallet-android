@@ -20,22 +20,16 @@ package com.mycelium.spvmodule
 import android.app.IntentService
 import android.app.NotificationManager
 import android.content.*
-import android.database.Cursor
-import android.text.format.DateUtils
 import android.util.Log
 import com.mycelium.modularizationtools.CommunicationManager
 import org.bitcoinj.core.*
 import org.bitcoinj.wallet.SendRequest
 import java.util.*
-import java.util.concurrent.Semaphore
-import java.util.concurrent.locks.ReentrantLock
 
-class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cursor> {
+class SpvService : IntentService("SpvService") {
     private val application = SpvModuleApplication.getApplication()
     private var notificationManager: NotificationManager? = null
     private var serviceCreatedAtMillis = System.currentTimeMillis()
-    private val LOADER_ID_NETWORK: Int = 0
-    private var reentrantLock = ReentrantLock(true)
     private var accountIndex: Int = -1
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -61,7 +55,6 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                 return
             }
 
-
             when (intent.action) {
                 ACTION_CANCEL_COINS_RECEIVED -> {
                     notificationManager!!.cancel(Constants.NOTIFICATION_ID_COINS_RECEIVED)
@@ -77,8 +70,8 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                     val transactionByteArray = intent.getByteArrayExtra("TX")
                     val transaction = Transaction(Constants.NETWORK_PARAMETERS, transactionByteArray)
                     Log.i(LOG_TAG, "onHandleIntent: ACTION_BROADCAST_TRANSACTION,  TX = " + transaction)
-                    transaction.getConfidence().setSource(TransactionConfidence.Source.SELF);
-                    transaction.setPurpose(Transaction.Purpose.USER_PAYMENT);
+                    transaction.confidence.source = TransactionConfidence.Source.SELF
+                    transaction.purpose = Transaction.Purpose.USER_PAYMENT
                     application.broadcastTransaction(transaction, accountIndex)
                 }
                 ACTION_SEND_FUNDS -> {
@@ -103,7 +96,6 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
                         SpvMessageSender.requestPrivateKey(CommunicationManager.getInstance(this), accountIndex)
                         return
                     }
-
                 }
                 else -> {
                     Log.e(LOG_TAG,
@@ -133,38 +125,6 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         }
     }
 
-    private var cursor: Cursor? = null
-    /**
-     * Called on the thread that created the Loader when the load is complete.
-     *
-     * @param loader the loader that completed the load
-     * @param data the result of the load
-     */
-    override fun onLoadComplete(loader: Loader<Cursor>?, data: Cursor?) {
-        if(BuildConfig.DEBUG) {
-            Log.d(LOG_TAG, "onLoadComplete, Cursor is ${data?.count} size")
-        }
-        cursor?.close()
-        cursor = data
-        if(reentrantLock.isLocked) {
-            reentrantLock.unlock()
-        }
-    }
-
-    private val semaphore = Semaphore(1, true)
-
-    /*
-    private fun notifyTransactions(transactions: Set<Transaction>) {
-        semaphore.acquire()
-        if (!transactions.isEmpty()) {
-            // send the new transaction and the *complete* utxo set of the wallet
-            val utxos = wallet!!.unspents.toSet()
-            SpvMessageSender.sendTransactions(CommunicationManager.getInstance(this), transactions, utxos)
-        }
-        semaphore.release()
-    }
-    */
-
     companion object {
         private val LOG_TAG = SpvService::class.java.simpleName
         private val PACKAGE_NAME = SpvService::class.java.`package`.name
@@ -175,14 +135,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
         val ACTION_ADD_ACCOUNT = PACKAGE_NAME + ".reset_blockchain"
         val ACTION_BROADCAST_TRANSACTION = PACKAGE_NAME + ".broadcast_transaction"
         val ACTION_RECEIVE_TRANSACTIONS = PACKAGE_NAME + ".receive_transactions"
-        val ACTION_BROADCAST_TRANSACTION_HASH = "hash"
         val ACTION_SEND_FUNDS = PACKAGE_NAME + ".send_funds"
-
-        private val MIN_COLLECT_HISTORY = 2
-        private val IDLE_BLOCK_TIMEOUT_MIN = 2
-        private val IDLE_TRANSACTION_TIMEOUT_MIN = 9
-        private val MAX_HISTORY_SIZE = Math.max(IDLE_TRANSACTION_TIMEOUT_MIN, IDLE_BLOCK_TIMEOUT_MIN)
-        private val APPWIDGET_THROTTLE_MS = DateUtils.SECOND_IN_MILLIS
 
         var intentsQueue: Queue<Intent> = LinkedList<Intent>()
     }

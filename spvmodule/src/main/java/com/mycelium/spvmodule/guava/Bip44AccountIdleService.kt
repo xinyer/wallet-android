@@ -45,8 +45,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
     private val spvModuleApplication = SpvModuleApplication.getApplication()
     private val sharedPreferences:SharedPreferences = spvModuleApplication.getSharedPreferences(
-                spvModuleApplication.getString(R.string.sharedpreferences_file_name),
-                Context.MODE_PRIVATE)
+                spvModuleApplication.getString(R.string.sharedpreferences_file_name), Context.MODE_PRIVATE)
     //Read list of accounts indexes
     private val accountIndexStrings: MutableSet<String> = sharedPreferences.getStringSet(
             spvModuleApplication.getString(R.string.account_index_stringset), mutableSetOf())
@@ -84,10 +83,11 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         if(BuildConfig.DEBUG) {
             Log.d(LOG_TAG, "startUp")
         }
-        val intentFilter = IntentFilter()
-        intentFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION)
-        intentFilter.addAction(Intent.ACTION_DEVICE_STORAGE_LOW)
-        intentFilter.addAction(Intent.ACTION_DEVICE_STORAGE_OK)
+        val intentFilter = IntentFilter().apply {
+            addAction(ConnectivityManager.CONNECTIVITY_ACTION)
+            addAction(Intent.ACTION_DEVICE_STORAGE_LOW)
+            addAction(Intent.ACTION_DEVICE_STORAGE_OK)
+        }
 
         Log.d(LOG_TAG, "initializeBlockchain, registering ConnectivityReceiver")
         //spvModuleApplication.applicationContext.registerReceiver(connectivityReceiver, intentFilter)
@@ -184,7 +184,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         peerGroup!!.addConnectedEventListener(peerConnectivityListener)
         peerGroup!!.addDisconnectedEventListener(peerConnectivityListener)
 
-        val trustedPeerHost = configuration!!.trustedPeerHost
+        val trustedPeerHost = configuration.trustedPeerHost
         val hasTrustedPeer = trustedPeerHost != null
 
         val connectTrustedPeerOnly = hasTrustedPeer && configuration.trustedPeerOnly
@@ -318,7 +318,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private fun getAccountWallet(accountIndex: Int) : Wallet? {
-        var walletAccount : Wallet? = walletsAccountsMap.get(accountIndex)
+        var walletAccount : Wallet? = walletsAccountsMap[accountIndex]
         if(walletAccount != null) {
             return walletAccount
         }
@@ -335,7 +335,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     private fun loadWalletFromProtobuf(accountIndex: Int) : Wallet {
         var walletStream: FileInputStream? = null
         var walletAccount : Wallet?
-        val start = System.currentTimeMillis()
         val walletAccountFile = spvModuleApplication.getFileStreamPath(
                 Constants.Files.WALLET_FILENAME_PROTOBUF + "_$accountIndex")
         try {
@@ -346,13 +345,9 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             if (walletAccount.params != Constants.NETWORK_PARAMETERS)
                 throw UnreadableWalletException("bad wallet network parameters: "
                         + walletAccount!!.params.id)
-
-            //Log.i(LOG_TAG, "wallet loaded from: '$walletAccountFile', took ${System.currentTimeMillis() - start}ms")
         } catch (x: FileNotFoundException) {
             Log.e(LOG_TAG, "problem loading wallet", x)
-
             Toast.makeText(spvModuleApplication, x.javaClass.name, Toast.LENGTH_LONG).show()
-
             walletAccount = restoreWalletFromBackup(accountIndex)
         } catch (x: UnreadableWalletException) {
             Log.e(LOG_TAG, "problem loading wallet", x)
@@ -424,20 +419,12 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         builder.clearLastSeenBlockTimeSecs()
         val walletProto = builder.build()
 
-        var os: OutputStream? = null
-
-        try {
-            os = spvModuleApplication.openFileOutput(
-                    Constants.Files.WALLET_KEY_BACKUP_PROTOBUF + accountIndex, Context.MODE_PRIVATE)
-            walletProto.writeTo(os)
-        } catch (x: IOException) {
-            Log.e(LOG_TAG, "problem writing key backup", x)
-        } finally {
+        spvModuleApplication.openFileOutput(
+                Constants.Files.WALLET_KEY_BACKUP_PROTOBUF + accountIndex, Context.MODE_PRIVATE).use {
             try {
-                if (os != null) {
-                    os.close()
-                }
-            } catch (ignored: IOException) {
+                walletProto.writeTo(it)
+            } catch (x: IOException) {
+                Log.e(LOG_TAG, "problem writing key backup", x)
             }
         }
     }
@@ -647,21 +634,17 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         }
 
         override fun onCoinsReceived(walletAccount: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
-            //If this is the first transaction found on that wallet/account, stop the download of the blockchain.
-            //MBW will request to add a new account.
-            if(walletAccount.getRecentTransactions(0, true).size == 1) {
-                if(BuildConfig.DEBUG) {
-                    Log.d(LOG_TAG, "onCoinsReceived, first transaction found on that wallet/account," +
-                            " stop the download of the blockchain")
-                }
-                stopAsync()
-            }
+            onTransaction(walletAccount)
         }
 
         override fun onCoinsSent(walletAccount: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
+            onTransaction(walletAccount)
+        }
+
+        private fun onTransaction(walletAccount: Wallet) {
             //If this is the first transaction found on that wallet/account, stop the download of the blockchain.
             //MBW will request to add a new account.
-            if(walletAccount.getRecentTransactions(0, true).size == 1) {
+            if(walletAccount.getRecentTransactions(2, true).size == 1) {
                 if(BuildConfig.DEBUG) {
                     Log.d(LOG_TAG, "onCoinsSent, first transaction found on that wallet/account," +
                             " stop the download of the blockchain")
@@ -725,12 +708,10 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
     inner class ConnectivityReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            val action = intent.action
-            when (action) {
+            when (intent.action) {
                 ConnectivityManager.CONNECTIVITY_ACTION -> {
                     val hasConnectivity = !intent.getBooleanExtra(ConnectivityManager.EXTRA_NO_CONNECTIVITY, false)
                     Log.i(LOG_TAG, "ConnectivityReceiver, network is " + if (hasConnectivity) "up" else "down")
-
                     if (hasConnectivity) {
                         impediments.remove(BlockchainState.Impediment.NETWORK)
                     } else {
@@ -739,7 +720,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                 }
                 Intent.ACTION_DEVICE_STORAGE_LOW -> {
                     Log.i(LOG_TAG, "ConnectivityReceiver, device storage low")
-
                     impediments.add(BlockchainState.Impediment.STORAGE)
                 }
                 Intent.ACTION_DEVICE_STORAGE_OK -> {
