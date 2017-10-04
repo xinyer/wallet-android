@@ -20,46 +20,21 @@ package com.mycelium.spvmodule
 import android.app.IntentService
 import android.app.NotificationManager
 import android.content.*
-import android.content.Context
 import android.database.Cursor
-import android.net.ConnectivityManager
-import android.os.AsyncTask
-import android.os.Handler
-import android.os.PowerManager
-import android.os.PowerManager.WakeLock
-import android.support.v4.content.LocalBroadcastManager
 import android.text.format.DateUtils
 import android.util.Log
-import com.google.common.collect.ImmutableList
-import com.google.common.util.concurrent.ListenableFuture
-import com.mycelium.modularizationtools.CommunicationManager
-import com.mycelium.spvmodule.BlockchainState.Impediment
-import com.mycelium.spvmodule.providers.BlockchainContract
 import org.bitcoinj.core.*
-import org.bitcoinj.core.listeners.DownloadProgressTracker
-import org.bitcoinj.crypto.ChildNumber
-import org.bitcoinj.store.BlockStoreException
-import org.bitcoinj.utils.Threading
-import org.bitcoinj.wallet.DeterministicSeed
 import org.bitcoinj.wallet.SendRequest
-import org.bitcoinj.wallet.Wallet
-import java.io.File
-import java.io.IOException
 import java.util.*
 import java.util.concurrent.Semaphore
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantLock
 
 class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cursor> {
-    private var application: SpvModuleApplication = SpvModuleApplication.getApplication()
-
+    private val application = SpvModuleApplication.getApplication()
     private var notificationManager: NotificationManager? = null
-    private var serviceCreatedAtInMs: Long = 0
-    private val LOG_TAG: String? = this::class.java.canonicalName
+    private var serviceCreatedAtMillis = System.currentTimeMillis()
     private val LOADER_ID_NETWORK: Int = 0
     private var reentrantLock = ReentrantLock(true)
-
     private var accountIndex: Int = -1
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -145,7 +120,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
 
         intentsQueue.clear()
         super.onDestroy()
-        Log.i(LOG_TAG, "service was up for ${(System.currentTimeMillis() - serviceCreatedAtInMs) / 1000 / 60} minutes")
+        Log.i(LOG_TAG, "service was up for ${(System.currentTimeMillis() - serviceCreatedAtMillis) / 1000 / 60} minutes")
     }
 
     override fun onTrimMemory(level: Int) {
@@ -190,6 +165,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
     */
 
     companion object {
+        private val LOG_TAG = this::class.java.canonicalName
         private val PACKAGE_NAME = SpvService::class.java.`package`.name
         val ACTION_PEER_STATE = PACKAGE_NAME + ".peer_state"
         val ACTION_PEER_STATE_NUM_PEERS = "num_peers"

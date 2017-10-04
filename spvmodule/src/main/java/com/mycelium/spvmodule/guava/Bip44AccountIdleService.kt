@@ -456,13 +456,13 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         private val stopped = AtomicBoolean(false)
 
         init {
-            configuration!!.registerOnSharedPreferenceChangeListener(this)
+            configuration.registerOnSharedPreferenceChangeListener(this)
         }
 
         internal fun stop() {
             stopped.set(true)
 
-            configuration!!.unregisterOnSharedPreferenceChangeListener(this)
+            configuration.unregisterOnSharedPreferenceChangeListener(this)
             notificationManager.cancel(Constants.NOTIFICATION_ID_CONNECTED)
         }
 
@@ -497,7 +497,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             val chainHead = blockChain!!.chainHead
             val bestChainDate = chainHead.header.time
             val bestChainHeight = chainHead.height
-            val replaying = chainHead.height < configuration!!.bestChainHeightEver
+            val replaying = chainHead.height < configuration.bestChainHeightEver
 
             return BlockchainState(bestChainDate, bestChainHeight, replaying, impediments)
         }
@@ -511,7 +511,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private fun changed() {
-        val connectivityNotificationEnabled = configuration!!.connectivityNotificationEnabled
+        val connectivityNotificationEnabled = configuration.connectivityNotificationEnabled
 
         if (!connectivityNotificationEnabled || peerCount == 0) {
             notificationManager.cancel(Constants.NOTIFICATION_ID_CONNECTED)
@@ -578,7 +578,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
     @Synchronized
     fun broadcastTransaction(transaction: Transaction, accountIndex: Int) {
-        val walletAccount = walletsAccountsMap.get(accountIndex)
+        val walletAccount = walletsAccountsMap[accountIndex]
         walletAccount!!.commitTx(transaction)
         val walletAccountFile = spvModuleApplication.getFileStreamPath(
                 Constants.Files.WALLET_FILENAME_PROTOBUF + "_$accountIndex")
@@ -690,7 +690,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
         private val runnable = Runnable {
             lastMessageTime.set(System.currentTimeMillis())
-            configuration!!.maybeIncrementBestChainHeightEver(blockChain!!.chainHead.height)
+            configuration.maybeIncrementBestChainHeightEver(blockChain!!.chainHead.height)
             broadcastBlockchainState()
             changed()
         }
