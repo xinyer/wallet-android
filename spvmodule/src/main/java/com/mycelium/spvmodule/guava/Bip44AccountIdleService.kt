@@ -79,32 +79,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
      * {@inheritDoc}
      */
     override fun runOneIteration() {
-        if(!peerGroup!!.isRunning) {
-            if(wakeLock == null) {
-                // if we still hold a wakelock, we don't leave it dangling to block until later.
-                val powerManager = spvModuleApplication.getSystemService(Context.POWER_SERVICE) as PowerManager
-                wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
-                        "${spvModuleApplication.packageName} blockchain sync")
-            }
-            if(!wakeLock!!.isHeld) {
-                wakeLock!!.acquire()
-            }
-            for (walletAccount in walletsAccounts.values) {
-                peerGroup!!.addWallet(walletAccount)
-            }
-
-            //Starting peerGroup;
-            peerGroup!!.startAsync()
-            //Start download blockchain
-            peerGroup!!.downloadBlockChain()
-            //Stop the peergroup after having downloaded the blockchain.
-            stopPeergroup()
-            //Release wakelock
-            if (wakeLock != null && wakeLock!!.isHeld) {
-                wakeLock!!.release()
-                wakeLock = null
-            }
-        }
+        checkImpediments()
     }
 
     private lateinit var peerConnectivityListener: PeerConnectivityListener
@@ -141,7 +116,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         intentFilter.addAction(Intent.ACTION_DEVICE_STORAGE_OK)
 
         Log.d(LOG_TAG, "initializeBlockchain, registering ConnectivityReceiver")
-        spvModuleApplication.registerReceiver(connectivityReceiver, intentFilter) // implicitly start PeerGroup
+        spvModuleApplication.registerReceiver(connectivityReceiver, intentFilter)
         initializeWalletAccountsListeners()
     }
 
@@ -287,6 +262,47 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             walletAccountIndexMapItem.value.removeTransactionConfidenceEventListener(walletEventListener)
         }
         blockStore.close()
+    }
+
+    @Synchronized
+    private fun checkImpediments() {
+        if(!peerGroup!!.isRunning) {
+            if (wakeLock == null) {
+                // if we still hold a wakelock, we don't leave it dangling to block until later.
+                val powerManager = spvModuleApplication.getSystemService(Context.POWER_SERVICE) as PowerManager
+                wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
+                        "${spvModuleApplication.packageName} blockchain sync")
+            }
+            if (!wakeLock!!.isHeld) {
+                wakeLock!!.acquire()
+            }
+            for (walletAccount in walletsAccounts.values) {
+                peerGroup!!.addWallet(walletAccount)
+            }
+            if (impediments.isEmpty() && peerGroup == null) {
+                downloadProgressTracker = DownloadProgressTrackerExt()
+                //Starting peerGroup;
+                Log.i(LOG_TAG, "checkImpediments(), peergroup startAsync")
+                peerGroup!!.startAsync()
+                //Start download blockchain
+                Log.i(LOG_TAG, "checkImpediments(), peergroup startBlockChainDownload")
+                peerGroup!!.startBlockChainDownload(downloadProgressTracker)
+                //Stop the peergroup after having downloaded the blockchain.
+                stopPeergroup()
+                //Release wakelock
+                if (wakeLock != null && wakeLock!!.isHeld) {
+                    wakeLock!!.release()
+                    wakeLock = null
+                }
+            } else if (!impediments.isEmpty() && peerGroup != null) {
+                Log.i(LOG_TAG, "checkImpediments(), stopping peergroup")
+                stopPeergroup()
+                Log.i(LOG_TAG, "checkImpediments(), impediments is not empty && peergroup is not null")
+            } else {
+                Log.i(LOG_TAG, "checkImpediments(), impediments size is ${impediments.size} && peergroup is $peerGroup")
+            }
+            broadcastBlockchainState()
+        }
     }
 
     private fun getAccountWallet(accountIndex: Int) : Wallet? {
@@ -706,7 +722,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
          */
         override fun onReceive(context: Context, intent: Intent) {
             val action = intent.action
-
             when (action) {
                 ConnectivityManager.CONNECTIVITY_ACTION -> {
                     val hasConnectivity = !intent.getBooleanExtra(ConnectivityManager.EXTRA_NO_CONNECTIVITY, false)
@@ -717,42 +732,18 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                     } else {
                         impediments.add(BlockchainState.Impediment.NETWORK)
                     }
-                    check()
                 }
                 Intent.ACTION_DEVICE_STORAGE_LOW -> {
                     Log.i(LOG_TAG, "ConnectivityReceiver, device storage low")
 
                     impediments.add(BlockchainState.Impediment.STORAGE)
-                    check()
                 }
                 Intent.ACTION_DEVICE_STORAGE_OK -> {
                     Log.i(LOG_TAG, "ConnectivityReceiver, device storage ok")
 
                     impediments.remove(BlockchainState.Impediment.STORAGE)
-                    check()
                 }
             }
-        }
-
-        //@SuppressLint("Wakelock")
-        private fun check() {
-            if (impediments.isEmpty() && peerGroup == null) {
-                Log.i(LOG_TAG, "check(), starting peergroup")
-
-                // start peergroup
-                downloadProgressTracker = DownloadProgressTrackerExt()
-                Log.i(LOG_TAG, "check(), peergroup startAsync")
-                peerGroup!!.startAsync()
-                Log.i(LOG_TAG, "check(), peergroup startBlockChainDownload")
-                peerGroup!!.startBlockChainDownload(downloadProgressTracker)
-            } else if (!impediments.isEmpty() && peerGroup != null) {
-                Log.i(LOG_TAG, "check(), stopping peergroup")
-                stopPeergroup()
-                Log.i(LOG_TAG, "check(), impediments is not empty && peergroup is not null")
-            } else {
-                Log.i(LOG_TAG, "check(), impediments size is ${impediments.size} && peergroup is $peerGroup")
-            }
-            broadcastBlockchainState()
         }
     }
 
