@@ -166,7 +166,7 @@ class SpvService : IntentService("SpvService"), Loader.OnLoadCompleteListener<Cu
     */
 
     companion object {
-        private val LOG_TAG = this::class.java.canonicalName
+        private val LOG_TAG = SpvService::class.java.canonicalName
         private val PACKAGE_NAME = SpvService::class.java.`package`.name
         val ACTION_PEER_STATE = PACKAGE_NAME + ".peer_state"
         val ACTION_PEER_STATE_NUM_PEERS = "num_peers"

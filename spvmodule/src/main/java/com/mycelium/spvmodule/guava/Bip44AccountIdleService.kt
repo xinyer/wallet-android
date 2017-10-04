@@ -734,7 +734,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     companion object {
-        private val LOG_TAG = this::class.java.canonicalName
+        private val LOG_TAG = Bip44AccountIdleService::class.java.canonicalName
         private val BLOCKCHAIN_STATE_BROADCAST_THROTTLE_MS = DateUtils.SECOND_IN_MILLIS
         private val APPWIDGET_THROTTLE_MS = DateUtils.SECOND_IN_MILLIS
     }
