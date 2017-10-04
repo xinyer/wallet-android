@@ -63,46 +63,44 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     override fun scheduler(): Scheduler =
-            AbstractScheduledService.Scheduler.newFixedRateSchedule(0, 1, TimeUnit.MINUTES)
+            AbstractScheduledService.Scheduler.newFixedRateSchedule(0, 20, TimeUnit.SECONDS)
 
     override fun runOneIteration() {
         if(BuildConfig.DEBUG) {
             Log.d(LOG_TAG, "runOneIteration")
         }
-        checkImpediments()
+        try {
+            checkImpediments()
+        } catch (e: Throwable) {
+            Log.e(LOG_TAG, e.localizedMessage, e)
+            throw e
+        }
+
     }
 
     override fun startUp() {
         if(BuildConfig.DEBUG) {
             Log.d(LOG_TAG, "startUp")
         }
-        val blockChainFile = File(spvModuleApplication.getDir("blockstore", Context.MODE_PRIVATE),
-                Constants.Files.BLOCKCHAIN_FILENAME)
-
-        try {
-            blockStore = SPVBlockStore(Constants.NETWORK_PARAMETERS, blockChainFile)
-            blockStore.chainHead // detect corruptions as early as possible
-            initializeWalletsAccounts()
-            val earliestKeyCreationTime = initializeEarliestKeyCreationTime()
-            if (earliestKeyCreationTime > 0L) {
-                initializeCheckpoint(earliestKeyCreationTime)
-            }
-            blockChain = BlockChain(Constants.NETWORK_PARAMETERS, walletsAccountsMap.values.toList(),
-                    blockStore)
-        } catch (x: BlockStoreException) {
-            blockChainFile.delete()
-            throw Error(x.localizedMessage, x)
-        }
-        initializePeergroup()
-
         val intentFilter = IntentFilter()
         intentFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION)
         intentFilter.addAction(Intent.ACTION_DEVICE_STORAGE_LOW)
         intentFilter.addAction(Intent.ACTION_DEVICE_STORAGE_OK)
 
         Log.d(LOG_TAG, "initializeBlockchain, registering ConnectivityReceiver")
-        spvModuleApplication.registerReceiver(connectivityReceiver, intentFilter)
-        initializeWalletAccountsListeners()
+        //spvModuleApplication.applicationContext.registerReceiver(connectivityReceiver, intentFilter)
+
+        val blockChainFile = File(spvModuleApplication.getDir("blockstore", Context.MODE_PRIVATE),
+                Constants.Files.BLOCKCHAIN_FILENAME)
+        try {
+            blockStore = SPVBlockStore(Constants.NETWORK_PARAMETERS, blockChainFile)
+            blockStore.chainHead // detect corruptions as early as possible
+        } catch (x: BlockStoreException) {
+            blockChainFile.delete()
+            throw Error(x.localizedMessage, x)
+        }
+        initializeWalletsAccounts()
+        initializePeergroup()
     }
 
     private fun initializeWalletAccountsListeners() {
@@ -128,6 +126,13 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                 walletsAccountsMap.put(accountIndex, walletAccount)
             }
         }
+        val earliestKeyCreationTime = initializeEarliestKeyCreationTime()
+        if (earliestKeyCreationTime > 0L) {
+            initializeCheckpoint(earliestKeyCreationTime)
+        }
+        blockChain = BlockChain(Constants.NETWORK_PARAMETERS, walletsAccountsMap.values.toList(),
+                blockStore)
+        initializeWalletAccountsListeners()
     }
 
     private fun initializeEarliestKeyCreationTime(): Long {
@@ -224,19 +229,23 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                 normalPeerDiscovery.shutdown()
             }
         })
+        //Starting peerGroup;
+        Log.i(LOG_TAG, "checkImpediments, peergroup startAsync")
+        peerGroup!!.startAsync()
     }
 
     private fun stopPeergroup() {
         if(BuildConfig.DEBUG) {
             Log.d(LOG_TAG, "stopPeergroup")
         }
-        peerGroup!!.removeDisconnectedEventListener(peerConnectivityListener)
-        peerGroup!!.removeConnectedEventListener(peerConnectivityListener)
-        for (walletAccount in walletsAccountsMap.values) {
-            peerGroup!!.removeWallet(walletAccount)
+        if(peerGroup != null) {
+            peerGroup!!.removeDisconnectedEventListener(peerConnectivityListener)
+            peerGroup!!.removeConnectedEventListener(peerConnectivityListener)
+            for (walletAccount in walletsAccountsMap.values) {
+                peerGroup!!.removeWallet(walletAccount)
+            }
+            peerGroup!!.stopAsync()
         }
-        peerGroup!!.stopAsync()
-        peerGroup = null
 
         try {
             spvModuleApplication.unregisterReceiver(connectivityReceiver)
@@ -256,7 +265,11 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             walletAccountIndexMapItem.value.removeCoinsReceivedEventListener(walletEventListener)
             walletAccountIndexMapItem.value.removeTransactionConfidenceEventListener(walletEventListener)
         }
-        blockStore.close()
+        try {
+            blockStore.close()
+        } catch (e: NullPointerException) {
+            Log.e(LOG_TAG, e.localizedMessage, e)
+        }
     }
 
     @Synchronized
@@ -264,7 +277,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         if(BuildConfig.DEBUG) {
             Log.d(LOG_TAG, "checkImpediments, peergroup.isRunning = ${peerGroup!!.isRunning}")
         }
-        if(!peerGroup!!.isRunning) {
+        if(peerGroup!!.isRunning) {
             if (wakeLock == null) {
                 // if we still hold a wakelock, we don't leave it dangling to block until later.
                 val powerManager = spvModuleApplication.getSystemService(Context.POWER_SERVICE) as PowerManager
@@ -277,27 +290,19 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             for (walletAccount in walletsAccountsMap.values) {
                 peerGroup!!.addWallet(walletAccount)
             }
-            if (impediments.isEmpty() && peerGroup == null) {
+            if (impediments.isEmpty() && peerGroup != null) {
                 downloadProgressTracker = DownloadProgressTrackerExt()
-                //Starting peerGroup;
-                Log.i(LOG_TAG, "checkImpediments(), peergroup startAsync")
-                peerGroup!!.startAsync()
+
                 //Start download blockchain
-                Log.i(LOG_TAG, "checkImpediments(), peergroup startBlockChainDownload")
+                Log.i(LOG_TAG, "checkImpediments, peergroup startBlockChainDownload")
                 peerGroup!!.startBlockChainDownload(downloadProgressTracker)
-                //Stop the peergroup after having downloaded the blockchain.
-                stopPeergroup()
                 //Release wakelock
                 if (wakeLock != null && wakeLock!!.isHeld) {
                     wakeLock!!.release()
                     wakeLock = null
                 }
-            } else if (!impediments.isEmpty() && peerGroup != null) {
-                Log.i(LOG_TAG, "checkImpediments(), stopping peergroup")
-                stopPeergroup()
-                Log.i(LOG_TAG, "checkImpediments(), impediments is not empty && peergroup is not null")
             } else {
-                Log.i(LOG_TAG, "checkImpediments(), impediments size is ${impediments.size} && peergroup is $peerGroup")
+                Log.i(LOG_TAG, "checkImpediments, impediments size is ${impediments.size} && peergroup is $peerGroup")
             }
             broadcastBlockchainState()
         }
@@ -377,6 +382,9 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private fun afterLoadWallet(walletAccount: Wallet, accountIndex: Int) {
+        if(BuildConfig.DEBUG) {
+            Log.d(LOG_TAG, "afterLoadWallet, accountIndex = $accountIndex")
+        }
         val walletAccountFile = spvModuleApplication.getFileStreamPath(
                 Constants.Files.WALLET_FILENAME_PROTOBUF + "_$accountIndex")
         walletAccount.autosaveToFile(walletAccountFile, 10, TimeUnit.SECONDS, WalletAutosaveEventListener())
@@ -537,7 +545,10 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     @Synchronized
     fun addWalletAccount(bip39Passphrase: ArrayList<String>, creationTimeSeconds: Long,
                          accountIndex: Int) {
-        stopPeergroup()
+        if(BuildConfig.DEBUG) {
+            Log.d(LOG_TAG, "addWalletAccount, accountIndex = $accountIndex")
+        }
+        stopAsync()
         val walletAccount = Wallet.fromSeed(
                 Constants.NETWORK_PARAMETERS,
                 DeterministicSeed(bip39Passphrase, null, "", creationTimeSeconds),
@@ -555,8 +566,10 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
         walletsAccountsMap.put(accountIndex, walletAccount)
         walletAccount.shutdownAutosaveAndWait()
-        configuration!!.maybeIncrementBestChainHeightEver(walletAccount.lastBlockSeenHeight)
-        afterLoadWallet(walletAccount, accountIndex)
+        configuration.maybeIncrementBestChainHeightEver(walletAccount.lastBlockSeenHeight)
+        //afterLoadWallet(walletAccount, accountIndex)
+
+        startAsync()
 
         /*
         val broadcast = Intent(SpvModuleApplication.ACTION_WALLET_REFERENCE_CHANGED) //TODO Investigate utility of this.
