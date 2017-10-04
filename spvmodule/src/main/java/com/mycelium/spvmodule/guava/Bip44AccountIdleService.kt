@@ -109,13 +109,11 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         if(BuildConfig.DEBUG) {
             Log.d(LOG_TAG, "initializeWalletAccountsListeners, number of accounts = ${walletsAccountsMap.values.size}")
         }
-        walletEventListener = ThrottlingWalletChangeListenerImp()
-
-        for (walletAccount in walletsAccountsMap.values) {
-            walletAccount.addCoinsReceivedEventListener(Threading.SAME_THREAD, walletEventListener)
-            walletAccount.addCoinsSentEventListener(Threading.SAME_THREAD, walletEventListener)
-            walletAccount.addChangeEventListener(Threading.SAME_THREAD, walletEventListener)
-            walletAccount.addTransactionConfidenceEventListener(Threading.SAME_THREAD, walletEventListener)
+        walletsAccountsMap.values.forEach {
+            it.addCoinsReceivedEventListener(Threading.SAME_THREAD, walletEventListener)
+            it.addCoinsSentEventListener(Threading.SAME_THREAD, walletEventListener)
+            it.addChangeEventListener(Threading.SAME_THREAD, walletEventListener)
+            it.addTransactionConfidenceEventListener(Threading.SAME_THREAD, walletEventListener)
         }
     }
 
@@ -263,11 +261,13 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         for (walletAccountIndexMapItem in walletsAccountsMap) {
             val walletFile = spvModuleApplication.getFileStreamPath(Constants.Files.WALLET_FILENAME_PROTOBUF
                     + "_${walletAccountIndexMapItem.key}")
-            walletAccountIndexMapItem.value.saveToFile(walletFile)
-            walletAccountIndexMapItem.value.removeChangeEventListener(walletEventListener)
-            walletAccountIndexMapItem.value.removeCoinsSentEventListener(walletEventListener)
-            walletAccountIndexMapItem.value.removeCoinsReceivedEventListener(walletEventListener)
-            walletAccountIndexMapItem.value.removeTransactionConfidenceEventListener(walletEventListener)
+            walletAccountIndexMapItem.value.run {
+                saveToFile(walletFile)
+                removeChangeEventListener(walletEventListener)
+                removeCoinsSentEventListener(walletEventListener)
+                removeCoinsReceivedEventListener(walletEventListener)
+                removeTransactionConfidenceEventListener(walletEventListener)
+            }
         }
         try {
             blockStore.close()
@@ -612,7 +612,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
     private fun broadcastBlockchainState() {
         if(BuildConfig.DEBUG) {
-            //Log.d(LOG_TAG, "broadcastBlockchainState")
+            Log.d(LOG_TAG, "broadcastBlockchainState")
         }
         val localBroadcast = Intent(SpvService.ACTION_BLOCKCHAIN_STATE)
         localBroadcast.`package` = spvModuleApplication.packageName
@@ -627,12 +627,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         SpvMessageSender.send(CommunicationManager.getInstance(spvModuleApplication), securedMulticastIntent)
     }
 
-
-
-    private lateinit var walletEventListener: ThrottlingWalletChangeListener
-
-    inner class ThrottlingWalletChangeListenerImp : ThrottlingWalletChangeListener(APPWIDGET_THROTTLE_MS) {
-
+    private val walletEventListener = object: ThrottlingWalletChangeListener(APPWIDGET_THROTTLE_MS) {
         override fun onReorganize(p0: Wallet?) {
             //Do nothing.
         }

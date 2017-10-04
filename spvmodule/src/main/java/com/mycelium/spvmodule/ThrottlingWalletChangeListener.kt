@@ -19,10 +19,7 @@ package com.mycelium.spvmodule
 
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 
-import org.bitcoinj.core.Coin
-import org.bitcoinj.core.Transaction
 import org.bitcoinj.core.listeners.TransactionConfidenceEventListener
 import org.bitcoinj.wallet.Wallet
 import org.bitcoinj.wallet.listeners.WalletChangeEventListener
@@ -30,10 +27,9 @@ import org.bitcoinj.wallet.listeners.WalletCoinsReceivedEventListener
 import org.bitcoinj.wallet.listeners.WalletCoinsSentEventListener
 import org.bitcoinj.wallet.listeners.WalletReorganizeEventListener
 
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
-abstract class ThrottlingWalletChangeListener constructor(private val throttleMs : Long = DEFAULT_THROTTLE_MS)
+abstract class ThrottlingWalletChangeListener(private val throttleMs: Long = DEFAULT_THROTTLE_MS)
     : WalletChangeEventListener, WalletCoinsSentEventListener, WalletCoinsReceivedEventListener,
         WalletReorganizeEventListener, TransactionConfidenceEventListener {
     private val lastMessageTime = AtomicLong(0)
@@ -41,18 +37,13 @@ abstract class ThrottlingWalletChangeListener constructor(private val throttleMs
 
     override fun onWalletChanged(walletAccount: Wallet) {
         handler.removeCallbacksAndMessages(null)
-
-        val now = System.currentTimeMillis()
-
         val runnable = Runnable {
             lastMessageTime.set(System.currentTimeMillis())
             onChanged(walletAccount)
         }
 
-        if (now - lastMessageTime.get() > throttleMs)
-            handler.post(runnable)
-        else
-            handler.postDelayed(runnable, throttleMs)
+        val delay = lastMessageTime.get() - System.currentTimeMillis() + throttleMs
+        handler.postDelayed(runnable, delay)
     }
 
     abstract fun onChanged(walletAccount: Wallet)
