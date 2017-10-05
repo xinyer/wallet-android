@@ -18,7 +18,7 @@ import java.net.URL
 class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
     @Synchronized
     override fun onMessage(callingPackageName: String, intent: Intent) {
-        Log.d(LOG_TAG, "onMessage($callingPackageName, $intent)")
+        Log.d(LOG_TAG, "onMessage($callingPackageName, ${intent.action})")
         org.bitcoinj.core.Context.propagate(Constants.CONTEXT)
         val clone = intent.clone() as Intent
         clone.setClass(context, SpvService::class.java)

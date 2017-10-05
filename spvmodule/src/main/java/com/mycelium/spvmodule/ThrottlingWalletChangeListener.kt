@@ -30,8 +30,7 @@ import org.bitcoinj.wallet.listeners.WalletReorganizeEventListener
 import java.util.concurrent.atomic.AtomicLong
 
 abstract class ThrottlingWalletChangeListener(private val throttleMs: Long = DEFAULT_THROTTLE_MS)
-    : WalletChangeEventListener, WalletCoinsSentEventListener, WalletCoinsReceivedEventListener,
-        WalletReorganizeEventListener, TransactionConfidenceEventListener {
+    : WalletChangeEventListener {
     private val lastMessageTime = AtomicLong(0)
     private val handler = Handler(Looper.getMainLooper())
 

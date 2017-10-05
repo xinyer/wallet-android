@@ -25,7 +25,6 @@ import org.bitcoinj.net.discovery.MultiplexingDiscovery
 import org.bitcoinj.net.discovery.PeerDiscovery
 import org.bitcoinj.net.discovery.PeerDiscoveryException
 import org.bitcoinj.store.BlockStore
-import org.bitcoinj.store.BlockStoreException
 import org.bitcoinj.store.SPVBlockStore
 import org.bitcoinj.utils.Threading
 import org.bitcoinj.wallet.*
@@ -91,10 +90,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     private fun initializeWalletAccountsListeners() {
         Log.d(LOG_TAG, "initializeWalletAccountsListeners, number of accounts = ${walletsAccountsMap.values.size}")
         walletsAccountsMap.values.forEach {
-            it.addCoinsReceivedEventListener(Threading.SAME_THREAD, walletEventListener)
-            it.addCoinsSentEventListener(Threading.SAME_THREAD, walletEventListener)
             it.addChangeEventListener(Threading.SAME_THREAD, walletEventListener)
-            it.addTransactionConfidenceEventListener(Threading.SAME_THREAD, walletEventListener)
         }
     }
 
@@ -237,15 +233,10 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
         peerConnectivityListener.stop()
 
-        for (walletAccountIndexMapItem in walletsAccountsMap) {
-            val walletFile = spvModuleApplication.getFileStreamPath(Constants.Files.WALLET_FILENAME_PROTOBUF
-                    + "_${walletAccountIndexMapItem.key}")
-            walletAccountIndexMapItem.value.run {
-                saveToFile(walletFile)
+        for(idWallet in walletsAccountsMap) {
+            idWallet.value.run {
+                saveToFile(walletFile(idWallet.key))
                 removeChangeEventListener(walletEventListener)
-                removeCoinsSentEventListener(walletEventListener)
-                removeCoinsReceivedEventListener(walletEventListener)
-                removeTransactionConfidenceEventListener(walletEventListener)
             }
         }
         blockStore.close()
@@ -575,38 +566,13 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private val walletEventListener = object: ThrottlingWalletChangeListener(APPWIDGET_THROTTLE_MS) {
-        override fun onReorganize(p0: Wallet?) {
-            //Do nothing.
-        }
-
         override fun onChanged(walletAccount: Wallet) {
             notifyTransactions(walletAccount.getTransactions(true), walletAccount.unspents.toSet())
-        }
-
-        override fun onTransactionConfidenceChanged(walletAccount: Wallet, tx: Transaction) {
-            //Do nothing.
-            /*
-            if(tx.confidence?.depthInBlocks?:0 > 7) {
-                // don't update on all transactions individually just because we found a new block
-                return
-            }
-            */
-        }
-
-        override fun onCoinsReceived(walletAccount: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
-            onTransaction(walletAccount)
-        }
-
-        override fun onCoinsSent(walletAccount: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
-            onTransaction(walletAccount)
-        }
-
-        private fun onTransaction(walletAccount: Wallet) {
             //If this is the first transaction found on that wallet/account, stop the download of the blockchain.
             //MBW will request to add a new account.
             if(walletAccount.getRecentTransactions(2, true).size == 1) {
                 if(BuildConfig.DEBUG) {
-                    Log.d(LOG_TAG, "onCoinsSent, first transaction found on that wallet/account," +
+                    Log.d("walletEventListener", "onChanged, first transaction found on that wallet/account," +
                             " stop the download of the blockchain")
                 }
                 stopAsync()
