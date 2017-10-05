@@ -32,12 +32,13 @@ import org.bitcoinj.wallet.*
 import java.io.*
 import java.net.InetSocketAddress
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
 class Bip44AccountIdleService : AbstractScheduledService() {
-    private val walletsAccountsMap: MutableMap<Int, Wallet> = mutableMapOf()
+    private val walletsAccountsMap: ConcurrentHashMap<Int, Wallet> = ConcurrentHashMap()
     private var downloadProgressTracker: DownloadProgressTracker? = null
     private val connectivityReceiver = ConnectivityReceiver()
 
@@ -56,9 +57,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     private lateinit var blockStore : BlockStore
 
     override fun shutDown() {
-        if(BuildConfig.DEBUG) {
-            Log.d(LOG_TAG, "shutDown")
-        }
+        Log.d(LOG_TAG, "shutDown")
         stopPeergroup()
     }
 
@@ -66,50 +65,31 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             AbstractScheduledService.Scheduler.newFixedRateSchedule(0, 1, TimeUnit.MINUTES)
 
     override fun runOneIteration() {
-        if(BuildConfig.DEBUG) {
-            Log.d(LOG_TAG, "runOneIteration")
+        Log.d(LOG_TAG, "runOneIteration")
+        if(walletsAccountsMap.isNotEmpty()) {
+            checkImpediments()
         }
-        try {
-            if(walletsAccountsMap.size > 0) {
-                checkImpediments()
-            }
-        } catch (e: Throwable) {
-            Log.e(LOG_TAG, e.localizedMessage, e)
-            throw e
-        }
-
     }
 
     override fun startUp() {
-        if(BuildConfig.DEBUG) {
-            Log.d(LOG_TAG, "startUp")
-        }
+        Log.d(LOG_TAG, "startUp")
         val intentFilter = IntentFilter().apply {
             addAction(ConnectivityManager.CONNECTIVITY_ACTION)
             addAction(Intent.ACTION_DEVICE_STORAGE_LOW)
             addAction(Intent.ACTION_DEVICE_STORAGE_OK)
         }
-
-        Log.d(LOG_TAG, "initializeBlockchain, registering ConnectivityReceiver")
         spvModuleApplication.applicationContext.registerReceiver(connectivityReceiver, intentFilter)
 
         val blockChainFile = File(spvModuleApplication.getDir("blockstore", Context.MODE_PRIVATE),
                 Constants.Files.BLOCKCHAIN_FILENAME)
-        try {
-            blockStore = SPVBlockStore(Constants.NETWORK_PARAMETERS, blockChainFile)
-            blockStore.chainHead // detect corruptions as early as possible
-        } catch (x: BlockStoreException) {
-            blockChainFile.delete()
-            throw Error(x.localizedMessage, x)
-        }
+        blockStore = SPVBlockStore(Constants.NETWORK_PARAMETERS, blockChainFile)
+        blockStore.chainHead // detect corruptions as early as possible
         initializeWalletsAccounts()
         initializePeergroup()
     }
 
     private fun initializeWalletAccountsListeners() {
-        if(BuildConfig.DEBUG) {
-            Log.d(LOG_TAG, "initializeWalletAccountsListeners, number of accounts = ${walletsAccountsMap.values.size}")
-        }
+        Log.d(LOG_TAG, "initializeWalletAccountsListeners, number of accounts = ${walletsAccountsMap.values.size}")
         walletsAccountsMap.values.forEach {
             it.addCoinsReceivedEventListener(Threading.SAME_THREAD, walletEventListener)
             it.addCoinsSentEventListener(Threading.SAME_THREAD, walletEventListener)
@@ -126,7 +106,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             val accountIndex: Int = accountIndexString.toInt()
             val walletAccount = getAccountWallet(accountIndex)
             if (walletAccount != null) {
-                walletsAccountsMap.put(accountIndex, walletAccount)
+                walletsAccountsMap[accountIndex] = walletAccount
             }
         }
         val earliestKeyCreationTime = initializeEarliestKeyCreationTime()
@@ -238,9 +218,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private fun stopPeergroup() {
-        if(BuildConfig.DEBUG) {
-            Log.d(LOG_TAG, "stopPeergroup")
-        }
+        Log.d(LOG_TAG, "stopPeergroup")
         if(peerGroup != null) {
             peerGroup!!.stopAsync()
             peerGroup!!.removeDisconnectedEventListener(peerConnectivityListener)
@@ -270,11 +248,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                 removeTransactionConfidenceEventListener(walletEventListener)
             }
         }
-        try {
-            blockStore.close()
-        } catch (e: NullPointerException) {
-            Log.e(LOG_TAG, e.localizedMessage, e)
-        }
+        blockStore.close()
     }
 
     @Synchronized
@@ -319,18 +293,17 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private fun getAccountWallet(accountIndex: Int) : Wallet? {
-        var walletAccount : Wallet? = walletsAccountsMap[accountIndex]
-        if(walletAccount != null) {
-            return walletAccount
+        var wallet : Wallet? = walletsAccountsMap[accountIndex]
+        if(wallet != null) {
+            return wallet
         }
-        val walletAccountFile = spvModuleApplication.getFileStreamPath(
-                Constants.Files.WALLET_FILENAME_PROTOBUF + "_$accountIndex")
-        if (walletAccountFile.exists()) {
-            walletAccount = loadWalletFromProtobuf(accountIndex)
-            afterLoadWallet(walletAccount, accountIndex)
+        val walletFile = walletFile(accountIndex)
+        if (walletFile.exists()) {
+            wallet = loadWalletFromProtobuf(accountIndex, walletFile)
+            afterLoadWallet(wallet, accountIndex)
             cleanupFiles(accountIndex)
         }
-        return walletAccount
+        return wallet
     }
 
     private fun loadWalletFromProtobuf(accountIndex: Int) : Wallet {
@@ -376,14 +349,14 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private fun restoreWalletFromBackup(accountIndex: Int): Wallet {
-        spvModuleApplication.openFileInput(Constants.Files.WALLET_KEY_BACKUP_PROTOBUF + accountIndex).use { stream ->
+        backupFileInputStream(accountIndex).use { stream ->
             val walletAccount = WalletProtobufSerializer().readWallet(stream, true, null)
             if (!walletAccount.isConsistent) {
                 throw Error("inconsistent backup")
             }
             //TODO : Reset Blockchain ?
             Log.i(LOG_TAG, "wallet/account restored from backup: "
-                    + "'${Constants.Files.WALLET_KEY_BACKUP_PROTOBUF + accountIndex}'")
+                    + "'${backupFileName(accountIndex)}'")
             return walletAccount
         }
     }
@@ -392,18 +365,14 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         if(BuildConfig.DEBUG) {
             Log.d(LOG_TAG, "afterLoadWallet, accountIndex = $accountIndex")
         }
-        val walletAccountFile = spvModuleApplication.getFileStreamPath(
-                Constants.Files.WALLET_FILENAME_PROTOBUF + "_$accountIndex")
-        walletAccount.autosaveToFile(walletAccountFile, 10, TimeUnit.SECONDS, WalletAutosaveEventListener())
+        walletAccount.autosaveToFile(walletFile(accountIndex), 10, TimeUnit.SECONDS, WalletAutosaveEventListener())
         // clean up spam
         walletAccount.cleanup()
         migrateBackup(walletAccount, accountIndex)
     }
 
     private fun migrateBackup(walletAccount: Wallet, accountIndex: Int) {
-        // TODO: make this multi-wallet aware
-        if (!spvModuleApplication.getFileStreamPath(
-                Constants.Files.WALLET_KEY_BACKUP_PROTOBUF + accountIndex).exists()) {
+        if (!backupFile(accountIndex).exists()) {
             Log.i(LOG_TAG, "migrating automatic backup to protobuf")
             // make sure there is at least one recent backup
             backupWallet(walletAccount, accountIndex)
@@ -420,8 +389,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         builder.clearLastSeenBlockTimeSecs()
         val walletProto = builder.build()
 
-        spvModuleApplication.openFileOutput(
-                Constants.Files.WALLET_KEY_BACKUP_PROTOBUF + accountIndex, Context.MODE_PRIVATE).use {
+        backupFileOutputStream(accountIndex).use {
             try {
                 walletProto.writeTo(it)
             } catch (x: IOException) {
@@ -433,8 +401,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     private fun cleanupFiles(accountIndex: Int) {
         for (filename in spvModuleApplication.fileList()) {
             if (filename.startsWith(Constants.Files.WALLET_KEY_BACKUP_BASE58)
-                    || filename.startsWith(
-                    Constants.Files.WALLET_KEY_BACKUP_PROTOBUF + accountIndex + '.')
+                    || filename.startsWith(backupFileName(accountIndex) + '.')
                     || filename.endsWith(".tmp")) {
                 val file = File(spvModuleApplication.filesDir, filename)
                 Log.i(LOG_TAG, "removing obsolete file: '$file'")
@@ -544,9 +511,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     @Synchronized
     fun addWalletAccount(bip39Passphrase: ArrayList<String>, creationTimeSeconds: Long,
                          accountIndex: Int) {
-        if(BuildConfig.DEBUG) {
-            Log.d(LOG_TAG, "addWalletAccount, accountIndex = $accountIndex")
-        }
+        Log.d(LOG_TAG, "addWalletAccount, accountIndex = $accountIndex")
         val walletAccount = Wallet.fromSeed(
                 Constants.NETWORK_PARAMETERS,
                 DeterministicSeed(bip39Passphrase, null, "", creationTimeSeconds),
@@ -557,16 +522,12 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         walletAccount.keyChainGroupLookaheadSize = 30
 
         accountIndexStrings.add(accountIndex.toString())
-        val editor = sharedPreferences.edit()
-        editor.putStringSet(spvModuleApplication.getString(R.string.account_index_stringset),
-                accountIndexStrings)
-        editor.commit()
+        sharedPreferences.edit()
+                .putStringSet(spvModuleApplication.getString(R.string.account_index_stringset), accountIndexStrings)
+                .apply()
         configuration.maybeIncrementBestChainHeightEver(walletAccount.lastBlockSeenHeight)
 
-
-        val walletAccountFile = spvModuleApplication.getFileStreamPath(
-                Constants.Files.WALLET_FILENAME_PROTOBUF + "_$accountIndex")
-        walletAccount.saveToFile(walletAccountFile)
+        walletAccount.saveToFile(walletFile(accountIndex))
         /*
         val broadcast = Intent(SpvModuleApplication.ACTION_WALLET_REFERENCE_CHANGED) //TODO Investigate utility of this.
         broadcast.`package` = packageName
@@ -576,11 +537,9 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
     @Synchronized
     fun broadcastTransaction(transaction: Transaction, accountIndex: Int) {
-        val walletAccount = walletsAccountsMap[accountIndex]
-        walletAccount!!.commitTx(transaction)
-        val walletAccountFile = spvModuleApplication.getFileStreamPath(
-                Constants.Files.WALLET_FILENAME_PROTOBUF + "_$accountIndex")
-        walletAccount.saveToFile(walletAccountFile)
+        val wallet = walletsAccountsMap[accountIndex]!!
+        wallet.commitTx(transaction)
+        wallet.saveToFile(walletFile(accountIndex))
 
         // A proposed transaction is now sitting in request.tx - send it in the background.
         val transactionBroadcast = peerGroup!!.broadcastTransaction(transaction)
@@ -733,14 +692,32 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private class WalletAutosaveEventListener : WalletFiles.Listener {
-        override fun onBeforeAutoSave(file: File) = Unit
+        override fun onBeforeAutoSave(file: File) {
+            Log.d("WalletAutosaveEventListener", "onBeforeAutoSave ${file.absolutePath}")
+        }
 
-        override fun onAfterAutoSave(file: File) = // make walletsAccounts world accessible in test mode
-                //if (Constants.TEST) {
-                //   Io.chmod(file, 0777);
-                //}
-                Unit
+        override fun onAfterAutoSave(file: File) {
+            Log.d("WalletAutosaveEventListener", "onAfterAutoSave ${file.absolutePath}")
+        }
     }
+
+    private fun backupFileOutputStream(accountIndex: Int): FileOutputStream =
+            spvModuleApplication.openFileOutput(backupFileName(accountIndex), Context.MODE_PRIVATE)
+
+    private fun backupFileInputStream(accountIndex: Int): FileInputStream =
+            spvModuleApplication.openFileInput(backupFileName(accountIndex))
+
+    private fun backupFile(accountIndex: Int): File =
+            spvModuleApplication.getFileStreamPath(backupFileName(accountIndex))
+
+    private fun backupFileName(accountIndex: Int): String =
+            Constants.Files.WALLET_KEY_BACKUP_PROTOBUF + "_$accountIndex"
+
+    private fun walletFile(accountIndex: Int): File =
+            spvModuleApplication.getFileStreamPath(walletFileName(accountIndex))
+
+    private fun walletFileName(accountIndex: Int): String =
+            Constants.Files.WALLET_FILENAME_PROTOBUF + "_$accountIndex"
 
     companion object {
         private val LOG_TAG = Bip44AccountIdleService::class.java.simpleName

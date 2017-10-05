@@ -23,6 +23,7 @@ import android.content.*
 import android.util.Log
 import com.mycelium.modularizationtools.CommunicationManager
 import org.bitcoinj.core.*
+import org.bitcoinj.core.Context.propagate
 import org.bitcoinj.wallet.SendRequest
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -39,17 +40,10 @@ class SpvService : IntentService("SpvService") {
     }
 
     override fun onHandleIntent(intent: Intent?) {
+        Log.i(LOG_TAG, "onHandleIntent: ${intent?.action}")
         intentsQueue.remove()
-        org.bitcoinj.core.Context.propagate(Constants.CONTEXT)
+        propagate(Constants.CONTEXT)
         if (intent != null) {
-            if(BuildConfig.DEBUG) {
-                Log.i(LOG_TAG, "onHandleIntent: $intent ${
-                if (intent.hasExtra(Intent.EXTRA_ALARM_COUNT))
-                    " (alarm count: ${intent.getIntExtra(Intent.EXTRA_ALARM_COUNT, 0)})"
-                else
-                    ""
-                }")
-            }
             accountIndex = intent.getIntExtra(IntentContract.ACCOUNT_INDEX_EXTRA, -1)
             if (accountIndex == -1) {
                 Log.e(LOG_TAG, "no account specified. Skipping ${intent.action}.")
