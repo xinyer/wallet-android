@@ -25,6 +25,7 @@ import com.mycelium.modularizationtools.CommunicationManager
 import org.bitcoinj.core.*
 import org.bitcoinj.wallet.SendRequest
 import java.util.*
+import java.util.concurrent.ConcurrentLinkedQueue
 
 class SpvService : IntentService("SpvService") {
     private val application = SpvModuleApplication.getApplication()
@@ -137,6 +138,6 @@ class SpvService : IntentService("SpvService") {
         val ACTION_RECEIVE_TRANSACTIONS = PACKAGE_NAME + ".receive_transactions"
         val ACTION_SEND_FUNDS = PACKAGE_NAME + ".send_funds"
 
-        var intentsQueue: Queue<Intent> = LinkedList<Intent>()
+        val intentsQueue: Queue<Intent> = ConcurrentLinkedQueue<Intent>()
     }
 }
