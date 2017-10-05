@@ -57,7 +57,7 @@ class SpvService : IntentService("SpvService") {
                 ACTION_ADD_ACCOUNT -> {
                     val bip39Passphrase = intent.getStringArrayListExtra("bip39Passphrase")
                     val creationTimeSeconds = intent.getLongExtra("creationTimeSeconds", 0)
-                    application.addAccountWalletWithExtendedKey(bip39Passphrase,
+                    application.addWalletAccountWithExtendedKey(bip39Passphrase,
                             creationTimeSeconds, accountIndex)
                     Log.d(LOG_TAG, "onHandleIntent(), ACTION_ADD_ACCOUNT, setting futureSpvService to 0")
                 }

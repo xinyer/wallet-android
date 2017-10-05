@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.collections.ArrayList
 
 class Bip44AccountIdleService : AbstractScheduledService() {
     private val walletsAccountsMap: ConcurrentHashMap<Int, Wallet> = ConcurrentHashMap()
@@ -54,6 +55,8 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     private val peerConnectivityListener: PeerConnectivityListener = PeerConnectivityListener()
     private val notificationManager = spvModuleApplication.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     private lateinit var blockStore : BlockStore
+    private var bip39Passphrase : ArrayList<String> = ArrayList(sharedPreferences.getStringSet(
+            spvModuleApplication.getString(R.string.account_bip39Passphrase_stringset), emptySet()))
 
     override fun shutDown() {
         Log.d(LOG_TAG, "shutDown")
@@ -91,6 +94,9 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         Log.d(LOG_TAG, "initializeWalletAccountsListeners, number of accounts = ${walletsAccountsMap.values.size}")
         walletsAccountsMap.values.forEach {
             it.addChangeEventListener(Threading.SAME_THREAD, walletEventListener)
+            it.addCoinsReceivedEventListener(Threading.SAME_THREAD, walletEventListener)
+            it.addCoinsSentEventListener(Threading.SAME_THREAD, walletEventListener)
+
         }
     }
 
@@ -216,7 +222,9 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     private fun stopPeergroup() {
         Log.d(LOG_TAG, "stopPeergroup")
         if(peerGroup != null) {
-            peerGroup!!.stopAsync()
+            if(peerGroup!!.isRunning) {
+                peerGroup!!.stopAsync()
+            }
             peerGroup!!.removeDisconnectedEventListener(peerConnectivityListener)
             peerGroup!!.removeConnectedEventListener(peerConnectivityListener)
             for (walletAccount in walletsAccountsMap.values) {
@@ -237,6 +245,8 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             idWallet.value.run {
                 saveToFile(walletFile(idWallet.key))
                 removeChangeEventListener(walletEventListener)
+                removeCoinsReceivedEventListener(walletEventListener)
+                removeCoinsSentEventListener(walletEventListener)
             }
         }
         blockStore.close()
@@ -490,16 +500,48 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     @Synchronized
     fun addWalletAccount(bip39Passphrase: ArrayList<String>, creationTimeSeconds: Long,
                          accountIndex: Int) {
-        Log.d(LOG_TAG, "addWalletAccount, accountIndex = $accountIndex")
+        Log.d(LOG_TAG, "addWalletAccount, accountIndex = $accountIndex," +
+                " creationTimeSeconds = $creationTimeSeconds")
+        this.bip39Passphrase = bip39Passphrase
+        sharedPreferences.edit()
+                .putStringSet(
+                        spvModuleApplication.getString(R.string.account_bip39Passphrase_stringset),
+                        bip39Passphrase.toSet())
+                .apply()
+        if (accountIndexStrings.size == 0) {
+            var i = 0
+            while (i < 3) {
+                createOneAccount(bip39Passphrase, creationTimeSeconds, accountIndex + i)
+                i++
+            }
+        } else if (accountIndexStrings.contains(accountIndex.toString())) {
+            var highestCurrentAccountIndex = accountIndex
+            for (accountIndexString in accountIndexStrings) {
+                if(accountIndexString.toInt() > highestCurrentAccountIndex) {
+                    highestCurrentAccountIndex = accountIndexString.toInt()
+                }
+            }
+            createOneAccount(bip39Passphrase, creationTimeSeconds, highestCurrentAccountIndex + 1)
+        } else {
+            //Should not happen.
+            createOneAccount(bip39Passphrase, creationTimeSeconds, accountIndex)
+        }
+        /*
+        val broadcast = Intent(SpvModuleApplication.ACTION_WALLET_REFERENCE_CHANGED) //TODO Investigate utility of this.
+        broadcast.`package` = packageName
+        LocalBroadcastManager.getInstance(this).sendBroadcast(broadcast)
+        */
+    }
+
+    private fun createOneAccount(bip39Passphrase: ArrayList<String>, creationTimeSeconds: Long, accountIndex: Int) {
+        Log.d(LOG_TAG, "createOneAccount, accountIndex = $accountIndex," +
+                " creationTimeSeconds = $creationTimeSeconds")
         val walletAccount = Wallet.fromSeed(
                 Constants.NETWORK_PARAMETERS,
                 DeterministicSeed(bip39Passphrase, null, "", creationTimeSeconds),
                 ImmutableList.of(ChildNumber(44, true), ChildNumber(1, true),
                         ChildNumber(accountIndex, true)))
-
-
-        walletAccount.keyChainGroupLookaheadSize = 30
-
+        walletAccount.keyChainGroupLookaheadSize = 20
         accountIndexStrings.add(accountIndex.toString())
         sharedPreferences.edit()
                 .putStringSet(spvModuleApplication.getString(R.string.account_index_stringset), accountIndexStrings)
@@ -507,11 +549,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         configuration.maybeIncrementBestChainHeightEver(walletAccount.lastBlockSeenHeight)
 
         walletAccount.saveToFile(walletFile(accountIndex))
-        /*
-        val broadcast = Intent(SpvModuleApplication.ACTION_WALLET_REFERENCE_CHANGED) //TODO Investigate utility of this.
-        broadcast.`package` = packageName
-        LocalBroadcastManager.getInstance(this).sendBroadcast(broadcast)
-        */
     }
 
     @Synchronized
@@ -554,17 +591,48 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private val walletEventListener = object: ThrottlingWalletChangeListener(APPWIDGET_THROTTLE_MS) {
-        override fun onChanged(walletAccount: Wallet) {
-            notifyTransactions(walletAccount.getTransactions(true), walletAccount.unspents.toSet())
+        override fun onCoinsReceived(walletAccount: Wallet?, transaction: Transaction?,
+                                     prevBalance: Coin?, newBalance: Coin?) {
+            Log.d(LOG_TAG, "walletEventListener, onCoinsReceived")
+            checkIfFirstTransaction(walletAccount)
+        }
+
+        override fun onCoinsSent(walletAccount: Wallet?, transaction: Transaction?,
+                                 prevBalance: Coin?, newBalance: Coin?) {
+            Log.d(LOG_TAG, "walletEventListener, onCoinsSent")
+            checkIfFirstTransaction(walletAccount)
+        }
+
+        private fun checkIfFirstTransaction(walletAccount: Wallet?) {
             //If this is the first transaction found on that wallet/account, stop the download of the blockchain.
-            //MBW will request to add a new account.
-            if(walletAccount.getRecentTransactions(2, true).size == 1) {
-                if(BuildConfig.DEBUG) {
-                    Log.d("walletEventListener", "onChanged, first transaction found on that wallet/account," +
+            if (walletAccount!!.getRecentTransactions(2, true).size == 1) {
+                var accountIndex = 0;
+                for (key in walletsAccountsMap.keys()) {
+                    if (walletsAccountsMap.get(key)!!.currentReceiveAddress() ==
+                            walletAccount.currentReceiveAddress()) {
+                        accountIndex = key
+                    }
+                }
+                val newAccountIndex = accountIndex + 1
+                if(doesWalletAccountExist(newAccountIndex + 3)) {
+                    return
+                }
+                if (BuildConfig.DEBUG) {
+                    Log.d(LOG_TAG, "walletEventListener, checkIfFirstTransaction, first transaction " +
+                            "found on that wallet/account with accountIndex = $accountIndex," +
                             " stop the download of the blockchain")
                 }
-                stopAsync()
+                //TODO Investigate why it is stuck while stopping.
+                peerGroup!!.stop()
+                Log.d(LOG_TAG, "walletEventListener, checkIfFirstTransaction,will try to " +
+                        "addWalletAccountWithExtendedKey with newAccountIndex = $newAccountIndex")
+                spvModuleApplication.addWalletAccountWithExtendedKey(bip39Passphrase,
+                        walletAccount.lastBlockSeenTimeSecs, newAccountIndex)
             }
+        }
+
+        override fun onChanged(walletAccount: Wallet) {
+            notifyTransactions(walletAccount.getTransactions(true), walletAccount.unspents.toSet())
         }
     }
 
@@ -681,6 +749,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
     fun doesWalletAccountExist(accountIndex: Int): Boolean {
         val tmpWallet = walletsAccountsMap.get(accountIndex)
-        return !(tmpWallet == null || tmpWallet.keyChainGroupSize == 0)
+        return !(tmpWallet == null)
     }
 }

@@ -54,15 +54,19 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
                 clone.action = SpvService.ACTION_RECEIVE_TRANSACTIONS
             }
             IntentContract.RequestPrivateExtendedKeyCoinTypeToSPV.ACTION -> {
-                val bip39Passphrase = intent.getStringArrayListExtra(IntentContract.RequestPrivateExtendedKeyCoinTypeToSPV.BIP39_PASS_PHRASE_EXTRA)
                 val accountIndex = intent.getIntExtra(IntentContract.ACCOUNT_INDEX_EXTRA, -1)
                 if (accountIndex == -1) {
                     Log.e(LOG_TAG, "no account specified. Skipping ${intent.action}.")
                     return
+                } else if (SpvModuleApplication.getApplication().doesWalletAccountExist(accountIndex)) {
+                    Log.i(LOG_TAG, "Trying to create an account / wallet with accountIndex " +
+                            "$accountIndex that already exists.")
+                    return
                 }
+                val bip39Passphrase = intent.getStringArrayListExtra(IntentContract.RequestPrivateExtendedKeyCoinTypeToSPV.BIP39_PASS_PHRASE_EXTRA)
                 val creationTimeSeconds = intent.getLongExtra(IntentContract.RequestPrivateExtendedKeyCoinTypeToSPV.CREATION_TIME_SECONDS_EXTRA, 0)
                 SpvModuleApplication.getApplication()
-                        .addAccountWalletWithExtendedKey(bip39Passphrase, creationTimeSeconds, accountIndex)
+                        .addWalletAccountWithExtendedKey(bip39Passphrase, creationTimeSeconds, accountIndex)
                 return
             }
         }

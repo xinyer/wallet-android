@@ -62,6 +62,8 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         spvServiceIntent = Intent(this, SpvService::class.java)
         blockchainServiceCancelCoinsReceivedIntent = Intent(SpvService.ACTION_CANCEL_COINS_RECEIVED, null, this,
                 SpvService::class.java)
+
+        //TODO Never called, investigate if still useful.
         blockchainServiceResetBlockchainIntent = Intent(SpvService.ACTION_ADD_ACCOUNT, null, this, SpvService::class.java)
         bip44AccountIdleService = Bip44AccountIdleService().startAsync() as Bip44AccountIdleService
     }
@@ -70,12 +72,21 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         stopService(spvServiceIntent)
     }
 
-    fun addAccountWalletWithExtendedKey(bip39Passphrase: ArrayList<String>, creationTimeSeconds: Long,
+    @Synchronized
+    fun addWalletAccountWithExtendedKey(bip39Passphrase: ArrayList<String>, creationTimeSeconds: Long,
                                         accountIndex: Int) {
+        Log.d(LOG_TAG, "addWalletAccountWithExtendedKey, accountIndex = $accountIndex, " +
+                "doesWalletAccountExist for accountIndex ${accountIndex + 3} " +
+                "is ${doesWalletAccountExist(accountIndex + 3)}.")
+        if(doesWalletAccountExist(accountIndex + 3)) {
+            return
+        }
+
         bip44AccountIdleService.addWalletAccount(bip39Passphrase, creationTimeSeconds, accountIndex)
         bip44AccountIdleService.stopAsync()
         bip44AccountIdleService.awaitTerminated()
-        bip44AccountIdleService = Bip44AccountIdleService().startAsync() as Bip44AccountIdleService
+        bip44AccountIdleService = Bip44AccountIdleService()
+        bip44AccountIdleService.startAsync()
     }
 
     fun broadcastTransaction(tx: Transaction, accountIndex: Int) {
@@ -118,6 +129,6 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
                 INSTANCE!!.doesWalletAccountExist(accountIndex)
     }
 
-    private fun doesWalletAccountExist(accountIndex: Int): Boolean =
+    internal fun doesWalletAccountExist(accountIndex: Int): Boolean =
             bip44AccountIdleService.doesWalletAccountExist(accountIndex)
 }

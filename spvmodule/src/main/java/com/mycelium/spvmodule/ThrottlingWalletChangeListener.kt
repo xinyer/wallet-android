@@ -30,7 +30,7 @@ import org.bitcoinj.wallet.listeners.WalletReorganizeEventListener
 import java.util.concurrent.atomic.AtomicLong
 
 abstract class ThrottlingWalletChangeListener(private val throttleMs: Long = DEFAULT_THROTTLE_MS)
-    : WalletChangeEventListener {
+    : WalletChangeEventListener, WalletCoinsReceivedEventListener, WalletCoinsSentEventListener {
     private val lastMessageTime = AtomicLong(0)
     private val handler = Handler(Looper.getMainLooper())
 
@@ -46,6 +46,8 @@ abstract class ThrottlingWalletChangeListener(private val throttleMs: Long = DEF
     }
 
     abstract fun onChanged(walletAccount: Wallet)
+
+
 
     companion object {
         private val DEFAULT_THROTTLE_MS: Long = 500
