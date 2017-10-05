@@ -297,46 +297,34 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         return wallet
     }
 
-    private fun loadWalletFromProtobuf(accountIndex: Int) : Wallet {
-        var walletStream: FileInputStream? = null
-        var walletAccount : Wallet?
-        val walletAccountFile = spvModuleApplication.getFileStreamPath(
-                Constants.Files.WALLET_FILENAME_PROTOBUF + "_$accountIndex")
-        try {
-            walletStream = FileInputStream(walletAccountFile!!)
-
-            walletAccount = WalletProtobufSerializer().readWallet(walletStream)
-
-            if (walletAccount.params != Constants.NETWORK_PARAMETERS)
-                throw UnreadableWalletException("bad wallet network parameters: "
-                        + walletAccount!!.params.id)
-        } catch (x: FileNotFoundException) {
-            Log.e(LOG_TAG, "problem loading wallet", x)
-            Toast.makeText(spvModuleApplication, x.javaClass.name, Toast.LENGTH_LONG).show()
-            walletAccount = restoreWalletFromBackup(accountIndex)
-        } catch (x: UnreadableWalletException) {
-            Log.e(LOG_TAG, "problem loading wallet", x)
-            Toast.makeText(spvModuleApplication, x.javaClass.name, Toast.LENGTH_LONG).show()
-            walletAccount = restoreWalletFromBackup(accountIndex)
-        } finally {
-            if (walletStream != null) {
-                try {
-                    walletStream.close()
-                } catch (ignore: IOException) {
+    private fun loadWalletFromProtobuf(accountIndex: Int, walletAccountFile: File) : Wallet {
+        var wallet = FileInputStream(walletAccountFile).use { walletStream ->
+            try {
+                WalletProtobufSerializer().readWallet(walletStream).apply {
+                    if (params != Constants.NETWORK_PARAMETERS) {
+                        throw UnreadableWalletException("bad wallet network parameters: ${params.id}")
+                    }
                 }
+            } catch (x: FileNotFoundException) {
+                Log.e(LOG_TAG, "problem loading wallet", x)
+                Toast.makeText(spvModuleApplication, x.javaClass.name, Toast.LENGTH_LONG).show()
+                restoreWalletFromBackup(accountIndex)
+            } catch (x: UnreadableWalletException) {
+                Log.e(LOG_TAG, "problem loading wallet", x)
+                Toast.makeText(spvModuleApplication, x.javaClass.name, Toast.LENGTH_LONG).show()
+                restoreWalletFromBackup(accountIndex)
             }
         }
 
-        if (!walletAccount!!.isConsistent) {
-            Toast.makeText(spvModuleApplication, "inconsistent wallet: " + walletAccountFile!!, Toast.LENGTH_LONG).show()
-
-            walletAccount = restoreWalletFromBackup(accountIndex)
+        if (!wallet!!.isConsistent) {
+            Toast.makeText(spvModuleApplication, "inconsistent wallet: " + walletAccountFile, Toast.LENGTH_LONG).show()
+            wallet = restoreWalletFromBackup(accountIndex)
         }
 
-        if (walletAccount.params != Constants.NETWORK_PARAMETERS) {
-            throw Error("bad wallet network parameters: ${walletAccount.params.id}")
+        if (wallet.params != Constants.NETWORK_PARAMETERS) {
+            throw Error("bad wallet network parameters: ${wallet.params.id}")
         }
-        return walletAccount
+        return wallet
     }
 
     private fun restoreWalletFromBackup(accountIndex: Int): Wallet {
