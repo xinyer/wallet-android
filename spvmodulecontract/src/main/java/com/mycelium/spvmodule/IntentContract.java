@@ -54,6 +54,19 @@ public interface IntentContract {
         }
     }
 
+    class SetPrivateKeyExtendedKeyCoinType {
+
+        public static final String ACTION = "com.mycelium.wallet.setPrivateKeyExtendedKeyCoinType";
+
+        public static final String PRIVATE_KEY = ACTION + "_data";
+
+        public static Intent createIntent(byte[] private_key) {
+            Intent intent = new Intent(ACTION);
+            intent.putExtra(PRIVATE_KEY, private_key);
+            return intent;
+        }
+    }
+
     class SendFunds {
 
         public static final String ACTION = "com.mycelium.wallet.sendFunds";
