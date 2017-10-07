@@ -32,6 +32,7 @@ import java.io.*
 import java.net.InetSocketAddress
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
@@ -623,11 +624,14 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                             " stop the download of the blockchain")
                 }
                 //TODO Investigate why it is stuck while stopping.
-                peerGroup!!.stop()
-                Log.d(LOG_TAG, "walletEventListener, checkIfFirstTransaction,will try to " +
-                        "addWalletAccountWithExtendedKey with newAccountIndex = $newAccountIndex")
-                spvModuleApplication.addWalletAccountWithExtendedKey(bip39Passphrase,
-                        walletAccount.lastBlockSeenTimeSecs, newAccountIndex)
+                val listenableFuture = peerGroup!!.stopAsync()
+                listenableFuture.addListener(
+                        Runnable { Log.d(LOG_TAG, "walletEventListener, checkIfFirstTransaction,will try to " +
+                                "addWalletAccountWithExtendedKey with newAccountIndex = $newAccountIndex")
+                            spvModuleApplication.addWalletAccountWithExtendedKey(bip39Passphrase,
+                                    walletAccount.lastBlockSeenTimeSecs, newAccountIndex) },
+                        Executors.newSingleThreadExecutor())
+
             }
         }
 
