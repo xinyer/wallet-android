@@ -18,10 +18,8 @@
 package com.mycelium.spvmodule
 
 import android.os.Handler
-import android.util.Log
+import android.os.Looper
 
-import org.bitcoinj.core.Coin
-import org.bitcoinj.core.Transaction
 import org.bitcoinj.core.listeners.TransactionConfidenceEventListener
 import org.bitcoinj.wallet.Wallet
 import org.bitcoinj.wallet.listeners.WalletChangeEventListener
@@ -29,63 +27,27 @@ import org.bitcoinj.wallet.listeners.WalletCoinsReceivedEventListener
 import org.bitcoinj.wallet.listeners.WalletCoinsSentEventListener
 import org.bitcoinj.wallet.listeners.WalletReorganizeEventListener
 
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
-abstract class ThrottlingWalletChangeListener constructor(private val throttleMs : Long = DEFAULT_THROTTLE_MS,
-                                                          private val coinsRelevant: Boolean = true,
-                                                          private val reorganizeRelevant: Boolean = true,
-                                                          private val confidenceRelevant: Boolean = true)
-    : WalletChangeEventListener, WalletCoinsSentEventListener, WalletCoinsReceivedEventListener,
-        WalletReorganizeEventListener, TransactionConfidenceEventListener {
+abstract class ThrottlingWalletChangeListener(private val throttleMs: Long = DEFAULT_THROTTLE_MS)
+    : WalletChangeEventListener, WalletCoinsReceivedEventListener, WalletCoinsSentEventListener {
     private val lastMessageTime = AtomicLong(0)
-    private val handler = Handler()
-    private val relevant = AtomicBoolean()
+    private val handler = Handler(Looper.getMainLooper())
 
-    override fun onWalletChanged(wallet: Wallet) {
-        if (relevant.getAndSet(false)) {
-            handler.removeCallbacksAndMessages(null)
-
-            val now = System.currentTimeMillis()
-
-            val runnable = Runnable {
-                lastMessageTime.set(System.currentTimeMillis())
-                onChanged(wallet)
-            }
-
-            if (now - lastMessageTime.get() > throttleMs)
-                handler.post(runnable)
-            else
-                handler.postDelayed(runnable, throttleMs)
+    override fun onWalletChanged(walletAccount: Wallet) {
+        handler.removeCallbacksAndMessages(null)
+        val runnable = Runnable {
+            lastMessageTime.set(System.currentTimeMillis())
+            onChanged(walletAccount)
         }
+
+        val delay = lastMessageTime.get() - System.currentTimeMillis() + throttleMs
+        handler.postDelayed(runnable, delay)
     }
 
-    abstract fun onChanged(wallet: Wallet)
+    abstract fun onChanged(walletAccount: Wallet)
 
-    override fun onCoinsReceived(wallet: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
-        if (coinsRelevant) {
-            relevant.set(true)
-        }
-    }
 
-    override fun onCoinsSent(wallet: Wallet, tx: Transaction, prevBalance: Coin, newBalance: Coin) {
-        if (coinsRelevant) {
-            relevant.set(true)
-        }
-    }
-
-    override fun onReorganize(wallet: Wallet) {
-        if (reorganizeRelevant) {
-            relevant.set(true)
-        }
-    }
-
-    override fun onTransactionConfidenceChanged(wallet: Wallet, tx: Transaction) {
-        //We should probably update info about transaction here. Documentation says we should save the wallet here.
-        if (confidenceRelevant) {
-            relevant.set(true)
-        }
-    }
 
     companion object {
         private val DEFAULT_THROTTLE_MS: Long = 500

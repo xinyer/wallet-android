@@ -18,7 +18,7 @@ import com.mycelium.spvmodule.Constants.Companion.TAG
 import com.mycelium.spvmodule.providers.BlockchainContract
 
 class TransactionListFragment : ListFragment() {
-    private val LOG_TAG: String? = this::class.java.canonicalName
+    private val LOG_TAG: String? = this::class.java.simpleName
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
@@ -52,7 +52,7 @@ class TransactionListFragment : ListFragment() {
         private val txid = cursor.getColumnIndexOrThrow(BlockchainContract.Transaction.TRANSACTION_ID)
         private val includedInBlock = cursor.getColumnIndexOrThrow(BlockchainContract.Transaction.INCLUDED_IN_BLOCK)
 
-        private val LOG_TAG: String? = this::class.java.canonicalName
+        private val LOG_TAG: String? = this::class.java.simpleName
 
         override fun getView(position: Int, convertView: View?, parent: ViewGroup): View? {
             var cv = convertView
@@ -88,6 +88,7 @@ class TransactionListFragment : ListFragment() {
 
     companion object {
         // TODO: 9/15/16 this is definitely no long term solution. Update on new block
-        private val lastBlockSeenHeight = SpvModuleApplication.getWallet()!!.lastBlockSeenHeight
+        // TODO: Find something better with new architecture. 10/03/2017
+        private val lastBlockSeenHeight = 0 //SpvModuleApplication.getWallet()!!.lastBlockSeenHeight
     }
 }
