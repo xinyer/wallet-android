@@ -668,7 +668,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     private fun checkIfDownloadIsIdling() {
         Log.d(LOG_TAG, "checkIfDownloadIsIdling, activityHistory.size = ${activityHistory.size}")
         // determine if block and transaction activity is idling
-        var isIdle = true
+        var isIdle = false
         for (i in activityHistory.indices) {
             val entry = activityHistory[i]
             Log.d(LOG_TAG, "checkIfDownloadIsIdling, activityHistory indice is $i, " +
@@ -677,8 +677,8 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             val blocksActive = entry.numBlocksDownloaded > 0 && i <= IDLE_BLOCK_TIMEOUT_MIN
             val transactionsActive = entry.numTransactionsReceived > 0 && i <= IDLE_TRANSACTION_TIMEOUT_MIN
 
-            if (blocksActive || transactionsActive) {
-                isIdle = false
+            if (!blocksActive && !transactionsActive) {
+                isIdle = true
                 break
             }
         }
