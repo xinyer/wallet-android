@@ -83,6 +83,10 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         }
 
         bip44AccountIdleService.addWalletAccount(bip39Passphrase, creationTimeSeconds, accountIndex)
+        restartBip44AccountIdleService()
+    }
+
+    internal fun restartBip44AccountIdleService() {
         bip44AccountIdleService.stopAsync()
         bip44AccountIdleService.awaitTerminated()
         bip44AccountIdleService = Bip44AccountIdleService()

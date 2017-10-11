@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.collections.ArrayList
 
@@ -58,6 +59,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     private lateinit var blockStore : BlockStore
     private var bip39Passphrase : ArrayList<String> = ArrayList(sharedPreferences.getStringSet(
             spvModuleApplication.getString(R.string.account_bip39Passphrase_stringset), emptySet()))
+    private var counter: Int = 0
 
     override fun shutDown() {
         Log.d(LOG_TAG, "shutDown")
@@ -70,7 +72,15 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     override fun runOneIteration() {
         Log.d(LOG_TAG, "runOneIteration")
         if(walletsAccountsMap.isNotEmpty()) {
-            checkImpediments()
+            counter++
+            if(counter.rem(10) == 0 || counter == 1) {
+                //We do that every ten minutes
+                checkImpediments()
+            }
+            if(counter.rem(2) == 0 || counter == 1) {
+                //We do that every two minutes
+                checkIfDownloadIsIdling()
+            }
         }
     }
 
@@ -591,16 +601,20 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         SpvMessageSender.send(CommunicationManager.getInstance(spvModuleApplication), securedMulticastIntent)
     }
 
+    private val transactionsReceived = AtomicInteger()
+
     private val walletEventListener = object: ThrottlingWalletChangeListener(APPWIDGET_THROTTLE_MS) {
         override fun onCoinsReceived(walletAccount: Wallet?, transaction: Transaction?,
                                      prevBalance: Coin?, newBalance: Coin?) {
             Log.d(LOG_TAG, "walletEventListener, onCoinsReceived")
+            transactionsReceived.incrementAndGet()
             checkIfFirstTransaction(walletAccount)
         }
 
         override fun onCoinsSent(walletAccount: Wallet?, transaction: Transaction?,
                                  prevBalance: Coin?, newBalance: Coin?) {
             Log.d(LOG_TAG, "walletEventListener, onCoinsSent")
+            transactionsReceived.incrementAndGet()
             checkIfFirstTransaction(walletAccount)
         }
 
@@ -648,6 +662,35 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         }
     }
 
+    private val activityHistory = LinkedList<ActivityHistoryEntry>()
+
+    private fun checkIfDownloadIsIdling() {
+        Log.d(LOG_TAG, "checkIfDownloadIsIdling, activityHistory.size = ${activityHistory.size}")
+        // determine if block and transaction activity is idling
+        var isIdle = true
+        for (i in activityHistory.indices) {
+            val entry = activityHistory[i]
+            Log.d(LOG_TAG, "checkIfDownloadIsIdling, activityHistory indice is $i, " +
+                    "entry.numBlocksDownloaded = ${entry.numBlocksDownloaded}, " +
+                    "entry.numTransactionsReceived = ${entry.numTransactionsReceived}")
+            val blocksActive = entry.numBlocksDownloaded > 0 && i <= IDLE_BLOCK_TIMEOUT_MIN
+            val transactionsActive = entry.numTransactionsReceived > 0 && i <= IDLE_TRANSACTION_TIMEOUT_MIN
+
+            if (blocksActive || transactionsActive) {
+                isIdle = false
+                break
+            }
+        }
+        //We empty the Activity history
+        activityHistory.removeAll(activityHistory)
+
+        // if idling, shutdown service
+        if (isIdle) {
+            Log.i(LOG_TAG, "Idling is detected, restart the $LOG_TAG")
+            spvModuleApplication.restartBip44AccountIdleService()
+        }
+    }
+
     inner class DownloadProgressTrackerExt : DownloadProgressTracker() {
         override fun onChainDownloadStarted(peer: Peer?, blocksLeft: Int) {
             Log.d(LOG_TAG, "onChainDownloadStarted(), Blockchain's download is starting. " +
@@ -657,17 +700,38 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
         private val lastMessageTime = AtomicLong(0)
 
-        override fun onBlocksDownloaded(peer: Peer, block: Block, filteredBlock: FilteredBlock?, blocksLeft: Int) {
+        private var lastChainHeight = 0
+
+
+        override fun onBlocksDownloaded(peer: Peer, block: Block, filteredBlock: FilteredBlock?,
+                                        blocksLeft: Int) {
             if(BuildConfig.DEBUG) {
                 //Log.d(LOG_TAG, "onBlocksDownloaded, blocks left + $blocksLeft")
             }
             val now = System.currentTimeMillis()
+
+            updateActivityHistory()
 
             if (now - lastMessageTime.get() > BLOCKCHAIN_STATE_BROADCAST_THROTTLE_MS
                     || blocksLeft == 0) {
                 AsyncTask.execute(runnable)
             }
             super.onBlocksDownloaded(peer, block, filteredBlock, blocksLeft)
+        }
+
+        private fun updateActivityHistory() {
+            val chainHeight = blockChain!!.bestChainHeight
+            val numBlocksDownloaded = chainHeight - lastChainHeight
+            val numTransactionsReceived = transactionsReceived.getAndSet(0)
+
+            // push history
+            activityHistory.add(0, ActivityHistoryEntry(numTransactionsReceived, numBlocksDownloaded))
+
+            // trim
+            while (activityHistory.size > MAX_HISTORY_SIZE) {
+                activityHistory.removeAt(activityHistory.size - 1)
+            }
+            lastChainHeight = chainHeight
         }
 
         override fun doneDownload() {
@@ -727,6 +791,10 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         }
     }
 
+    private class ActivityHistoryEntry(val numTransactionsReceived: Int, val numBlocksDownloaded: Int) {
+        override fun toString(): String = "$numTransactionsReceived / $numBlocksDownloaded"
+    }
+
     private fun backupFileOutputStream(accountIndex: Int): FileOutputStream =
             spvModuleApplication.openFileOutput(backupFileName(accountIndex), Context.MODE_PRIVATE)
 
@@ -749,6 +817,10 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         private val LOG_TAG = Bip44AccountIdleService::class.java.simpleName
         private val BLOCKCHAIN_STATE_BROADCAST_THROTTLE_MS = DateUtils.SECOND_IN_MILLIS
         private val APPWIDGET_THROTTLE_MS = DateUtils.SECOND_IN_MILLIS
+        private val MIN_COLLECT_HISTORY = 2
+        private val IDLE_BLOCK_TIMEOUT_MIN = 2
+        private val IDLE_TRANSACTION_TIMEOUT_MIN = 9
+        private val MAX_HISTORY_SIZE = Math.max(IDLE_TRANSACTION_TIMEOUT_MIN, IDLE_BLOCK_TIMEOUT_MIN)
     }
 
     fun doesWalletAccountExist(accountIndex: Int): Boolean {
