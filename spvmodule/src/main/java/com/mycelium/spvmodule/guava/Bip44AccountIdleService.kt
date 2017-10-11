@@ -584,7 +584,13 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             Log.e(LOG_TAG, "broadcasting failed")
             return
         }
-        broadcastTransaction(transaction, accountIndex)
+        val transactionBroadcast = peerGroup!!.broadcastTransaction(transaction)
+        val future = transactionBroadcast.future()
+
+        // The future will complete when we've seen the transaction ripple across the network to a sufficient degree.
+        // Here, we just wait for it to finish, but we can also attach a listener that'll get run on a background
+        // thread when finished. Or we could just assume the network accepts the transaction and carry on.
+        future.get()
     }
 
     private fun broadcastBlockchainState() {

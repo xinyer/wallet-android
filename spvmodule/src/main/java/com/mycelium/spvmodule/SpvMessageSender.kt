@@ -31,11 +31,13 @@ class SpvMessageSender {
                 ByteBuffer.allocate(/* 1 int */ 4 + transactionBytes.size + /* 1 Long */ 8)
                         .putInt(blockHeight).put(transactionBytes).putLong(it.updateTime.time).array()
             }.toTypedArray()
-            val txos = HashMap<String, ByteArray>()
-            for(tx in transactionSet) {
-                for(txi in tx.inputs) {
-                    txos[txi.outpoint.toString()] = txi.connectedOutput?.bitcoinSerialize() ?: continue
-                    //Log.d(LOG_TAG, "Sharing connected output $txi with ${Hex.encode(txi!!.connectedOutput!!.bitcoinSerialize())}")
+            val connectedOutputs = HashMap<String, ByteArray>()
+            for(transaction in transactionSet) {
+                for(transactionInput in transaction.inputs) {
+                    connectedOutputs[transactionInput.outpoint.toString()] =
+                            transactionInput.connectedOutput?.bitcoinSerialize() ?: continue
+                    //Log.d(LOG_TAG, "Sharing connected output $txi with
+                    // ${Hex.encode(txi!!.connectedOutput!!.bitcoinSerialize())}")
                 }
             }
             val utxos = unspentTransactionOutputSet.associate {
@@ -48,7 +50,7 @@ class SpvMessageSender {
             intent.action = "com.mycelium.wallet.receivedTransactions"
             intent.putExtra("TRANSACTIONS", transactions)
             //dumpTxos(txos)
-            intent.putExtra("CONNECTED_OUTPUTS", txos)
+            intent.putExtra("CONNECTED_OUTPUTS", connectedOutputs)
             intent.putExtra("UTXOS", utxoHM)
             send(communicationManager, intent)
         }
