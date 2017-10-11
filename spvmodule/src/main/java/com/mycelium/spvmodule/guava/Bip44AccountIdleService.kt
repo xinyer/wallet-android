@@ -674,16 +674,13 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             Log.d(LOG_TAG, "checkIfDownloadIsIdling, activityHistory indice is $i, " +
                     "entry.numBlocksDownloaded = ${entry.numBlocksDownloaded}, " +
                     "entry.numTransactionsReceived = ${entry.numTransactionsReceived}")
-            val blocksActive = entry.numBlocksDownloaded > 0 && i <= IDLE_BLOCK_TIMEOUT_MIN
-            val transactionsActive = entry.numTransactionsReceived > 0 && i <= IDLE_TRANSACTION_TIMEOUT_MIN
-
-            if (!blocksActive && !transactionsActive) {
+            if (entry.numBlocksDownloaded == 0) {
                 isIdle = true
                 break
             }
         }
         //We empty the Activity history
-        activityHistory.removeAll(activityHistory)
+        activityHistory.removeAll(activityHistory.clone() as Collection<*>)
 
         // if idling, shutdown service
         if (isIdle) {
@@ -727,12 +724,12 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
             // push history
             activityHistory.add(0, ActivityHistoryEntry(numTransactionsReceived, numBlocksDownloaded))
+            lastChainHeight = chainHeight
 
             // trim
             while (activityHistory.size > MAX_HISTORY_SIZE) {
                 activityHistory.removeAt(activityHistory.size - 1)
             }
-            lastChainHeight = chainHeight
         }
 
         override fun doneDownload() {
@@ -818,10 +815,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         private val LOG_TAG = Bip44AccountIdleService::class.java.simpleName
         private val BLOCKCHAIN_STATE_BROADCAST_THROTTLE_MS = DateUtils.SECOND_IN_MILLIS
         private val APPWIDGET_THROTTLE_MS = DateUtils.SECOND_IN_MILLIS
-        private val MIN_COLLECT_HISTORY = 2
-        private val IDLE_BLOCK_TIMEOUT_MIN = 2
-        private val IDLE_TRANSACTION_TIMEOUT_MIN = 9
-        private val MAX_HISTORY_SIZE = Math.max(IDLE_TRANSACTION_TIMEOUT_MIN, IDLE_BLOCK_TIMEOUT_MIN)
+        private val MAX_HISTORY_SIZE = 10
     }
 
     fun doesWalletAccountExist(accountIndex: Int): Boolean {
