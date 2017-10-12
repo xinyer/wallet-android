@@ -646,13 +646,12 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                 //TODO Investigate why it is stuck while stopping.
                 val listenableFuture = peerGroup!!.stopAsync()
                 listenableFuture.addListener(
-                        Runnable { Log.d(LOG_TAG, "walletEventListener, checkIfFirstTransaction,will try to " +
+                        Runnable { Log.d(LOG_TAG, "walletEventListener, checkIfFirstTransaction, will try to " +
                                 "addWalletAccountWithExtendedKey with newAccountIndex = $newAccountIndex")
                             spvModuleApplication.addWalletAccountWithExtendedKey(bip39Passphrase,
                                     walletAccount.lastBlockSeenTimeSecs + TimeUnit.HOURS.toSeconds(4),
                                     newAccountIndex) },
                         Executors.newSingleThreadExecutor())
-
             }
         }
 
@@ -665,7 +664,8 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     private fun notifyTransactions(transactions: Set<Transaction>, utxos: Set<TransactionOutput> ) {
         if (!transactions.isEmpty()) {
             // send the new transaction and the *complete* utxo set of the wallet
-            SpvMessageSender.sendTransactions(CommunicationManager.getInstance(spvModuleApplication), transactions, utxos)
+            SpvMessageSender.sendTransactions(CommunicationManager.getInstance(spvModuleApplication),
+                    transactions, utxos)
         }
     }
 
@@ -675,6 +675,9 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         Log.d(LOG_TAG, "checkIfDownloadIsIdling, activityHistory.size = ${activityHistory.size}")
         // determine if block and transaction activity is idling
         var isIdle = false
+        if(activityHistory.size == 0) {
+            isIdle = true
+        }
         for (i in activityHistory.indices) {
             val entry = activityHistory[i]
             Log.d(LOG_TAG, "checkIfDownloadIsIdling, activityHistory indice is $i, " +
