@@ -77,7 +77,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                 //We do that every ten minutes
                 checkImpediments()
             }
-            if(counter.rem(2) == 0 || counter == 1) {
+            if(counter.rem(2) == 0) {
                 //We do that every two minutes
                 checkIfDownloadIsIdling()
             }
