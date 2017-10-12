@@ -59,7 +59,8 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     private lateinit var blockStore : BlockStore
     private var bip39Passphrase : ArrayList<String> = ArrayList(sharedPreferences.getStringSet(
             spvModuleApplication.getString(R.string.account_bip39Passphrase_stringset), emptySet()))
-    private var counter: Int = 0
+    private var counterCheckImpediments: Int = 0
+    private var countercheckIfDownloadIsIdling: Int = 0
 
     override fun shutDown() {
         Log.d(LOG_TAG, "shutDown")
@@ -72,12 +73,13 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     override fun runOneIteration() {
         Log.d(LOG_TAG, "runOneIteration")
         if(walletsAccountsMap.isNotEmpty()) {
-            counter++
-            if(counter.rem(10) == 0 || counter == 1) {
+            counterCheckImpediments++
+            countercheckIfDownloadIsIdling++
+            if(counterCheckImpediments.rem(10) == 0 || counterCheckImpediments == 1) {
                 //We do that every ten minutes
                 checkImpediments()
             }
-            if(counter.rem(2) == 0) {
+            if(countercheckIfDownloadIsIdling.rem(2) == 0) {
                 //We do that every two minutes
                 checkIfDownloadIsIdling()
             }
@@ -261,6 +263,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             }
         }
         blockStore.close()
+        Log.d(LOG_TAG, "stopPeergroup DONE")
     }
 
     @Synchronized
@@ -680,9 +683,9 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         }
         for (i in activityHistory.indices) {
             val entry = activityHistory[i]
-            Log.d(LOG_TAG, "checkIfDownloadIsIdling, activityHistory indice is $i, " +
+           /* Log.d(LOG_TAG, "checkIfDownloadIsIdling, activityHistory indice is $i, " +
                     "entry.numBlocksDownloaded = ${entry.numBlocksDownloaded}, " +
-                    "entry.numTransactionsReceived = ${entry.numTransactionsReceived}")
+                    "entry.numTransactionsReceived = ${entry.numTransactionsReceived}") */
             if (entry.numBlocksDownloaded == 0) {
                 isIdle = true
                 break
@@ -695,6 +698,8 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         if (isIdle) {
             Log.i(LOG_TAG, "Idling is detected, restart the $LOG_TAG")
             spvModuleApplication.restartBip44AccountIdleService()
+        } else {
+            countercheckIfDownloadIsIdling = 0
         }
     }
 

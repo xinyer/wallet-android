@@ -358,7 +358,8 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
                    output.value, output.script.getScriptBytes(), output.script.isCoinBase()));
             }
          }
-         handleNewExternalTransactionsInt(Lists.newArrayList(new TransactionExApi(transactionEx)), fetchMissingOutputs);
+         handleNewExternalTransactionsInt(Lists.newArrayList(new TransactionExApi(transactionEx)),
+             fetchMissingOutputs);
       } catch (WapiException | TransactionParsingException e) {
          throw new RuntimeException(e);
       }
