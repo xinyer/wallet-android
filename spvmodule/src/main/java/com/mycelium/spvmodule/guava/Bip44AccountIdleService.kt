@@ -117,16 +117,22 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         if(BuildConfig.DEBUG) {
             Log.d(LOG_TAG, "initializeWalletsAccounts, number of accounts = ${accountIndexStrings.size}")
         }
+        var shouldInitializeCheckpoint: Boolean = true
         for (accountIndexString in accountIndexStrings) {
             val accountIndex: Int = accountIndexString.toInt()
             val walletAccount = getAccountWallet(accountIndex)
             if (walletAccount != null) {
                 walletsAccountsMap[accountIndex] = walletAccount
+                if(walletAccount.lastBlockSeenHeight >= 0 && shouldInitializeCheckpoint == true) {
+                    shouldInitializeCheckpoint = false
+                }
             }
         }
-        val earliestKeyCreationTime = initializeEarliestKeyCreationTime()
-        if (earliestKeyCreationTime > 0L) {
-            initializeCheckpoint(earliestKeyCreationTime)
+        if (shouldInitializeCheckpoint) {
+            val earliestKeyCreationTime = initializeEarliestKeyCreationTime()
+            if(earliestKeyCreationTime > 0L) {
+                initializeCheckpoint(earliestKeyCreationTime)
+            }
         }
         blockChain = BlockChain(Constants.NETWORK_PARAMETERS, walletsAccountsMap.values.toList(),
                 blockStore)
@@ -652,7 +658,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                         Runnable { Log.d(LOG_TAG, "walletEventListener, checkIfFirstTransaction, will try to " +
                                 "addWalletAccountWithExtendedKey with newAccountIndex = $newAccountIndex")
                             spvModuleApplication.addWalletAccountWithExtendedKey(bip39Passphrase,
-                                    walletAccount.lastBlockSeenTimeSecs + TimeUnit.HOURS.toSeconds(4),
+                                    walletAccount.lastBlockSeenTimeSecs + 1,
                                     newAccountIndex) },
                         Executors.newSingleThreadExecutor())
             }
