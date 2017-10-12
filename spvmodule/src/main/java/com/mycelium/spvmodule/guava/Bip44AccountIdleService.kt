@@ -649,7 +649,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                         Runnable { Log.d(LOG_TAG, "walletEventListener, checkIfFirstTransaction,will try to " +
                                 "addWalletAccountWithExtendedKey with newAccountIndex = $newAccountIndex")
                             spvModuleApplication.addWalletAccountWithExtendedKey(bip39Passphrase,
-                                    walletAccount.lastBlockSeenTimeSecs + 1,
+                                    walletAccount.lastBlockSeenTimeSecs + TimeUnit.HOURS.toSeconds(4),
                                     newAccountIndex) },
                         Executors.newSingleThreadExecutor())
 
