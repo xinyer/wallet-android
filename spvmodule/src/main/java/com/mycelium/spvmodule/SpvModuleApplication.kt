@@ -17,6 +17,7 @@ import org.bitcoinj.crypto.LinuxSecureRandom
 import org.bitcoinj.utils.Threading
 import org.bitcoinj.wallet.SendRequest
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 class SpvModuleApplication : Application(), ModuleMessageReceiver {
     var configuration: Configuration? = null
@@ -87,8 +88,9 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     }
 
     internal fun restartBip44AccountIdleService() {
+        Log.d(LOG_TAG, "restartBip44AccountIdleService")
         bip44AccountIdleService.stopAsync()
-        bip44AccountIdleService.awaitTerminated()
+        bip44AccountIdleService.awaitTerminated(1, TimeUnit.MINUTES)
         bip44AccountIdleService = Bip44AccountIdleService()
         bip44AccountIdleService.startAsync()
     }
