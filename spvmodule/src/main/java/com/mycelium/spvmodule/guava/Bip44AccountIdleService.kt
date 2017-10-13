@@ -672,33 +672,35 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
     private fun checkIfDownloadIsIdling() {
         Log.d(LOG_TAG, "checkIfDownloadIsIdling, activityHistory.size = ${activityHistory.size}")
-        // determine if block and transaction activity is idling
-        var isIdle = false
-        if(activityHistory.size == 0) {
-            isIdle = true
-        }
-        for (i in activityHistory.indices) {
-            val entry = activityHistory[i]
-           /* Log.d(LOG_TAG, "checkIfDownloadIsIdling, activityHistory indice is $i, " +
+        if((downloadProgressTracker != null && !downloadProgressTracker!!.future.isDone)) {
+            // determine if block and transaction activity is idling
+            var isIdle = false
+            if (activityHistory.size == 0) {
+                isIdle = true
+            }
+            for (i in activityHistory.indices) {
+                val entry = activityHistory[i]
+                /* Log.d(LOG_TAG, "checkIfDownloadIsIdling, activityHistory indice is $i, " +
                     "entry.numBlocksDownloaded = ${entry.numBlocksDownloaded}, " +
                     "entry.numTransactionsReceived = ${entry.numTransactionsReceived}") */
-            if (entry.numBlocksDownloaded == 0) {
-                isIdle = true
-                break
+                if (entry.numBlocksDownloaded == 0) {
+                    isIdle = true
+                    break
+                }
             }
-        }
-        //We empty the Activity history
-        activityHistory.removeAll(activityHistory.clone() as Collection<*>)
+            //We empty the Activity history
+            activityHistory.removeAll(activityHistory.clone() as Collection<*>)
 
-        // if idling, shutdown service
-        if (isIdle) {
-            Log.i(LOG_TAG, "Idling is detected, restart the $LOG_TAG")
-            // AbstractScheduledService#shutDown is guaranteed not to run concurrently
-            // with {@link AbstractScheduledService#runOneIteration}. Se we restart the service in
-            // an AsyncTask
-            AsyncTask.execute({ spvModuleApplication.restartBip44AccountIdleService() })
-        } else {
-            countercheckIfDownloadIsIdling = 0
+            // if idling, shutdown service
+            if (isIdle) {
+                Log.i(LOG_TAG, "Idling is detected, restart the $LOG_TAG")
+                // AbstractScheduledService#shutDown is guaranteed not to run concurrently
+                // with {@link AbstractScheduledService#runOneIteration}. Se we restart the service in
+                // an AsyncTask
+                AsyncTask.execute({ spvModuleApplication.restartBip44AccountIdleService() })
+            } else {
+                countercheckIfDownloadIsIdling = 0
+            }
         }
     }
 
