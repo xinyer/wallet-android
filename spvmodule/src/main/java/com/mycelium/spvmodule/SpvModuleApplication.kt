@@ -89,11 +89,11 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
 
     internal fun restartBip44AccountIdleService() {
         Log.d(LOG_TAG, "restartBip44AccountIdleService, stopAsync")
-        bip44AccountIdleService.stopAsync()
-        Log.d(LOG_TAG, "restartBip44AccountIdleService, awaitTerminated")
         try {
-            bip44AccountIdleService.awaitTerminated()
-        } catch (e : Exception) {
+            val service = bip44AccountIdleService.stopAsync()
+            Log.d(LOG_TAG, "restartBip44AccountIdleService, awaitTerminated")
+            service.awaitTerminated()
+        } catch (e : Throwable) {
             Log.e(LOG_TAG, e.localizedMessage, e)
         } finally {
             Log.d(LOG_TAG, "restartBip44AccountIdleService, constructor")

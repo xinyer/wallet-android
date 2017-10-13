@@ -90,6 +90,9 @@ dependencies {
     compile project(includePrefix +':spvmodulecontract')
     compile project(includePrefix +':myceliummodularizationtools')
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    compile(guavaArtifact) {
+        force = true
+    }
 }
 
 if (project.hasProperty('testKeyStore') &&
