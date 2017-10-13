@@ -74,7 +74,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     }
 
     @Synchronized
-    fun addWalletAccountWithExtendedKey(bip39Passphrase: ArrayList<String>, creationTimeSeconds: Long,
+    fun addWalletAccountWithExtendedKey(bip39Passphrase: List<String>, creationTimeSeconds: Long,
                                         accountIndex: Int) {
         Log.d(LOG_TAG, "addWalletAccountWithExtendedKey, accountIndex = $accountIndex, " +
                 "doesWalletAccountExist for accountIndex ${accountIndex + 3} " +

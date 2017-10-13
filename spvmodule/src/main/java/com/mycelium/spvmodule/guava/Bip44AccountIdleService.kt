@@ -32,6 +32,7 @@ import java.io.*
 import java.net.InetSocketAddress
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentSkipListSet
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -49,16 +50,16 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
     private val spvModuleApplication = SpvModuleApplication.getApplication()
     private val sharedPreferences:SharedPreferences = spvModuleApplication.getSharedPreferences(
-                spvModuleApplication.getString(R.string.sharedpreferences_file_name), Context.MODE_PRIVATE)
+            SHARED_PREFERENCES_FILE_NAME, Context.MODE_PRIVATE)
     //Read list of accounts indexes
-    private val accountIndexStrings: MutableSet<String> = sharedPreferences.getStringSet(
-            spvModuleApplication.getString(R.string.account_index_stringset), mutableSetOf())
+    private val accountIndexStrings: ConcurrentSkipListSet<String> = ConcurrentSkipListSet<String>().apply {
+        addAll(sharedPreferences.getStringSet(ACCOUNT_INDEX_STRING_SET_PREF, emptySet()))
+    }
     private val configuration = spvModuleApplication.configuration!!
     private val peerConnectivityListener: PeerConnectivityListener = PeerConnectivityListener()
     private val notificationManager = spvModuleApplication.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     private lateinit var blockStore : BlockStore
-    private var bip39Passphrase : ArrayList<String> = ArrayList(sharedPreferences.getStringSet(
-            spvModuleApplication.getString(R.string.account_bip39Passphrase_stringset), emptySet()))
+    private var bip39Passphrase = sharedPreferences.getString(PASSPHRASE_PREF, "").split(" ")
     private var counterCheckImpediments: Int = 0
     private var countercheckIfDownloadIsIdling: Int = 0
 
@@ -109,7 +110,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             it.addChangeEventListener(Threading.SAME_THREAD, walletEventListener)
             it.addCoinsReceivedEventListener(Threading.SAME_THREAD, walletEventListener)
             it.addCoinsSentEventListener(Threading.SAME_THREAD, walletEventListener)
-
         }
     }
 
@@ -117,7 +117,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         if(BuildConfig.DEBUG) {
             Log.d(LOG_TAG, "initializeWalletsAccounts, number of accounts = ${accountIndexStrings.size}")
         }
-        var shouldInitializeCheckpoint: Boolean = true
+        var shouldInitializeCheckpoint = true
         for (accountIndexString in accountIndexStrings) {
             val accountIndex: Int = accountIndexString.toInt()
             val walletAccount = getAccountWallet(accountIndex)
@@ -518,15 +518,13 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
 
     @Synchronized
-    fun addWalletAccount(bip39Passphrase: ArrayList<String>, creationTimeSeconds: Long,
+    fun addWalletAccount(bip39Passphrase: List<String>, creationTimeSeconds: Long,
                          accountIndex: Int) {
         Log.d(LOG_TAG, "addWalletAccount, accountIndex = $accountIndex," +
                 " creationTimeSeconds = $creationTimeSeconds")
         this.bip39Passphrase = bip39Passphrase
         sharedPreferences.edit()
-                .putStringSet(
-                        spvModuleApplication.getString(R.string.account_bip39Passphrase_stringset),
-                        bip39Passphrase.toSet())
+                .putString(PASSPHRASE_PREF, bip39Passphrase.joinToString(" "))
                 .apply()
         if (accountIndexStrings.size == 0) {
             var i = 0
@@ -546,14 +544,9 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             //Should not happen.
             createOneAccount(bip39Passphrase, creationTimeSeconds, accountIndex)
         }
-        /*
-        val broadcast = Intent(SpvModuleApplication.ACTION_WALLET_REFERENCE_CHANGED) //TODO Investigate utility of this.
-        broadcast.`package` = packageName
-        LocalBroadcastManager.getInstance(this).sendBroadcast(broadcast)
-        */
     }
 
-    private fun createOneAccount(bip39Passphrase: ArrayList<String>, creationTimeSeconds: Long, accountIndex: Int) {
+    private fun createOneAccount(bip39Passphrase: List<String>, creationTimeSeconds: Long, accountIndex: Int) {
         Log.d(LOG_TAG, "createOneAccount, accountIndex = $accountIndex," +
                 " creationTimeSeconds = $creationTimeSeconds")
         val walletAccount = Wallet.fromSeed(
@@ -564,7 +557,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         walletAccount.keyChainGroupLookaheadSize = 20
         accountIndexStrings.add(accountIndex.toString())
         sharedPreferences.edit()
-                .putStringSet(spvModuleApplication.getString(R.string.account_index_stringset), accountIndexStrings)
+                .putStringSet(ACCOUNT_INDEX_STRING_SET_PREF, accountIndexStrings)
                 .apply()
         configuration.maybeIncrementBestChainHeightEver(walletAccount.lastBlockSeenHeight)
 
@@ -836,6 +829,9 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         private val BLOCKCHAIN_STATE_BROADCAST_THROTTLE_MS = DateUtils.SECOND_IN_MILLIS
         private val APPWIDGET_THROTTLE_MS = DateUtils.SECOND_IN_MILLIS
         private val MAX_HISTORY_SIZE = 10
+        private val SHARED_PREFERENCES_FILE_NAME = "com.mycelium.spvmodule.PREFERENCE_FILE_KEY"
+        private val ACCOUNT_INDEX_STRING_SET_PREF = "account_index_stringset"
+        private val PASSPHRASE_PREF = "bip39Passphrase"
     }
 
     fun doesWalletAccountExist(accountIndex: Int): Boolean {
