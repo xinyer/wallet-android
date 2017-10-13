@@ -88,11 +88,15 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     }
 
     internal fun restartBip44AccountIdleService() {
-        Log.d(LOG_TAG, "restartBip44AccountIdleService")
+        Log.d(LOG_TAG, "restartBip44AccountIdleService, stopAsync")
         bip44AccountIdleService.stopAsync()
+        Log.d(LOG_TAG, "restartBip44AccountIdleService, awaitTerminated")
         bip44AccountIdleService.awaitTerminated(1, TimeUnit.MINUTES)
+        Log.d(LOG_TAG, "restartBip44AccountIdleService, constructor")
         bip44AccountIdleService = Bip44AccountIdleService()
+        Log.d(LOG_TAG, "restartBip44AccountIdleService, startAsync")
         bip44AccountIdleService.startAsync()
+        Log.d(LOG_TAG, "restartBip44AccountIdleService, DONE")
     }
 
     fun broadcastTransaction(tx: Transaction, accountIndex: Int) {
