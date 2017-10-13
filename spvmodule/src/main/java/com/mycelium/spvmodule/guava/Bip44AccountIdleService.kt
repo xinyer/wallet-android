@@ -693,7 +693,10 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         // if idling, shutdown service
         if (isIdle) {
             Log.i(LOG_TAG, "Idling is detected, restart the $LOG_TAG")
-            spvModuleApplication.restartBip44AccountIdleService()
+            // AbstractScheduledService#shutDown is guaranteed not to run concurrently
+            // with {@link AbstractScheduledService#runOneIteration}. Se we restart the service in
+            // an AsyncTask
+            AsyncTask.execute({ spvModuleApplication.restartBip44AccountIdleService() })
         } else {
             countercheckIfDownloadIsIdling = 0
         }
