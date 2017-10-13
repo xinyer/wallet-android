@@ -91,12 +91,17 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         Log.d(LOG_TAG, "restartBip44AccountIdleService, stopAsync")
         bip44AccountIdleService.stopAsync()
         Log.d(LOG_TAG, "restartBip44AccountIdleService, awaitTerminated")
-        bip44AccountIdleService.awaitTerminated(1, TimeUnit.MINUTES)
-        Log.d(LOG_TAG, "restartBip44AccountIdleService, constructor")
-        bip44AccountIdleService = Bip44AccountIdleService()
-        Log.d(LOG_TAG, "restartBip44AccountIdleService, startAsync")
-        bip44AccountIdleService.startAsync()
-        Log.d(LOG_TAG, "restartBip44AccountIdleService, DONE")
+        try {
+            bip44AccountIdleService.awaitTerminated(2, TimeUnit.MINUTES)
+        } catch (e : Exception) {
+            Log.e(LOG_TAG, e.localizedMessage, e)
+        } finally {
+            Log.d(LOG_TAG, "restartBip44AccountIdleService, constructor")
+            bip44AccountIdleService = Bip44AccountIdleService()
+            Log.d(LOG_TAG, "restartBip44AccountIdleService, startAsync")
+            bip44AccountIdleService.startAsync()
+            Log.d(LOG_TAG, "restartBip44AccountIdleService, DONE")
+        }
     }
 
     fun broadcastTransaction(tx: Transaction, accountIndex: Int) {
