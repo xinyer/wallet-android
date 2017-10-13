@@ -92,7 +92,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         bip44AccountIdleService.stopAsync()
         Log.d(LOG_TAG, "restartBip44AccountIdleService, awaitTerminated")
         try {
-            bip44AccountIdleService.awaitTerminated(2, TimeUnit.MINUTES)
+            bip44AccountIdleService.awaitTerminated()
         } catch (e : Exception) {
             Log.e(LOG_TAG, e.localizedMessage, e)
         } finally {
