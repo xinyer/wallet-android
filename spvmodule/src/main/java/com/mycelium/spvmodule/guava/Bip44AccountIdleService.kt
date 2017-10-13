@@ -18,6 +18,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.spvmodule.*
 import org.bitcoinj.core.*
+import org.bitcoinj.core.Context.propagate
 import org.bitcoinj.core.listeners.DownloadProgressTracker
 import org.bitcoinj.core.listeners.PeerConnectedEventListener
 import org.bitcoinj.core.listeners.PeerDisconnectedEventListener
@@ -75,6 +76,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     override fun runOneIteration() {
         Log.d(LOG_TAG, "runOneIteration")
         if(walletsAccountsMap.isNotEmpty()) {
+            propagate(Constants.CONTEXT)
             counterCheckImpediments++
             countercheckIfDownloadIsIdling++
             if(counterCheckImpediments.rem(10) == 0 || counterCheckImpediments == 1) {
@@ -90,6 +92,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
     override fun startUp() {
         Log.d(LOG_TAG, "startUp")
+        propagate(Constants.CONTEXT)
         val intentFilter = IntentFilter().apply {
             addAction(ConnectivityManager.CONNECTIVITY_ACTION)
             addAction(Intent.ACTION_DEVICE_STORAGE_LOW)
@@ -201,6 +204,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             @Throws(PeerDiscoveryException::class)
             override fun getPeers(services: Long, timeoutValue: Long, timeoutUnit: TimeUnit)
                     : Array<InetSocketAddress> {
+                propagate(Constants.CONTEXT)
                 val peers = LinkedList<InetSocketAddress>()
 
                 var needsTrimPeersWorkaround = false
@@ -241,6 +245,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
     private fun stopPeergroup() {
         Log.d(LOG_TAG, "stopPeergroup")
+        propagate(Constants.CONTEXT)
         if(peerGroup != null) {
             if(peerGroup!!.isRunning) {
                 peerGroup!!.stopAsync()
@@ -445,11 +450,13 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         override fun onPeerDisconnected(peer: Peer, peerCount: Int) = onPeerChanged(peerCount)
 
         private fun onPeerChanged(peerCount: Int) {
+            propagate(Constants.CONTEXT)
             this@Bip44AccountIdleService.peerCount = peerCount
             changed()
         }
 
         override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String) {
+            propagate(Constants.CONTEXT)
             if (Configuration.PREFS_KEY_CONNECTIVITY_NOTIFICATION == key) {
                 changed()
             }
@@ -458,6 +465,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         private fun changed() {
             if(!stopped.get()) {
                 AsyncTask.execute {
+                    propagate(Constants.CONTEXT)
                     this@Bip44AccountIdleService.changed()
                 }
             }
@@ -523,6 +531,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                          accountIndex: Int) {
         Log.d(LOG_TAG, "addWalletAccount, accountIndex = $accountIndex," +
                 " creationTimeSeconds = $creationTimeSeconds")
+        propagate(Constants.CONTEXT)
         this.bip39Passphrase = bip39Passphrase
         sharedPreferences.edit()
                 .putString(PASSPHRASE_PREF, bip39Passphrase.joinToString(" "))
@@ -550,6 +559,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     private fun createOneAccount(bip39Passphrase: List<String>, creationTimeSeconds: Long, accountIndex: Int) {
         Log.d(LOG_TAG, "createOneAccount, accountIndex = $accountIndex," +
                 " creationTimeSeconds = $creationTimeSeconds")
+        propagate(Constants.CONTEXT)
         val walletAccount = Wallet.fromSeed(
                 Constants.NETWORK_PARAMETERS,
                 DeterministicSeed(bip39Passphrase, null, "", creationTimeSeconds),
@@ -567,6 +577,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
     @Synchronized
     fun broadcastTransaction(transaction: Transaction, accountIndex: Int) {
+        propagate(Constants.CONTEXT)
         val wallet = walletsAccountsMap[accountIndex]!!
         wallet.commitTx(transaction)
         wallet.saveToFile(walletFile(accountIndex))
@@ -576,6 +587,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     fun broadcastTransaction(sendRequest: SendRequest, accountIndex: Int) {
+        propagate(Constants.CONTEXT)
         walletsAccountsMap[accountIndex]?.completeTx(sendRequest)
         broadcastTransaction(sendRequest.tx, accountIndex)
     }
