@@ -671,8 +671,8 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     private val activityHistory = LinkedList<ActivityHistoryEntry>()
 
     private fun checkIfDownloadIsIdling() {
-        Log.d(LOG_TAG, "checkIfDownloadIsIdling, activityHistory.size = ${activityHistory.size}")
         if((downloadProgressTracker != null && !downloadProgressTracker!!.future.isDone)) {
+            Log.d(LOG_TAG, "checkIfDownloadIsIdling, activityHistory.size = ${activityHistory.size}")
             // determine if block and transaction activity is idling
             var isIdle = false
             if (activityHistory.size == 0) {
