@@ -96,6 +96,9 @@ class CommunicationManager private constructor(val context: Context) {
         saveSessions()
     }
 
+    /**
+     * @return if the pairing was successful or not
+     */
     fun requestPair(packageName: String): Boolean {
         Log.d(LOG_TAG, "requestPair")
         var success = false
@@ -186,18 +189,6 @@ class CommunicationManager private constructor(val context: Context) {
         }
     }
 
-    companion object {
-        private var INSTANCE: CommunicationManager? = null
-
-        @Synchronized
-        fun getInstance(context: Context): CommunicationManager {
-            if (INSTANCE == null) {
-                INSTANCE = CommunicationManager(context)
-            }
-            return INSTANCE!!
-        }
-    }
-
     fun send(receivingPackage: String, intent: Intent) {
         if(!trustedPackages.containsKey(receivingPackage)) {
             Log.w(LOG_TAG, "Can't send to not trusted package $receivingPackage")
@@ -209,6 +200,19 @@ class CommunicationManager private constructor(val context: Context) {
         serviceIntent.component = ComponentName(receivingPackage, MessageReceiver::class.qualifiedName)
         context.startService(serviceIntent)
 
+    }
+
+    companion object {
+        private var INSTANCE: CommunicationManager? = null
+
+        @Synchronized
+        @JvmStatic
+        fun getInstance(context: Context): CommunicationManager {
+            if (INSTANCE == null) {
+                INSTANCE = CommunicationManager(context)
+            }
+            return INSTANCE!!
+        }
     }
 }
 

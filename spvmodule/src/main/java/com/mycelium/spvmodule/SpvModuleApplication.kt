@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.os.StrictMode
 import android.preference.PreferenceManager
 import android.util.Log
+import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.modularizationtools.ModuleMessageReceiver
 import com.mycelium.spvmodule.guava.Bip44AccountIdleService
 import org.bitcoinj.core.*
@@ -67,6 +68,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         //TODO Never called, investigate if still useful.
         blockchainServiceResetBlockchainIntent = Intent(SpvService.ACTION_ADD_ACCOUNT, null, this, SpvService::class.java)
         bip44AccountIdleService = Bip44AccountIdleService().startAsync() as Bip44AccountIdleService
+        CommunicationManager.getInstance(this).requestPair(getMbwModuleName())
     }
 
     fun stopBlockchainService() {
