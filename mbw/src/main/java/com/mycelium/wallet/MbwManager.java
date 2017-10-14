@@ -1431,7 +1431,7 @@ public class MbwManager implements WalletManager.TransactionFetcher {
    public void getTransactions(int accountId) {
       Intent service = IntentContract.ReceiveTransactions.createIntent(accountId);
       Log.d(LOG_TAG, "getTransactions: Intent is " + service + ", account index is : " + accountId);
-      CommunicationManager.Companion.getInstance(_applicationContext)
+      CommunicationManager.getInstance(_applicationContext)
           .send(WalletApplication.getSpvModuleName(), service);
    }
 }

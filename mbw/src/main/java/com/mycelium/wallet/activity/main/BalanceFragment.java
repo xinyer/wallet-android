@@ -206,8 +206,8 @@ public class BalanceFragment extends Fragment {
       if(_mbwManager.useSpvModule() && selectedAccount instanceof Bip44Account) {
          int accountIndex = ((Bip44Account) selectedAccount).getAccountIndex();
          Intent waitingIntent = IntentContract.WaitingIntents.createIntent(accountIndex);
-         CommunicationManager communicationManager = CommunicationManager.Companion.getInstance(getActivity());
-         communicationManager.send(WalletApplication.getSpvModuleName(), waitingIntent);
+         CommunicationManager.getInstance(getActivity())
+                 .send(WalletApplication.getSpvModuleName(), waitingIntent);
       }
 
       // Hide spend button if not canSpend()

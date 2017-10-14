@@ -13,16 +13,14 @@ import com.mycelium.bitcoinaccountmodule.providers.data.DatabaseHelper
 import com.mycelium.bitcoinaccountmodule.providers.BitcoinAccountContract.Address
 import com.mycelium.bitcoinaccountmodule.providers.BitcoinAccountContract.Transaction
 
-import com.mycelium.bitcoinaccountmodule.providers.BitcoinAccountContract.Companion.AUTHORITY
 import com.mycelium.modularizationtools.CommunicationManager
-
 
 class BitcoinAccountContentProvider : ContentProvider() {
     private var dbHelper: DatabaseHelper? = null
     private var signatureChecker: CommunicationManager? = null
 
     override fun onCreate(): Boolean {
-        signatureChecker = CommunicationManager.Companion.getInstance(context)
+        signatureChecker = CommunicationManager.getInstance(context)
         dbHelper = DatabaseHelper(context!!)
         return true
     }

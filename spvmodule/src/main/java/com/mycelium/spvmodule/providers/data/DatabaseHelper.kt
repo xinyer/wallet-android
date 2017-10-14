@@ -4,8 +4,6 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.util.Log
-import com.mycelium.spvmodule.Constants.Companion.TAG
-import com.mycelium.spvmodule.providers.BlockchainContract
 
 import com.mycelium.spvmodule.providers.data.DatabaseContract.Address
 import com.mycelium.spvmodule.providers.data.DatabaseContract.Transaction

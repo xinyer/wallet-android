@@ -5,7 +5,6 @@ import android.content.ContentValues
 import android.database.Cursor
 import android.net.Uri
 import android.util.Log
-import com.mycelium.modularizationtools.Constants.Companion.TAG
 
 /**
  * This ContentProvider serves to authenticate one app against another.

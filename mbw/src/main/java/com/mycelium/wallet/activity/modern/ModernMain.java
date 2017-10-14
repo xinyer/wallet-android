@@ -308,7 +308,7 @@ public class ModernMain extends ActionBarActivity {
       supportInvalidateOptionsMenu();
       // remove the transaction notification (if exists)
       NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-      nm.cancel(MbwMessageReceiver.Companion.getTRANSACTION_NOTIFICATION_ID());
+      nm.cancel(MbwMessageReceiver.getTRANSACTION_NOTIFICATION_ID());
       super.onResume();
    }
 

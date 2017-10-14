@@ -11,22 +11,17 @@ import android.view.ViewGroup
 import android.widget.CursorAdapter
 import android.widget.SimpleCursorAdapter
 import android.widget.TextView
-import com.mycelium.spvmodule.Constants.Companion.TAG
 
 import com.mycelium.spvmodule.providers.BlockchainContract
 
 class AddressListFragment : ListFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
-        val context = activity
-        val contentResolver = context.contentResolver
-        val cursor = contentResolver.query(BlockchainContract.Address.CONTENT_URI(activity.packageName),
-                AddressesAdapter.fromColumns, null, null, null)
-        val adapter = AddressesAdapter(context, cursor)
-
-        /** Setting the list adapter for the ListFragment  */
-        listAdapter = adapter
-
+        activity.contentResolver.query(BlockchainContract.Address.CONTENT_URI(activity.packageName),
+                AddressesAdapter.fromColumns, null, null, null).use { cursor ->
+            /** Setting the list adapter for the ListFragment  */
+            listAdapter = AddressesAdapter(context, cursor)
+        }
         return super.onCreateView(inflater, container, savedInstanceState)
     }
 

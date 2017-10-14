@@ -5,7 +5,6 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.util.Log
-import com.mycelium.bitcoinaccountmodule.Constants.Companion.TAG
 
 import com.mycelium.bitcoinaccountmodule.providers.data.DatabaseContract.Address
 import com.mycelium.bitcoinaccountmodule.providers.data.DatabaseContract.Transaction

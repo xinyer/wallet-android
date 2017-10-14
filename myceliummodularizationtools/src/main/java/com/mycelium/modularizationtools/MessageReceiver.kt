@@ -1,12 +1,8 @@
 package com.mycelium.modularizationtools
 
 import android.app.IntentService
-import android.app.Service
 import android.content.Intent
-import android.os.Build
-import android.os.IBinder
 import android.util.Log
-import com.mycelium.modularizationtools.Constants.Companion.TAG
 
 class MessageReceiver : IntentService("MessageReceiverThread") {
     private val LOG_TAG: String? = this.javaClass.canonicalName

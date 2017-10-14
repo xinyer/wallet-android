@@ -13,7 +13,6 @@ import android.view.ViewGroup
 import android.widget.CursorAdapter
 import android.widget.SimpleCursorAdapter
 import android.widget.TextView
-import com.mycelium.spvmodule.Constants.Companion.TAG
 
 import com.mycelium.spvmodule.providers.BlockchainContract
 
@@ -26,23 +25,23 @@ class TransactionListFragment : ListFragment() {
         val cr = context.contentResolver
         val uri = BlockchainContract.Transaction.CONTENT_URI(context.packageName)
         Log.d(LOG_TAG, "BlockchainContract.Transaction URI is ${uri}")
-        val cursor = cr.query(BlockchainContract.Transaction.CONTENT_URI(context.packageName), TransactionsAdapter.fromColumns, null, null, null)
-
-        cr.registerContentObserver(BlockchainContract.Transaction.CONTENT_URI(context.packageName), true, object : ContentObserver(null) {
-            override fun onChange(selfChange: Boolean, uri: Uri?) {
-                activity.runOnUiThread {
-                    // val cursor2 = cr.query(BlockchainContract.Transaction.CONTENT_URI(context.packageName), TransactionsAdapter.fromColumns, null, null, null)
-                    // adapter.swapCursor(cursor);
-                    Log.d(LOG_TAG, "We actually got notified of a transactions change.")
+        cr.query(BlockchainContract.Transaction.CONTENT_URI(context.packageName), TransactionsAdapter.fromColumns, null, null, null).use { cursor ->
+            cr.registerContentObserver(BlockchainContract.Transaction.CONTENT_URI(context.packageName), true, object : ContentObserver(null) {
+                override fun onChange(selfChange: Boolean, uri: Uri?) {
+                    activity.runOnUiThread {
+                        // val cursor2 = cr.query(BlockchainContract.Transaction.CONTENT_URI(context.packageName), TransactionsAdapter.fromColumns, null, null, null)
+                        // adapter.swapCursor(cursor);
+                        Log.d(LOG_TAG, "We actually got notified of a transactions change.")
+                    }
                 }
-            }
 
-            override fun onChange(selfChange: Boolean) {
-                onChange(selfChange, null)
-            }
-        })
-        // cursor.setNotificationUri(cr, Transactions.CONTENT_URI);
-        listAdapter = TransactionsAdapter(context, cursor)
+                override fun onChange(selfChange: Boolean) {
+                    onChange(selfChange, null)
+                }
+            })
+            // cursor.setNotificationUri(cr, Transactions.CONTENT_URI);
+            listAdapter = TransactionsAdapter(context, cursor)
+        }
 
         return super.onCreateView(inflater, container, savedInstanceState)
     }

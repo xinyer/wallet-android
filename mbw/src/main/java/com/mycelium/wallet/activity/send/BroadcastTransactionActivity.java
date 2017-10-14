@@ -128,9 +128,8 @@ public class BroadcastTransactionActivity extends Activity {
                int accountIndex = ((com.mycelium.wapi.wallet.bip44.Bip44Account) _mbwManager.getSelectedAccount()).getAccountIndex();
                Intent intent = IntentContract.BroadcastTransaction.createIntent(
                        accountIndex, _transaction.toBytes());
-               CommunicationManager communicationManager =
-                   CommunicationManager.Companion.getInstance(BroadcastTransactionActivity.this);
-               communicationManager.send(WalletApplication.getSpvModuleName(), intent);
+               CommunicationManager.getInstance(BroadcastTransactionActivity.this)
+                       .send(WalletApplication.getSpvModuleName(), intent);
                return WalletAccount.BroadcastResult.SUCCESS;
             } else {
                return _account.broadcastTransaction(_transaction);

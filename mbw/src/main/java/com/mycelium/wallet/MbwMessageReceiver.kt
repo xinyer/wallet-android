@@ -72,7 +72,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 val affectedAccounts = HashSet<WalletAccount>()
                 try {
                     for (confTransactionBytes in transactionsBytes) {
-                        affectedAccounts.removeAll(affectedAccounts)
+                        affectedAccounts.clear()
                         val transactionBytesBuffer = ByteBuffer.wrap(confTransactionBytes)
                         val blockHeight = transactionBytesBuffer.int
                         val transactionBytes = ByteArray(transactionBytesBuffer.capacity() - (4 + 8))
@@ -264,6 +264,6 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
 
     companion object {
         private val TAG = MbwMessageReceiver::class.java.canonicalName
-        val TRANSACTION_NOTIFICATION_ID = -553794088
+        @JvmStatic val TRANSACTION_NOTIFICATION_ID = -553794088
     }
 }
