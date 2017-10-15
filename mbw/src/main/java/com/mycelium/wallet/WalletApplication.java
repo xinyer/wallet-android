@@ -42,6 +42,7 @@ import android.os.StrictMode;
 import android.support.multidex.MultiDexApplication;
 import android.util.Log;
 
+import com.mycelium.modularizationtools.CommunicationManager;
 import com.mycelium.modularizationtools.ModuleMessageReceiver;
 
 import org.jetbrains.annotations.NotNull;
@@ -55,13 +56,14 @@ public class WalletApplication extends MultiDexApplication implements ModuleMess
          StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder()
                  .detectAll()
                  .penaltyLog()
-                 //.penaltyDeath()
                  .build());
       }
       super.onCreate();
+      boolean paired = CommunicationManager.getInstance(this).requestPair(getSpvModuleName());
       moduleMessageReceiver = new MbwMessageReceiver(this);
-      String lang = MbwManager.getInstance(this).getLanguage();
-      applyLanguageChange(lang);
+      MbwManager mbwManager = MbwManager.getInstance(this);
+      mbwManager.setSpvMode(paired);
+      applyLanguageChange(mbwManager.getLanguage());
    }
 
    @Override

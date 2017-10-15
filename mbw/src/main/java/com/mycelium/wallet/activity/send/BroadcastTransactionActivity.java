@@ -124,7 +124,7 @@ public class BroadcastTransactionActivity extends Activity {
          @Override
          protected WalletAccount.BroadcastResult doInBackground(Void... args) {
             // TODO: 12/1/16 move this distinction to AbstractAccount or so.
-            if(_mbwManager.useSpvModule()) {
+            if(_mbwManager.isSpvMode()) {
                int accountIndex = ((com.mycelium.wapi.wallet.bip44.Bip44Account) _mbwManager.getSelectedAccount()).getAccountIndex();
                Intent intent = IntentContract.BroadcastTransaction.createIntent(
                        accountIndex, _transaction.toBytes());

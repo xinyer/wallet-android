@@ -203,7 +203,7 @@ public class BalanceFragment extends Fragment {
       }
 
       WalletAccount selectedAccount = _mbwManager.getSelectedAccount();
-      if(_mbwManager.useSpvModule() && selectedAccount instanceof Bip44Account) {
+      if(_mbwManager.isSpvMode() && selectedAccount instanceof Bip44Account) {
          int accountIndex = ((Bip44Account) selectedAccount).getAccountIndex();
          Intent waitingIntent = IntentContract.WaitingIntents.createIntent(accountIndex);
          CommunicationManager.getInstance(getActivity())

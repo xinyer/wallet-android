@@ -75,7 +75,6 @@ public class WalletManager {
    private volatile UUID _activeAccountId;
    private FeeEstimation _lastFeeEstimations = FeeEstimation.DEFAULT;
    private TransactionFetcher _transactionFetcher;
-   private final boolean _useTransactionFetcher;
 
    /**
     * Create a new wallet manager instance
@@ -88,8 +87,7 @@ public class WalletManager {
                         WalletManagerBacking backing,
                         NetworkParameters network, Wapi wapi,
                         ExternalSignatureProviderProxy signatureProviders,
-                        TransactionFetcher transactionFetcher,
-                        boolean useTransactionFetcher) {
+                        TransactionFetcher transactionFetcher) {
       _secureKeyValueStore = secureKeyValueStore;
       _backing = backing;
       _network = network;
@@ -102,8 +100,6 @@ public class WalletManager {
       _accountEventManager = new AccountEventManager();
       _observers = new LinkedList<>();
       _transactionFetcher = transactionFetcher;
-      //Use SPV or not.
-      _useTransactionFetcher = useTransactionFetcher;
       loadAccounts();
    }
 
@@ -771,7 +767,7 @@ public class WalletManager {
       }
 
       private boolean synchronize() {
-         if(_useTransactionFetcher) {
+         if(_transactionFetcher.isActive()) {
             //If using SPV module, enters this condition.
            // Get adresses from all accounts
             for(WalletAccount account : getAllAccounts()) {
@@ -1206,6 +1202,8 @@ public class WalletManager {
 
    public interface TransactionFetcher {
       void getTransactions(int accountId);
+
+      boolean isActive();
    }
 
    public class AddressWithCreationTime {

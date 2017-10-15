@@ -1425,7 +1425,7 @@ public class SendMainActivity extends Activity {
 
         disableButtons();
 
-        if (_mbwManager.useSpvModule()) {
+        if (_mbwManager.isSpvMode()) {
             String receivingAddress = _receivingAddress.toString();
             BitcoinValue amountToSend = getBitcoinValueToSend();
             sendWithSpvModule(receivingAddress, amountToSend, feePerKbValue);

@@ -63,7 +63,6 @@ import com.google.common.collect.EvictingQueue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
-import com.megiontechnologies.Bitcoins;
 import com.mrd.bitlib.crypto.Bip39;
 import com.mrd.bitlib.crypto.HdKeyNode;
 import com.mrd.bitlib.crypto.InMemoryPrivateKey;
@@ -225,7 +224,6 @@ public class MbwManager implements WalletManager.TransactionFetcher {
    private MbwManager(Context evilContext) {
       _applicationContext = Preconditions.checkNotNull(evilContext.getApplicationContext());
       _environment = MbwEnvironment.verifyEnvironment(_applicationContext);
-      checkAndRePairModules();
       String version = VersionManager.determineVersion(_applicationContext);
 
       // Preferences
@@ -351,16 +349,12 @@ public class MbwManager implements WalletManager.TransactionFetcher {
       }
    }
 
-   /**
-    * Makes sure that all installed and activated modules are paired, so they can be called in a
-    * secure manner.
-    */
-   private void checkAndRePairModules() {
-      CommunicationManager communicationManager = CommunicationManager.Companion.getInstance(_applicationContext);
-      _useSpvModule = communicationManager.requestPair(WalletApplication.getSpvModuleName());
+   void setSpvMode(boolean spvMode) {
+      Log.d(TAG, "setSpvMode: " + (spvMode ? "on" : "off"));
+      _useSpvModule = spvMode;
    }
 
-   public boolean useSpvModule() {
+   public boolean isSpvMode() {
       return _useSpvModule;
    }
 
@@ -645,7 +639,7 @@ public class MbwManager implements WalletManager.TransactionFetcher {
       // Create and return wallet manager
       WalletManager walletManager = new WalletManager(secureKeyValueStore,
             backing, environment.getNetwork(), _wapi, externalSignatureProviderProxy,
-              this, useSpvModule());
+              this);
 
       // notify the walletManager about the current selected account
       UUID lastSelectedAccountId = getLastSelectedAccountId();
@@ -671,7 +665,7 @@ public class MbwManager implements WalletManager.TransactionFetcher {
       // Create and return wallet manager
       WalletManager walletManager = new WalletManager(secureKeyValueStore,
             backing, environment.getNetwork(), _wapi, null,
-              this, useSpvModule());
+              this);
 
       walletManager.disableTransactionHistorySynchronization();
       return walletManager;
@@ -1433,5 +1427,10 @@ public class MbwManager implements WalletManager.TransactionFetcher {
       Log.d(LOG_TAG, "getTransactions: Intent is " + service + ", account index is : " + accountId);
       CommunicationManager.getInstance(_applicationContext)
           .send(WalletApplication.getSpvModuleName(), service);
+   }
+
+   @Override
+   public boolean isActive() {
+      return isSpvMode();
    }
 }

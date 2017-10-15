@@ -795,13 +795,9 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private class WalletAutosaveEventListener : WalletFiles.Listener {
-        override fun onBeforeAutoSave(file: File) {
-            Log.d("WalletAutosaveEventListener", "onBeforeAutoSave ${file.absolutePath}")
-        }
+        override fun onBeforeAutoSave(file: File) {}
 
-        override fun onAfterAutoSave(file: File) {
-            Log.d("WalletAutosaveEventListener", "onAfterAutoSave ${file.absolutePath}")
-        }
+        override fun onAfterAutoSave(file: File) {}
     }
 
     private class ActivityHistoryEntry(val numTransactionsReceived: Int, val numBlocksDownloaded: Int) {
