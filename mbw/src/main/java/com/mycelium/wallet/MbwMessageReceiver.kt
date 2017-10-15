@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import com.megiontechnologies.Bitcoins
 import com.mrd.bitlib.crypto.Bip39
 import com.mrd.bitlib.model.*
 import com.mrd.bitlib.model.NetworkParameters.NetworkType.*
@@ -68,11 +69,12 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                     return
                 }
                 var satoshisReceived = 0L
+                var satoshisSent = 0L
                 val mds = MbwManager.getInstance(context).metadataStorage
-                val affectedAccounts = HashSet<WalletAccount>()
+                val messageAccounts = HashSet<WalletAccount>()
                 try {
                     for (confTransactionBytes in transactionsBytes) {
-                        affectedAccounts.clear()
+                        val transactionAccounts = HashSet<WalletAccount>()
                         val transactionBytesBuffer = ByteBuffer.wrap(confTransactionBytes)
                         val blockHeight = transactionBytesBuffer.int
                         val transactionBytes = ByteArray(transactionBytesBuffer.capacity() - (4 + 8))
@@ -98,11 +100,11 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                                 if (account.getTransaction(transaction.hash) == null) {
                                     // The transaction is new and relevant for the account.
                                     // We found spending from the account.
-                                    satoshisReceived -= connectedOutput.value
+                                    satoshisSent += connectedOutput.value
                                     //Should we update lookahead of adresses / Accounts that needs to be look at
                                     //by SPV module ?
                                 }
-                                affectedAccounts.add(account)
+                                transactionAccounts.add(account)
                             }
                         }
 
@@ -118,10 +120,10 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                                     // We found spending from the account.
                                     satoshisReceived += output.value
                                 }
-                                affectedAccounts.add(account)
+                                transactionAccounts.add(account)
                             }
                         }
-                        for (account in affectedAccounts) {
+                        for (account in transactionAccounts) {
                             when (blockHeight) {
                                 DEAD.value -> Log.e(TAG, "transaction is dead")
                                 IN_CONFLICT.value -> Log.e(TAG, "transaction is in conflict")
@@ -151,10 +153,11 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                                 }
                             }
                         }
+                        messageAccounts.addAll(transactionAccounts)
                     }
-                    // account has a new incoming transaction!
-                    if (satoshisReceived > 0) {
-                        notifySatoshisReceived(satoshisReceived, mds, affectedAccounts)
+                    // account has activity!
+                    if (messageAccounts.isNotEmpty()) {
+                        notifySatoshisReceived(satoshisReceived, satoshisSent, mds, messageAccounts)
                     }
                 } catch (e: Transaction.TransactionParsingException) {
                     Log.e(TAG, e.message, e)
@@ -225,23 +228,32 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
         }
     }
 
-    private fun notifySatoshisReceived(satoshisReceived: Long, mds: MetadataStorage,
+    private fun notifySatoshisReceived(satoshisReceived: Long, satoshisSent: Long, mds: MetadataStorage,
                                        affectedAccounts: Collection<WalletAccount>) {
         val builder = Notification.Builder(context)
-        // TODO: bitcoin icon
-        builder.setSmallIcon(R.drawable.holo_dark_ic_action_new_usd_account)
-        builder.setContentTitle(context.getString(R.string.app_name))
-        var contentText = context.getString(R.string.receiving, satoshisReceived.toString() + "sat")
+                // TODO: bitcoin icon
+                .setSmallIcon(R.drawable.holo_dark_ic_action_new_usd_account)
+                .setContentTitle(context.getString(R.string.app_name))
         val accountString: String = if (affectedAccounts.size > 1) {
             "various accounts"
         } else {
             mds.getLabelByAccount(affectedAccounts.toList()[0].id)
         }
-        contentText += " To $accountString"
+        val receivingString = if (satoshisReceived > 0) {
+            context.getString(R.string.receiving, Bitcoins.valueOf(satoshisReceived).toCurrencyString())
+        } else {
+            ""
+        }
+        val sendingString = if (satoshisSent > 0) {
+            context.getString(R.string.sending, Bitcoins.valueOf(satoshisSent).toCurrencyString())
+        } else {
+            ""
+        }
+        val contentText = "$receivingString $sendingString ($accountString)"
         builder.setContentText(contentText)
-        builder.setContentIntent(PendingIntent.getActivity(context, 0, Intent(context, ModernMain::class.java), 0))
-        builder.setWhen(System.currentTimeMillis())
-        builder.setSound(Uri.parse("android.resource://${context.packageName}/${R.raw.coins_received}"))
+                .setContentIntent(PendingIntent.getActivity(context, 0, Intent(context, ModernMain::class.java), 0))
+                .setWhen(System.currentTimeMillis())
+                .setSound(Uri.parse("android.resource://${context.packageName}/${R.raw.coins_received}"))
         val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         nm.notify(TRANSACTION_NOTIFICATION_ID, builder.build())
     }
