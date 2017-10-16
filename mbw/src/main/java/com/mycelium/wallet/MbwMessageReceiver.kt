@@ -103,8 +103,9 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                                     satoshisSent += connectedOutput.value
                                     //Should we update lookahead of adresses / Accounts that needs to be look at
                                     //by SPV module ?
+                                    transactionAccounts.add(account)
+                                    Log.d(TAG, "new transaction $transaction is sending ${connectedOutput.value}sat from ${input.outPoint} of Account ${account.accountIndex}")
                                 }
-                                transactionAccounts.add(account)
                             }
                         }
 
@@ -113,14 +114,15 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                             val address = output.script.getAddress(network)
                             val optionalAccount = walletManager.getAccountByAddress(address)
                             if (optionalAccount.isPresent) {
-                                val account = walletManager.getAccount(optionalAccount.get())
+                                val account = walletManager.getAccount(optionalAccount.get()) as Bip44Account
                                 account.storeAddressOldestActivityTime(address, updateAtTime / 1000)
                                 if (account.getTransaction(transaction.hash) == null) {
                                     // The transaction is new and relevant for the account.
                                     // We found spending from the account.
                                     satoshisReceived += output.value
+                                    transactionAccounts.add(account)
+                                    Log.d(TAG, "new transaction $transaction is sending ${output.value}sat to ${output.script.getAddress(network)} of Account ${account.accountIndex}")
                                 }
-                                transactionAccounts.add(account)
                             }
                         }
                         for (account in transactionAccounts) {
