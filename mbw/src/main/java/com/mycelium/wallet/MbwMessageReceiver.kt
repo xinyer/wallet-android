@@ -183,6 +183,8 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
             "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW" -> {
                 val _mbwManager = MbwManager.getInstance(context)
                 val accountIndex = intent.getIntExtra(IntentContract.ACCOUNT_INDEX_EXTRA, -1)
+                Log.d(TAG, "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW, " +
+                        "accountIndex = $accountIndex")
                 if (accountIndex == -19) {
                     Log.e(TAG, "Account Index required!")
                     return

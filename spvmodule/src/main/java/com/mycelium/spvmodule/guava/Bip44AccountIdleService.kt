@@ -543,20 +543,42 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                 i++
             }
         } else if (accountIndexStrings.contains(accountIndex.toString())) {
-            var highestCurrentAccountIndex = accountIndex
-            for (accountIndexString in accountIndexStrings) {
-                if(accountIndexString.toInt() > highestCurrentAccountIndex) {
-                    highestCurrentAccountIndex = accountIndexString.toInt()
-                }
-            }
-            createOneAccount(bip39Passphrase, creationTimeSeconds, highestCurrentAccountIndex + 1)
-        } else {
-            //Should not happen.
-            createOneAccount(bip39Passphrase, creationTimeSeconds, accountIndex)
+            createMissingAccounts(bip39Passphrase, creationTimeSeconds)
         }
     }
 
-    private fun createOneAccount(bip39Passphrase: List<String>, creationTimeSeconds: Long, accountIndex: Int) {
+    private fun createMissingAccounts(bip39Passphrase: List<String>, creationTimeSeconds: Long) {
+        var accountIndex = 0
+        if (accountIndexStrings.size == 0) {
+            var i = 0
+            while (i < 3) {
+                createOneAccount(bip39Passphrase, creationTimeSeconds, accountIndex + i)
+                i++
+            }
+        } else {
+            var highestCurrentAccountWithActivityIndex = 0
+            for (accountIndexString in accountIndexStrings) {
+                accountIndex = accountIndexString.toInt()
+                val walletAccount = walletsAccountsMap.get(accountIndex)
+                if (walletAccount != null
+                        && accountIndex > highestCurrentAccountWithActivityIndex) {
+                    highestCurrentAccountWithActivityIndex = accountIndex
+                }
+            }
+            var i = 1
+            while (i < 3) {
+                if(walletsAccountsMap.get(highestCurrentAccountWithActivityIndex + i) == null) {
+                    createOneAccount(bip39Passphrase, creationTimeSeconds,
+                            highestCurrentAccountWithActivityIndex + i)
+                }
+                i++
+            }
+
+        }
+    }
+
+
+        private fun createOneAccount(bip39Passphrase: List<String>, creationTimeSeconds: Long, accountIndex: Int) {
         Log.d(LOG_TAG, "createOneAccount, accountIndex = $accountIndex," +
                 " creationTimeSeconds = $creationTimeSeconds")
         propagate(Constants.CONTEXT)
