@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 
-import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.modularizationtools.ModuleMessageReceiver
 
 import org.bitcoinj.core.Transaction
@@ -105,7 +104,7 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
                 val intent = Intent("com.mycelium.wallet.broadcaststatus")
                 intent.putExtra("tx", transaction.hash)
                 intent.putExtra("result", if(conn.responseCode == 200) "success" else "failure")
-                SpvMessageSender.send(CommunicationManager.getInstance(context), intent)
+                SpvModuleApplication.sendMbw(intent)
 
                 conn.disconnect()
             } catch (e: Exception) {

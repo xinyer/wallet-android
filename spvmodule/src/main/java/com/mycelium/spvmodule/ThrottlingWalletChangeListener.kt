@@ -47,8 +47,6 @@ abstract class ThrottlingWalletChangeListener(private val throttleMs: Long = DEF
 
     abstract fun onChanged(walletAccount: Wallet)
 
-
-
     companion object {
         private val DEFAULT_THROTTLE_MS: Long = 500
     }

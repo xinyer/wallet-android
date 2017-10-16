@@ -213,7 +213,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 val service = IntentContract.RequestPrivateExtendedKeyCoinTypeToSPV.createIntent(
                         accountIndex, bip39PassphraseList,
                         1504664986L) //TODO Change value after test. Nelson
-                CommunicationManager.getInstance(context).send(WalletApplication.getSpvModuleName(), service)
+                WalletApplication.sendToSpv(service)
             }
             null -> Log.w(TAG, "onMessage failed. No action defined.")
             else -> Log.e(TAG, "onMessage failed. Unknown action ${intent.action}")

@@ -596,12 +596,10 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         blockchainState.putExtras(localBroadcast)
         LocalBroadcastManager.getInstance(spvModuleApplication).sendBroadcast(localBroadcast)
 
-        // "broadcast" to registered consumers
-        val securedMulticastIntent = Intent()
-        securedMulticastIntent.action = "com.mycelium.wallet.blockchainState"
-        blockchainState.putExtras(securedMulticastIntent)
-
-        SpvMessageSender.send(CommunicationManager.getInstance(spvModuleApplication), securedMulticastIntent)
+        Intent("com.mycelium.wallet.blockchainState").run {
+            blockchainState.putExtras(this)
+            SpvModuleApplication.sendMbw(this)
+        }
     }
 
     private val transactionsReceived = AtomicInteger()
@@ -660,9 +658,8 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     @Synchronized
     private fun notifyTransactions(transactions: Set<Transaction>, utxos: Set<TransactionOutput> ) {
         if (!transactions.isEmpty()) {
-            // send the new transaction and the *complete* utxo set of the wallet
-            SpvMessageSender.sendTransactions(CommunicationManager.getInstance(spvModuleApplication),
-                    transactions, utxos)
+            // send the new transaction and the *complete* utxo set of the account
+            SpvMessageSender.sendTransactions(transactions, utxos)
         }
     }
 

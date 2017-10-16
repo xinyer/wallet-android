@@ -121,6 +121,9 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
                 6
             }
 
+    internal fun doesWalletAccountExist(accountIndex: Int): Boolean =
+            bip44AccountIdleService.doesWalletAccountExist(accountIndex)
+
     companion object {
         private var INSTANCE: SpvModuleApplication? = null
 
@@ -142,10 +145,11 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
             else -> throw RuntimeException("No mbw module defined for BuildConfig " + BuildConfig.APPLICATION_ID)
         }
 
+        fun sendMbw(intent: Intent) {
+            CommunicationManager.getInstance(getApplication()).send(getMbwModuleName(), intent)
+        }
+
         fun doesWalletAccountExist(accountIndex: Int): Boolean =
                 INSTANCE!!.doesWalletAccountExist(accountIndex)
     }
-
-    internal fun doesWalletAccountExist(accountIndex: Int): Boolean =
-            bip44AccountIdleService.doesWalletAccountExist(accountIndex)
 }

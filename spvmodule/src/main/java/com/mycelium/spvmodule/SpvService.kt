@@ -88,7 +88,7 @@ class SpvService : IntentService("SpvService") {
                 ACTION_RECEIVE_TRANSACTIONS -> {
                     if (!SpvModuleApplication.doesWalletAccountExist(accountIndex)) {
                         // Ask for private Key
-                        SpvMessageSender.requestPrivateKey(CommunicationManager.getInstance(this), accountIndex)
+                        SpvMessageSender.requestPrivateKey(accountIndex)
                         return
                     }
                 }

@@ -1440,8 +1440,7 @@ public class SendMainActivity extends Activity {
         int accountIndex = ((Bip44Account) selectedAccount).getAccountIndex();
         Intent paymentIntent = IntentContract.SendFunds.createIntent(
                 accountIndex, address, amountToSend.getLongValue(), getFeePerKb);
-        CommunicationManager.getInstance(this)
-                .send(WalletApplication.getSpvModuleName(), paymentIntent);
+        WalletApplication.sendToSpv(paymentIntent);
     }
 
     protected void disableButtons() {

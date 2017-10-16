@@ -16,8 +16,7 @@ class SpvMessageSender {
     companion object {
         private val LOG_TAG: String = SpvMessageSender::class.java.simpleName
 
-        fun sendTransactions(communicationManager: CommunicationManager,
-                             transactionSet: Set<Transaction>,
+        fun sendTransactions(transactionSet: Set<Transaction>,
                              unspentTransactionOutputSet: Set<TransactionOutput>) {
             val transactions = transactionSet.map {
                 val transactionBytes = it.bitcoinSerialize()
@@ -52,7 +51,7 @@ class SpvMessageSender {
             //dumpTxos(txos)
             intent.putExtra("CONNECTED_OUTPUTS", connectedOutputs)
             intent.putExtra("UTXOS", utxoHM)
-            send(communicationManager, intent)
+            send(intent)
         }
 
         private fun dumpTxos(txos: HashMap<String, ByteArray>) {
@@ -62,18 +61,16 @@ class SpvMessageSender {
             }
         }
 
-        fun send(communicationManager: CommunicationManager, intent: Intent) {
-            communicationManager.send(SpvModuleApplication.getMbwModuleName(), intent)
+        private fun send(intent: Intent) {
+            SpvModuleApplication.sendMbw(intent)
         }
 
-        fun requestPrivateKey(communicationManager: CommunicationManager, accountIndex: Int) {
-            if(BuildConfig.DEBUG) {
-                Log.d(LOG_TAG, "requestPrivateKey")
+        fun requestPrivateKey(accountIndex: Int) {
+            Log.d(LOG_TAG, "requestPrivateKey")
+            Intent("com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW").run {
+                putExtra(IntentContract.ACCOUNT_INDEX_EXTRA, accountIndex)
+                send(this)
             }
-            val requestPrivateExtendedKeyAccountLevelIntent = Intent()
-            requestPrivateExtendedKeyAccountLevelIntent.action = "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW"
-            requestPrivateExtendedKeyAccountLevelIntent.putExtra(IntentContract.ACCOUNT_INDEX_EXTRA, accountIndex)
-            send(communicationManager, requestPrivateExtendedKeyAccountLevelIntent)
         }
     }
 }

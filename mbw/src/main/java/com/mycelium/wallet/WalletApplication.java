@@ -49,9 +49,11 @@ import org.jetbrains.annotations.NotNull;
 
 public class WalletApplication extends MultiDexApplication implements ModuleMessageReceiver {
    private ModuleMessageReceiver moduleMessageReceiver;
+   private static WalletApplication INSTANCE;
 
    @Override
    public void onCreate() {
+      INSTANCE = this;
       if (BuildConfig.DEBUG) {
          StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder()
                  .detectAll()
@@ -112,5 +114,9 @@ public class WalletApplication extends MultiDexApplication implements ModuleMess
          case "com.mycelium.devwallet_spore": return "com.mycelium.spvmodule.test";
          default: throw new RuntimeException("No spv module defined for BuildConfig " + BuildConfig.APPLICATION_ID);
       }
+   }
+
+   public static void sendToSpv(Intent intent) {
+      CommunicationManager.getInstance(INSTANCE).send(getSpvModuleName(), intent);
    }
 }
