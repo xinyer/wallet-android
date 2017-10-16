@@ -39,6 +39,7 @@ import android.app.Fragment;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -67,17 +68,13 @@ import java.util.UUID;
 public abstract class HdAccountSelectorActivity extends Activity implements MasterseedPasswordSetter {
    protected final static int REQUEST_SEND = 1;
    public static final String PASSPHRASE_FRAGMENT_TAG = "passphrase";
-   protected ArrayList<HdAccountWrapper> accounts = new ArrayList<HdAccountWrapper>();
+   protected ArrayList<HdAccountWrapper> accounts = new ArrayList<>();
    protected AccountsAdapter accountsAdapter;
    protected AbstractAccountScanManager masterseedScanManager;
 
-
-
-   private ListView lvAccounts;
    protected TextView txtStatus;
 
    protected abstract AbstractAccountScanManager initMasterseedManager();
-
 
    @Override
    protected void onCreate(Bundle savedInstanceState) {
@@ -85,7 +82,7 @@ public abstract class HdAccountSelectorActivity extends Activity implements Mast
 
       setView();
 
-      lvAccounts = (ListView)findViewById(R.id.lvAccounts);
+      ListView lvAccounts = (ListView) findViewById(R.id.lvAccounts);
       txtStatus = (TextView)findViewById(R.id.txtStatus);
 
       // Accounts listview + adapter
@@ -106,7 +103,7 @@ public abstract class HdAccountSelectorActivity extends Activity implements Mast
             MbwManager mbwManager = MbwManager.getInstance(getApplicationContext());
             WalletManager walletManager = mbwManager.getWalletManager(true);
 
-            UUID id = null;
+            UUID id;
             try {
                id = masterseedScanManager.createOnTheFlyAccount(
                      account.accountRoot,
@@ -233,8 +230,9 @@ public abstract class HdAccountSelectorActivity extends Activity implements Mast
          super(context, resource, objects);
       }
 
+      @NonNull
       @Override
-      public View getView(int position, View convertView, ViewGroup parent) {
+      public View getView(int position, View convertView, @NonNull ViewGroup parent) {
          LayoutInflater inflater = (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
          View row;
@@ -256,22 +254,20 @@ public abstract class HdAccountSelectorActivity extends Activity implements Mast
          Drawable drawableForAccount = Utils.getDrawableForAccount(walletAccount, true, getResources());
 
          ((TextView)row.findViewById(R.id.tvBalance)).setText(balanceString);
-         ((TextView)row.findViewById(R.id.tvAddress)).setVisibility(View.GONE);
+         row.findViewById(R.id.tvAddress).setVisibility(View.GONE);
          ((ImageView)row.findViewById(R.id.ivIcon)).setImageDrawable(drawableForAccount);
 
 //         ((TextView)row.findViewById(R.id.tvLegacyAccountWarning)).setVisibility(View.GONE);
-         ((TextView)row.findViewById(R.id.tvBackupMissingWarning)).setVisibility(View.GONE);
+         row.findViewById(R.id.tvBackupMissingWarning).setVisibility(View.GONE);
 
          return row;
       }
    }
 
-
    @Subscribe
    public void onScanError(AccountScanManager.OnScanError event){
       Utils.showSimpleMessageDialog(this, event.errorMessage);
    }
-
 
    @Subscribe
    public void onStatusChanged(AccountScanManager.OnStatusChanged event){
