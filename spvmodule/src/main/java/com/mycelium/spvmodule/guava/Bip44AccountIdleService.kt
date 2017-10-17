@@ -125,9 +125,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private fun initializeWalletsAccounts() {
-        if(BuildConfig.DEBUG) {
-            Log.d(LOG_TAG, "initializeWalletsAccounts, number of accounts = ${accountIndexStrings.size}")
-        }
+        Log.d(LOG_TAG, "initializeWalletsAccounts, number of accounts = ${accountIndexStrings.size}")
         var shouldInitializeCheckpoint = true
         for (accountIndexString in accountIndexStrings) {
             val accountIndex: Int = accountIndexString.toInt()
@@ -151,9 +149,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private fun initializeEarliestKeyCreationTime(): Long {
-        if(BuildConfig.DEBUG) {
-            Log.d(LOG_TAG, "initializeEarliestKeyCreationTime")
-        }
+        Log.d(LOG_TAG, "initializeEarliestKeyCreationTime")
         var earliestKeyCreationTime = 0L
         for (walletAccount in walletsAccountsMap.values) {
             if (earliestKeyCreationTime != 0L) {
@@ -168,9 +164,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private fun initializeCheckpoint(earliestKeyCreationTime: Long) {
-        if(BuildConfig.DEBUG) {
-            Log.d(LOG_TAG, "initializeCheckpoint, earliestKeyCreationTime = $earliestKeyCreationTime")
-        }
+        Log.d(LOG_TAG, "initializeCheckpoint, earliestKeyCreationTime = $earliestKeyCreationTime")
         try {
             val start = System.currentTimeMillis()
             val checkpointsInputStream = spvModuleApplication.assets.open(Constants.Files.CHECKPOINTS_FILENAME)
@@ -186,9 +180,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private fun initializePeergroup() {
-        if(BuildConfig.DEBUG) {
-            Log.d(LOG_TAG, "initializePeergroup")
-        }
+        Log.d(LOG_TAG, "initializePeergroup")
         peerGroup = PeerGroup(Constants.NETWORK_PARAMETERS, blockChain)
         peerGroup!!.setDownloadTxDependencies(0) // recursive implementation causes StackOverflowError
 
@@ -287,11 +279,9 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
     @Synchronized
     private fun checkImpediments() {
-        if(BuildConfig.DEBUG) {
-            Log.d(LOG_TAG, "checkImpediments, peergroup.isRunning = ${peerGroup!!.isRunning},"
-                    + "downloadProgressTracker condition is "
-                    + "${(downloadProgressTracker == null || downloadProgressTracker!!.future.isDone)}")
-        }
+        Log.d(LOG_TAG, "checkImpediments, peergroup.isRunning = ${peerGroup!!.isRunning},"
+                + "downloadProgressTracker condition is "
+                + "${(downloadProgressTracker == null || downloadProgressTracker!!.future.isDone)}")
         //Second condition (downloadProgressTracker) prevent the case where the peergroup is
         // currently downloading the blockchain.
         if(peerGroup!!.isRunning
@@ -384,9 +374,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     private fun afterLoadWallet(walletAccount: Wallet, accountIndex: Int) {
-        if(BuildConfig.DEBUG) {
-            Log.d(LOG_TAG, "afterLoadWallet, accountIndex = $accountIndex")
-        }
+        Log.d(LOG_TAG, "afterLoadWallet, accountIndex = $accountIndex")
         walletAccount.autosaveToFile(walletFile(accountIndex), 10, TimeUnit.SECONDS, WalletAutosaveEventListener())
         // clean up spam
         walletAccount.cleanup()
@@ -640,11 +628,9 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                 if(doesWalletAccountExist(newAccountIndex + 3)) {
                     return
                 }
-                if (BuildConfig.DEBUG) {
-                    Log.d(LOG_TAG, "walletEventListener, checkIfFirstTransaction, first transaction " +
-                            "found on that wallet/account with accountIndex = $accountIndex," +
-                            " stop the download of the blockchain")
-                }
+                Log.d(LOG_TAG, "walletEventListener, checkIfFirstTransaction, first transaction " +
+                        "found on that wallet/account with accountIndex = $accountIndex," +
+                        " stop the download of the blockchain")
                 //TODO Investigate why it is stuck while stopping.
                 val listenableFuture = peerGroup!!.stopAsync()
                 listenableFuture.addListener(
@@ -720,9 +706,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
         override fun onBlocksDownloaded(peer: Peer, block: Block, filteredBlock: FilteredBlock?,
                                         blocksLeft: Int) {
-            if(BuildConfig.DEBUG) {
-                //Log.d(LOG_TAG, "onBlocksDownloaded, blocks left + $blocksLeft")
-            }
             val now = System.currentTimeMillis()
 
             updateActivityHistory()

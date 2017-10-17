@@ -38,6 +38,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     override fun onMessage(callingPackageName: String, intent: Intent) = spvMessageReceiver.onMessage(callingPackageName, intent)
 
     override fun onCreate() {
+        Log.d(LOG_TAG, "This should not happen in release mode" + INSTANCE!!)
         INSTANCE = if (INSTANCE != null && INSTANCE !== this) {
             throw Error("Application was instanciated more than once?")
         } else {

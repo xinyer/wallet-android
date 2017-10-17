@@ -3,7 +3,6 @@ apply plugin: 'kotlin-android'
 
 repositories {
     mavenLocal()
-   //maven { url localMavenRepo }
     jcenter()
 }
 
@@ -29,15 +28,14 @@ android {
     }
     buildTypes {
         all {
-            minifyEnabled false
-            proguardFiles {
-                getDefaultProguardFile('proguard-android.txt')
-                'proguard.cfg'
-            }
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard.cfg'
         }
         debug {
             applicationIdSuffix '.test'
             debuggable true
+            shrinkResources true
+            //minifyEnabled false
         }
     }
     sourceSets {
