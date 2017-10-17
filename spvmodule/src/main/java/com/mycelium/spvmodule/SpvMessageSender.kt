@@ -45,12 +45,11 @@ class SpvMessageSender {
             }
             val utxoHM = HashMap<String, ByteArray>(utxos.size).apply { putAll(utxos) }
             // report back known transactions
-            val intent = Intent()
-            intent.action = "com.mycelium.wallet.receivedTransactions"
-            intent.putExtra("TRANSACTIONS", transactions)
-            //dumpTxos(txos)
-            intent.putExtra("CONNECTED_OUTPUTS", connectedOutputs)
-            intent.putExtra("UTXOS", utxoHM)
+            val intent = Intent("com.mycelium.wallet.receivedTransactions").apply {
+                putExtra("TRANSACTIONS", transactions)
+                putExtra("CONNECTED_OUTPUTS", connectedOutputs)
+                putExtra("UTXOS", utxoHM)
+            }
             send(intent)
         }
 

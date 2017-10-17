@@ -193,6 +193,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 }
                 val masterSeed = _mbwManager.getWalletManager(false).getMasterSeed(AesKeyCipher.defaultKeyCipher())
 
+                /*
                 val masterDeterministicKey : DeterministicKey = HDKeyDerivation.createMasterPrivateKey(masterSeed.bip32Seed)
                 val bip44LevelDeterministicKey = HDKeyDerivation.deriveChildKey(masterDeterministicKey, ChildNumber(44, true))
                 val coinType = if (_mbwManager.network.isTestnet) {
@@ -207,6 +208,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 } else {
                     NetworkParameters.fromID(NetworkParameters.ID_MAINNET)!!
                 }
+                */
 
                 //HexUtils.toHex(masterSeed.bip32Seed)
                 val bip39PassphraseList : ArrayList<String> = ArrayList(masterSeed.bip39WordList)
