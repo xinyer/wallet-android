@@ -34,7 +34,7 @@ android {
         debug {
             applicationIdSuffix '.test'
             debuggable true
-            shrinkResources true
+            //shrinkResources true
             //minifyEnabled false
         }
     }
