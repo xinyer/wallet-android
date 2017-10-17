@@ -105,7 +105,14 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         blockStore = SPVBlockStore(Constants.NETWORK_PARAMETERS, blockChainFile)
         blockStore.chainHead // detect corruptions as early as possible
         initializeWalletsAccounts()
+        shareCurrentWalletState()
         initializePeergroup()
+    }
+
+    private fun shareCurrentWalletState() {
+        walletsAccountsMap.values.forEach {
+            notifyTransactions(it.getTransactions(true), it.unspents.toSet())
+        }
     }
 
     private fun initializeWalletAccountsListeners() {
