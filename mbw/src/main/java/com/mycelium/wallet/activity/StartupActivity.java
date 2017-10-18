@@ -37,6 +37,8 @@ package com.mycelium.wallet.activity;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.ActivityNotFoundException;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
@@ -61,6 +63,7 @@ import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.PinDialog;
 import com.mycelium.wallet.R;
 import com.mycelium.wallet.Utils;
+import com.mycelium.wallet.WalletApplication;
 import com.mycelium.wallet.activity.export.DecryptBip38PrivateKeyActivity;
 import com.mycelium.wallet.activity.modern.ModernMain;
 import com.mycelium.wallet.activity.pop.PopActivity;
@@ -127,32 +130,35 @@ public class StartupActivity extends Activity {
       @Override
       public void run() {
          long startTime = System.currentTimeMillis();
-         _mbwManager = MbwManager.getInstance(StartupActivity.this.getApplication());
+          _mbwManager = MbwManager.getInstance(StartupActivity.this.getApplication());
+         if (_mbwManager.isSpvMode()) {
+             //in case this is a fresh startup, import backup or create new seed
+             if (_mbwManager.getWalletManager(false).getAccountIds().isEmpty()) {
+                 initMasterSeed();
+                 //we return here, delayed finish will get posted once have our first account
+                 return;
+             } else if (!_mbwManager.getWalletManager(false).hasBip32MasterSeed()) {
+                 //user has accounts, but no seed. we just create one for him
+                 //first show an upgrade info, then make seed
+                 showUpgradeInfo();
+                 //the Asynctask will execute delayedfinish
+                 return;
+             }
 
-         //in case this is a fresh startup, import backup or create new seed
-         if (_mbwManager.getWalletManager(false).getAccountIds().isEmpty()) {
-            initMasterSeed();
-            //we return here, delayed finish will get posted once have our first account
-            return;
-         } else if (!_mbwManager.getWalletManager(false).hasBip32MasterSeed()) {
-            //user has accounts, but no seed. we just create one for him
-            //first show an upgrade info, then make seed
-            showUpgradeInfo();
-            //the Asynctask will execute delayedfinish
-            return;
+             // Check if we have lingering exported private keys, we want to warn
+             // the user if that is the case
+             _hasClipboardExportedPrivateKeys = hasPrivateKeyOnClipboard(_mbwManager.getNetwork());
+             // Calculate how much time we spent initializing, and do a delayed
+             // finish so we display the splash a minimum amount of time
+             long timeSpent = System.currentTimeMillis() - startTime;
+             long remainingTime = MINIMUM_SPLASH_TIME - timeSpent;
+             if (remainingTime < 0) {
+                 remainingTime = 0;
+             }
+             new Handler().postDelayed(delayedFinish, remainingTime);
+         } else {
+             showNoSpvModuleWarning();
          }
-
-         // Check if we have lingering exported private keys, we want to warn
-         // the user if that is the case
-         _hasClipboardExportedPrivateKeys = hasPrivateKeyOnClipboard(_mbwManager.getNetwork());
-         // Calculate how much time we spent initializing, and do a delayed
-         // finish so we display the splash a minimum amount of time
-         long timeSpent = System.currentTimeMillis() - startTime;
-         long remainingTime = MINIMUM_SPLASH_TIME - timeSpent;
-         if (remainingTime < 0) {
-            remainingTime = 0;
-         }
-         new Handler().postDelayed(delayedFinish, remainingTime);
       }
 
       private boolean hasPrivateKeyOnClipboard(NetworkParameters network) {
@@ -165,6 +171,35 @@ public class StartupActivity extends Activity {
          }
       }
    };
+
+   private void showNoSpvModuleWarning() {
+      new AlertDialog.Builder(this)
+              .setTitle(R.string.title_no_spvmodule_warning)
+              .setMessage(R.string.message_no_spvmodule_warning)
+              .setPositiveButton(R.string.no_spvmodule_warning_install, new DialogInterface.OnClickListener() {
+                 public void onClick(DialogInterface dialog, int which) {
+                    String spvModulePackage = WalletApplication.getSpvModuleName();
+                    launchGooglePlay(StartupActivity.this, spvModulePackage);
+                    StartupActivity.this.finish();
+                 }
+              })
+              .setNegativeButton(R.string.no_spvmodule_warning_ignore, new DialogInterface.OnClickListener() {
+                 public void onClick(DialogInterface dialog, int which) {
+                    StartupActivity.this.finish();
+                 }
+              })
+              .show();
+   }
+
+   private void launchGooglePlay(Context context, String packageName) {
+      try {
+         Intent googlePlayIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + packageName));
+         googlePlayIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+         context.startActivity(googlePlayIntent);
+      } catch (ActivityNotFoundException ex) {
+         Toast.makeText(StartupActivity.this, R.string.google_play_not_found, Toast.LENGTH_SHORT).show();
+      }
+   }
 
    private void showUpgradeInfo() {
       //show upgrade info

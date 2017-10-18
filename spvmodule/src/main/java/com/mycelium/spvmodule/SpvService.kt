@@ -74,7 +74,8 @@ class SpvService : IntentService("SpvService") {
                     val rawAmount = intent.getLongExtra(IntentContract.SendFunds.AMOUNT_EXTRA, -1)
                     val feePerKb = intent.getLongExtra(IntentContract.SendFunds.FEE_EXTRA, -1)
                     if (rawAddress.isEmpty() || rawAmount < 0 || feePerKb < 0) {
-                        Log.e(LOG_TAG, "Could not send funds with parameters rawAddress $rawAddress, rawAmount $rawAmount and feePerKb $feePerKb.")
+                        Log.e(LOG_TAG, "Could not send funds with parameters rawAddress $rawAddress, "
+                                + "rawAmount $rawAmount and feePerKb $feePerKb.")
                         return
                     }
                     val address = Address.fromBase58(Constants.NETWORK_PARAMETERS, rawAddress)
@@ -90,6 +91,8 @@ class SpvService : IntentService("SpvService") {
                         // Ask for private Key
                         SpvMessageSender.requestPrivateKey(accountIndex)
                         return
+                    } else {
+                        application.sendTransactions(accountIndex)
                     }
                 }
                 else -> {
