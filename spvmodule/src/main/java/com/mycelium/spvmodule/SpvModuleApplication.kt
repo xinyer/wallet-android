@@ -33,6 +33,10 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     override fun onMessage(callingPackageName: String, intent: Intent) = spvMessageReceiver.onMessage(callingPackageName, intent)
 
     override fun onCreate() {
+        // TODO: make sure the following debug log statements get removed by proguard
+        // Log.d(LOG_TAG, "this should not be visible in release mode")
+        // Log.e(LOG_TAG, "this should always be visible")
+        // Log.d(LOG_TAG, "This should not happen in release mode" + INSTANCE!!)
         INSTANCE = if (INSTANCE != null && INSTANCE !== this) {
             throw Error("Application was instanciated more than once?")
         } else {
@@ -119,7 +123,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
             }
 
     internal fun doesWalletAccountExist(accountIndex: Int): Boolean =
-            bip44AccountIdleService.doesWalletAccountExist(accountIndex)
+            Bip44AccountIdleService.getInstance().doesWalletAccountExist(accountIndex)
 
     companion object {
         private var INSTANCE: SpvModuleApplication? = null
@@ -149,7 +153,4 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         fun doesWalletAccountExist(accountIndex: Int): Boolean =
                 INSTANCE!!.doesWalletAccountExist(accountIndex)
     }
-
-    internal fun doesWalletAccountExist(accountIndex: Int): Boolean =
-            bip44AccountIdleService.doesWalletAccountExist(accountIndex)
 }

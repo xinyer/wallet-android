@@ -630,11 +630,9 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                 if(doesWalletAccountExist(newAccountIndex + 3)) {
                     return
                 }
-                if (BuildConfig.DEBUG) {
-                    Log.d(LOG_TAG, "walletEventListener, checkIfFirstTransaction, first transaction " +
-                            "found on that wallet/account with accountIndex = $accountIndex," +
-                            " stop the download of the blockchain")
-                }
+                Log.d(LOG_TAG, "walletEventListener, checkIfFirstTransaction, first transaction " +
+                        "found on that wallet/account with accountIndex = $accountIndex," +
+                        " stop the download of the blockchain")
                 //TODO Investigate why it is stuck while stopping.
                 val listenableFuture = peerGroup!!.stopAsync()
                 listenableFuture.addListener(
@@ -717,7 +715,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
         override fun onBlocksDownloaded(peer: Peer, block: Block, filteredBlock: FilteredBlock?,
                                         blocksLeft: Int) {
-            //Log.d(LOG_TAG, "onBlocksDownloaded, blocks left + $blocksLeft")
             val now = System.currentTimeMillis()
 
             updateActivityHistory()
