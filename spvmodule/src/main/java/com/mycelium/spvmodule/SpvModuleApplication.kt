@@ -17,8 +17,6 @@ import org.bitcoinj.core.Context.propagate
 import org.bitcoinj.crypto.LinuxSecureRandom
 import org.bitcoinj.utils.Threading
 import org.bitcoinj.wallet.SendRequest
-import java.util.*
-import java.util.concurrent.TimeUnit
 
 class SpvModuleApplication : Application(), ModuleMessageReceiver {
     var configuration: Configuration? = null
@@ -28,9 +26,6 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     private var spvServiceIntent: Intent? = null
     private var blockchainServiceCancelCoinsReceivedIntent: Intent? = null
     private var blockchainServiceResetBlockchainIntent: Intent? = null
-
-    private lateinit var bip44AccountIdleService: Bip44AccountIdleService
-
     var packageInfo: PackageInfo? = null
         private set
     private val spvMessageReceiver: SpvMessageReceiver = SpvMessageReceiver(this)
@@ -67,7 +62,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
 
         //TODO Never called, investigate if still useful.
         blockchainServiceResetBlockchainIntent = Intent(SpvService.ACTION_ADD_ACCOUNT, null, this, SpvService::class.java)
-        bip44AccountIdleService = Bip44AccountIdleService().startAsync() as Bip44AccountIdleService
+        Bip44AccountIdleService().startAsync()
         CommunicationManager.getInstance(this).requestPair(getMbwModuleName())
     }
 
@@ -85,33 +80,35 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
             return
         }
 
-        bip44AccountIdleService.addWalletAccount(bip39Passphrase, creationTimeSeconds, accountIndex)
+        Bip44AccountIdleService.getInstance().addWalletAccount(bip39Passphrase, creationTimeSeconds, accountIndex)
         restartBip44AccountIdleService()
     }
 
     internal fun restartBip44AccountIdleService() {
         Log.d(LOG_TAG, "restartBip44AccountIdleService, stopAsync")
         try {
-            val service = bip44AccountIdleService.stopAsync()
+            val service = Bip44AccountIdleService.getInstance().stopAsync()
             Log.d(LOG_TAG, "restartBip44AccountIdleService, awaitTerminated")
             service.awaitTerminated()
         } catch (e : Throwable) {
             Log.e(LOG_TAG, e.localizedMessage, e)
         } finally {
-            Log.d(LOG_TAG, "restartBip44AccountIdleService, constructor")
-            bip44AccountIdleService = Bip44AccountIdleService()
             Log.d(LOG_TAG, "restartBip44AccountIdleService, startAsync")
-            bip44AccountIdleService.startAsync()
+            Bip44AccountIdleService().startAsync()
             Log.d(LOG_TAG, "restartBip44AccountIdleService, DONE")
         }
     }
 
     fun broadcastTransaction(tx: Transaction, accountIndex: Int) {
-        bip44AccountIdleService.broadcastTransaction(tx, accountIndex)
+        Bip44AccountIdleService.getInstance().broadcastTransaction(tx, accountIndex)
     }
 
     fun broadcastTransaction(sendRequest: SendRequest, accountIndex: Int) {
-        bip44AccountIdleService.broadcastTransaction(sendRequest, accountIndex)
+        Bip44AccountIdleService.getInstance().broadcastTransaction(sendRequest, accountIndex)
+    }
+
+    fun sendTransactions(accountIndex: Int) {
+        Bip44AccountIdleService.getInstance().sendTransactions(accountIndex)
     }
 
     fun maxConnectedPeers(): Int =
@@ -147,5 +144,5 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     }
 
     internal fun doesWalletAccountExist(accountIndex: Int): Boolean =
-            bip44AccountIdleService.doesWalletAccountExist(accountIndex)
+            Bip44AccountIdleService.getInstance().doesWalletAccountExist(accountIndex)
 }

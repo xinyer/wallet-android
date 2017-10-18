@@ -92,6 +92,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
     override fun startUp() {
         Log.d(LOG_TAG, "startUp")
+        INSTANCE = this
         propagate(Constants.CONTEXT)
         val intentFilter = IntentFilter().apply {
             addAction(ConnectivityManager.CONNECTIVITY_ACTION)
@@ -307,6 +308,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             }
             broadcastBlockchainState()
         }
+        Log.i(LOG_TAG, "checkImpediments, DONE")
     }
 
     private fun getAccountWallet(accountIndex: Int) : Wallet? {
@@ -678,6 +680,13 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         }
     }
 
+    fun sendTransactions(accountIndex: Int) {
+        val walletAccount = walletsAccountsMap.get(accountIndex)
+        if(walletAccount != null) {
+            notifyTransactions(walletAccount.getTransactions(true), walletAccount.unspents.toSet())
+        }
+    }
+
     private val activityHistory = LinkedList<ActivityHistoryEntry>()
 
     private fun checkIfDownloadIsIdling() {
@@ -831,6 +840,8 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             Constants.Files.WALLET_FILENAME_PROTOBUF + "_$accountIndex"
 
     companion object {
+        private var INSTANCE: Bip44AccountIdleService? = null
+        fun getInstance(): Bip44AccountIdleService = INSTANCE!!
         private val LOG_TAG = Bip44AccountIdleService::class.java.simpleName
         private val BLOCKCHAIN_STATE_BROADCAST_THROTTLE_MS = DateUtils.SECOND_IN_MILLIS
         private val APPWIDGET_THROTTLE_MS = DateUtils.SECOND_IN_MILLIS
