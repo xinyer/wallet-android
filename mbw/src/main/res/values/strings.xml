@@ -549,6 +549,11 @@
     <string name="title_upgrade_info">Welcome to Mycelium 2.0</string>
     <string name="button_continue">Continue</string>
     <string name="butto_show_release_notes">Show Details</string>
+    <string name="title_no_spvmodule_warning">No SPV Module found</string>
+    <string name="message_no_spvmodule_warning">Please install the Bitcoin spv module from Google Play.</string>
+    <string name="no_spvmodule_warning_install">Install</string>
+    <string name="no_spvmodule_warning_ignore">Close the wallet</string>
+    <string name="google_play_not_found">Google Play not found</string>
     <string name="word_does_not_exist_in_wordlist">The word you typed does not exist in the word list</string>
     <string name="pref_legacy_backup_title">Legacy Backup</string>
     <string name="pref_legacy_backup_summary">Create a legacy backup, containing your single address accounts.</string>
