@@ -92,6 +92,7 @@ dependencies {
     compile(guavaArtifact) {
         force = true
     }
+    compile project(path: ':wapi')
 }
 
 if (project.hasProperty('testKeyStore') &&

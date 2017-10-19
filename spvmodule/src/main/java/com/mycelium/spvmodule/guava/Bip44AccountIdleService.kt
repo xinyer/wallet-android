@@ -15,8 +15,12 @@ import android.widget.Toast
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.AbstractScheduledService
 import com.google.common.util.concurrent.ListenableFuture
+import com.mrd.bitlib.model.Address
+import com.mrd.bitlib.model.NetworkParameters
 import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.spvmodule.*
+import com.mycelium.wapi.model.TransactionEx
+import com.mycelium.wapi.model.TransactionSummary
 import org.bitcoinj.core.*
 import org.bitcoinj.core.Context.propagate
 import org.bitcoinj.core.listeners.DownloadProgressTracker
@@ -698,6 +702,70 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             } else {
                 countercheckIfDownloadIsIdling = 0
             }
+        }
+    }
+
+    fun getTransactionsSummary(accountIndex: Int) : Set<TransactionSummary> {
+        val walletAccount = walletsAccountsMap.get(accountIndex)
+        val transactions = walletAccount.getTransactions(true)
+        for (transactionBitcoinJ in transactions) {
+            val transactionBitLib : com.mrd.bitlib.model.Transaction =
+                    com.mrd.bitlib.model.Transaction.fromBytes(transactionBitcoinJ.bitcoinSerialize())
+
+            transactionBitcoinJ.isAnyOutputSpent
+            // Outputs
+            var satoshis: Long = 0
+            val toAddresses = java.util.ArrayList<Address>()
+            var destAddress: Address? = null
+            val valueSentToMe = transactionBitcoinJ.getValueSentToMe(walletAccount)
+            if(valueSentToMe.isPositive) {
+                satoshis.plus(valueSentToMe.value)
+            }
+
+            val networkParametersBitlib : NetworkParameters = {
+                when(walletAccount!!.networkParameters.id) {
+                    org.bitcoinj.core.NetworkParameters.ID_MAINNET -> NetworkParameters.productionNetwork
+                    org.bitcoinj.core.NetworkParameters.ID_TESTNET -> NetworkParameters.testNetwork
+                    else -> {
+                        throw Error("Wrong network parameters")
+                    }
+                }
+            }.invoke()
+
+            for (transactionOutput in transactionBitcoinJ.outputs) {
+                val toAddress = Address.fromString(
+                        transactionOutput.scriptPubKey.getToAddress(walletAccount!!.networkParameters)
+                                .toBase58(), networkParametersBitlib)
+                if (!transactionOutput.isMine(walletAccount)) {
+                    destAddress = toAddress
+                }
+                if(toAddress != Address.getNullAddress(networkParametersBitlib)) {
+                    toAddresses.add(toAddress)
+                }
+            }
+
+            // Inputs
+            if (!transactionBitLib.isCoinbase()) {
+                for (input in transactionBitLib.inputs) {
+                    // find parent output
+                    val funding = _backing.getParentTransactionOutput(input.outPoint)
+                    if (funding == null) {
+                        _logger.logError("Unable to find parent output for: " + input.outPoint)
+                        continue
+                    }
+                    if (isMine(funding)) {
+                        satoshis -= funding!!.value
+                    }
+                }
+            }
+
+
+
+
+
+
+
+            val transactionSummary : TransactionSummary = TransactionSummary(transactionBitcoinJ.hash)
         }
     }
 
