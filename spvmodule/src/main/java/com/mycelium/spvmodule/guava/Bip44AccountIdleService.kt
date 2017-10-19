@@ -708,9 +708,10 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     fun getTransactionsSummary(accountIndex: Int) : List<TransactionSummary> {
+        Log.d(LOG_TAG, "getTransactionsSummary, accountIndex = $accountIndex")
         val transactionsSummary = mutableListOf<TransactionSummary>()
         val walletAccount = walletsAccountsMap.get(accountIndex)
-        val transactions = walletAccount!!.getTransactions(true)
+        val transactions = walletAccount!!.getTransactions(false)
         for (transactionBitcoinJ in transactions) {
             val transactionBitLib : com.mrd.bitlib.model.Transaction =
                     com.mrd.bitlib.model.Transaction.fromBytes(transactionBitcoinJ.bitcoinSerialize())
@@ -754,11 +755,20 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             } else {
                 Optional.absent()
             }
-            transactionsSummary.add(TransactionSummary(transactionBitLib.hash,
-                    ExactBitcoinValue.from(transactionBitcoinJ.getValue(walletAccount).value),
-                    transactionBitcoinJ.getValueSentToMe(walletAccount).isPositive,
+            val bitcoinJValue = transactionBitcoinJ.getValue(walletAccount)
+            val isIncoming = bitcoinJValue.isPositive
+            val bitcoinValue = if(bitcoinJValue.isPositive) {
+                ExactBitcoinValue.from(bitcoinJValue.value)
+            } else {
+                ExactBitcoinValue.from(bitcoinJValue.value * -1)
+            }
+            val transactionSummary = TransactionSummary(transactionBitLib.hash,
+                    bitcoinValue,
+                    isIncoming,
                     transactionBitcoinJ.lockTime, transactionBitcoinJ.confidence.appearedAtChainHeight,
-                    confirmations, isQueuedOutgoing, null, destAddressOptional, toAddresses))
+                    confirmations, isQueuedOutgoing, null, destAddressOptional, toAddresses)
+            Log.d(LOG_TAG, "getTransactionsSummary, accountIndex = $accountIndex, transactionSummary = ${transactionSummary.toString()} ")
+            transactionsSummary.add(transactionSummary)
         }
         return transactionsSummary.toList()
     }
