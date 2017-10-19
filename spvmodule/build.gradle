@@ -97,7 +97,9 @@ dependencies {
     compile(guavaArtifact) {
         force = true
     }
-    compile project(path: ':wapi')
+    compile(project(path: ':wapi')) {
+        exclude module: 'annotations'
+    }
 }
 
 if (project.hasProperty('testKeyStore') &&
