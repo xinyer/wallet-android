@@ -1,0 +1,93 @@
+package com.mycelium.spvmodule.providers
+
+import android.content.ContentProvider
+import android.content.ContentValues
+import android.content.UriMatcher
+import android.database.Cursor
+import android.net.Uri
+import com.mycelium.modularizationtools.CommunicationManager
+import com.mycelium.spvmodule.guava.Bip44AccountIdleService
+import com.mycelium.spvmodule.providers.TransactionContract.Transaction
+import com.mycelium.spvmodule.providers.data.TransactionCursor
+
+
+/**
+ * Created by Nelson on 17/10/2017.
+ */
+class TransactionContentProvider : ContentProvider() {
+
+    var communicationManager: CommunicationManager? = null
+
+    override fun onCreate(): Boolean {
+        communicationManager = CommunicationManager.getInstance(context)
+        return true
+    }
+
+    override fun query(uri: Uri?, projection: Array<out String>?, selection: String?, selectionArgs: Array<out String>?, sortOrder: String?): Cursor {
+        checkSignature(callingPackage)
+        var cursor = TransactionCursor(0)
+        val match = URI_MATCHER.match(uri)
+        when (match) {
+            TRANSACTION_LIST ->
+                if (selection!!.contentEquals(Transaction.SELECTION_ACCOUNT_INDEX)) {
+                    val accountIndex = selectionArgs!!.get(0)
+
+                    // !!! below code trows some exceptions !!!
+                    /*
+                    val transactionsSummary =
+                            Bip44AccountIdleService.getInstance().getTransactionsSummary(accountIndex.toInt())
+                    cursor = TransactionCursor(transactionsSummary.size)
+                    cursor.addRow(transactionsSummary)
+                    */
+                    return cursor
+                }
+            else -> {
+                // Do nothing.
+            }
+        }
+        return cursor
+    }
+
+    override fun insert(uri: Uri?, values: ContentValues?): Uri {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun update(uri: Uri?, values: ContentValues?, selection: String?, selectionArgs: Array<out String>?): Int {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun delete(uri: Uri?, selection: String?, selectionArgs: Array<out String>?): Int {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    private fun checkSignature(callingPackage: String) {
+        communicationManager!!.checkSignature(callingPackage)
+    }
+
+    override fun getType(uri: Uri): String? {
+        checkSignature(callingPackage)
+        return when (URI_MATCHER.match(uri)) {
+            TRANSACTION_LIST -> Transaction.CONTENT_TYPE
+            else -> throw IllegalArgumentException("Unknown URI " + uri)
+        }
+    }
+
+    companion object {
+
+        val URI_MATCHER: UriMatcher
+
+        private val TRANSACTION_LIST = 1
+
+        init {
+            URI_MATCHER = UriMatcher(UriMatcher.NO_MATCH)
+            URI_MATCHER.addURI("*", Transaction.TABLE_NAME, TRANSACTION_LIST)
+        }
+
+        private fun getTableFromMatch(match: Int): String {
+            return when (match) {
+                TRANSACTION_LIST -> Transaction.TABLE_NAME
+                else -> throw IllegalArgumentException("Unknown match " + match)
+            }
+        }
+    }
+}

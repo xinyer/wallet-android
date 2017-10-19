@@ -2,7 +2,6 @@ package com.mycelium.spvmodule.providers
 
 import android.content.ContentResolver
 import android.net.Uri
-import com.mycelium.spvmodulecontract.BuildConfig
 
 /**
  * The contract between the [BlockchainContentProvider] and clients. Contains definitions

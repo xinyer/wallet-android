@@ -36,17 +36,26 @@ package com.mycelium.wallet.activity.main;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.view.ActionMode;
-import android.view.*;
+import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ListView;
 import android.widget.Toast;
+
 import com.commonsware.cwac.endless.EndlessAdapter;
 import com.google.common.base.Preconditions;
 import com.mrd.bitlib.StandardTransactionBuilder.InsufficientFundsException;
@@ -55,6 +64,7 @@ import com.mrd.bitlib.StandardTransactionBuilder.UnsignedTransaction;
 import com.mrd.bitlib.model.Address;
 import com.mrd.bitlib.model.Transaction;
 import com.mrd.bitlib.util.Sha256Hash;
+import com.mycelium.spvmodule.providers.TransactionContract;
 import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.MinerFee;
 import com.mycelium.wallet.R;
@@ -71,7 +81,6 @@ import com.mycelium.wallet.event.SelectedCurrencyChanged;
 import com.mycelium.wallet.event.SyncStopped;
 import com.mycelium.wallet.persistence.MetadataStorage;
 import com.mycelium.wapi.model.TransactionDetails;
-import com.mycelium.wapi.model.TransactionEx;
 import com.mycelium.wapi.model.TransactionSummary;
 import com.mycelium.wapi.wallet.AbstractAccount;
 import com.mycelium.wapi.wallet.WalletAccount;
@@ -109,7 +118,26 @@ public class TransactionHistoryFragment extends Fragment {
             _mbwManager.getWalletManager(false).startSynchronization();
          }
       });
+      getTransactions();
       return _root;
+   }
+
+   private void getTransactions() {
+      FragmentActivity context = getActivity();
+      Uri uri = TransactionContract.Transaction.CONTENT_URI("com.mycelium.spvmodule.test");
+
+      String selection = TransactionContract.Transaction.SELECTION_ACCOUNT_INDEX;
+      String[] selectionArgs = new String[]{"1"};
+      Cursor cursor = null;
+      ContentResolver contentResolver = context.getContentResolver();
+      try {
+         cursor = contentResolver.query(uri, null, selection, selectionArgs, null);
+         // do the work
+      } finally {
+         if (cursor != null) {
+            cursor.close();
+         }
+      }
    }
 
    @Override

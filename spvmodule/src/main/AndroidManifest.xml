@@ -32,5 +32,9 @@
             android:name=".providers.BlockchainContentProvider"
             android:exported="true"
             android:authorities="${applicationId}.providers.BlockchainContentProvider" />
+        <provider
+            android:name=".providers.TransactionContentProvider"
+            android:exported="true"
+            android:authorities="${applicationId}.providers.TransactionContentProvider" />
     </application>
 </manifest>
