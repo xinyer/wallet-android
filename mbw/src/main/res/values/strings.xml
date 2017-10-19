@@ -247,7 +247,9 @@
     <string name="source_url">https://github.com/mycelium-com/wallet</string>
     <string name="source_repo_label">Source Repository</string>
     <string name="version_label">Version</string>
-    <string name="authors_label">Developed by</string>
+    <string name="first_author_label">Created by</string>
+    <string name="authors_label">Current Team</string>
+    <string name="previous_authors_label">Previously</string>
     <string name="homepage_label">Homepage</string>
     <string name="homepage_url">https://mycelium.com</string>
     <string name="company_header">This app is provided to you for free by</string>
