@@ -94,17 +94,22 @@ class TransactionContentProvider : ContentProvider() {
      * @return a Cursor or `null`.
      */
     override fun query(uri: Uri?, projection: Array<out String>?, selection: String?, selectionArgs: Array<out String>?, sortOrder: String?): Cursor {
+        val cursor = TransactionCursor(0)
         when (sUriMatcher.match(uri)) {
             1 ->
                 if (selection!!.contentEquals(SELECTION_ACCOUNTINDEX)) {
                     val accountIndex = selectionArgs!!.get(0)
-                    Bip44AccountIdleService.getInstance().
+                    val transactionsSummary =
+                            Bip44AccountIdleService.getInstance().getTransactionsSummary(accountIndex.toInt())
+                    val cursor = TransactionCursor(transactionsSummary.size)
+                    cursor.addRow(transactionsSummary)
+                    return cursor
                 }
             else -> {
-                return TransactionCursor(0)
+                // Do nothing.
             }
-        // call the code to actually do the query
         }
+        return cursor
     }
 
     /**
