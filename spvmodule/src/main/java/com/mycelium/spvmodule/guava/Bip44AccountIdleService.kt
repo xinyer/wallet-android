@@ -769,11 +769,17 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             } else {
                 ExactBitcoinValue.from(bitcoinJValue.value * -1)
             }
+            var height : Int
+            try {
+                height = transactionBitcoinJ.confidence.appearedAtChainHeight
+            } catch (e : IllegalStateException) {
+                continue
+            }
             val transactionSummary = TransactionSummary(transactionBitLib.hash,
                     bitcoinValue,
                     isIncoming,
                     transactionBitcoinJ.updateTime.time / 1000,
-                    transactionBitcoinJ.confidence.appearedAtChainHeight,
+                    height,
                     confirmations, isQueuedOutgoing, null, destAddressOptional, toAddresses)
             Log.d(LOG_TAG, "getTransactionsSummary, accountIndex = $accountIndex, " +
                     "transactionSummary = ${transactionSummary.toString()} ")
@@ -828,8 +834,14 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             outputs.add(TransactionDetails.Item(addressBitLib, output.value!!.value, false))
         }
 
+        var height : Int
+        try {
+            height = transactionBitcoinJ.confidence.appearedAtChainHeight
+        } catch (e : IllegalStateException) {
+            height = 0
+        }
         val transactionDetails : TransactionDetails = TransactionDetails(Sha256Hash.fromString(hash),
-                transactionBitcoinJ.confidence.appearedAtChainHeight,
+                height,
                 (transactionBitcoinJ.updateTime.time / 1000).toInt(), inputs.toTypedArray(),
                 outputs.toTypedArray(), transactionBitcoinJ.optimalEncodingMessageSize)
         return transactionDetails
