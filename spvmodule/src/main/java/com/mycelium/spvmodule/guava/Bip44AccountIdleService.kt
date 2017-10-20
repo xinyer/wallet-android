@@ -754,7 +754,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             val confirmations : Int = transactionBitcoinJ.confidence.depthInBlocks
             val isQueuedOutgoing = transactionBitcoinJ.isPending
 
-            val destAddressOptional = if(destAddress != null) {
+            val destAddressOptional : Optional<Address> = if(destAddress != null) {
                 Optional.of(destAddress)
             } else {
                 Optional.absent()
@@ -769,9 +769,11 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             val transactionSummary = TransactionSummary(transactionBitLib.hash,
                     bitcoinValue,
                     isIncoming,
-                    transactionBitcoinJ.lockTime, transactionBitcoinJ.confidence.appearedAtChainHeight,
+                    transactionBitcoinJ.updateTime.time / 1000,
+                    transactionBitcoinJ.confidence.appearedAtChainHeight,
                     confirmations, isQueuedOutgoing, null, destAddressOptional, toAddresses)
-            Log.d(LOG_TAG, "getTransactionsSummary, accountIndex = $accountIndex, transactionSummary = ${transactionSummary.toString()} ")
+            Log.d(LOG_TAG, "getTransactionsSummary, accountIndex = $accountIndex, " +
+                    "transactionSummary = ${transactionSummary.toString()} ")
             transactionsSummary.add(transactionSummary)
         }
         return transactionsSummary.toList()
