@@ -712,6 +712,9 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         Log.d(LOG_TAG, "getTransactionsSummary, accountIndex = $accountIndex")
         val transactionsSummary = mutableListOf<TransactionSummary>()
         val walletAccount = walletsAccountsMap.get(accountIndex)
+        if (walletAccount == null) {
+            return transactionsSummary
+        }
         val transactions = walletAccount!!.getTransactions(false)
         for (transactionBitcoinJ in transactions) {
             val transactionBitLib : com.mrd.bitlib.model.Transaction =
