@@ -770,9 +770,8 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                 ExactBitcoinValue.from(bitcoinJValue.value * -1)
             }
             var height : Int
-            try {
-                height = transactionBitcoinJ.confidence.appearedAtChainHeight
-            } catch (e : IllegalStateException) {
+            height = transactionBitcoinJ.confidence.depthInBlocks
+            if(height <= 0 ) {
                 continue
             }
             val transactionSummary = TransactionSummary(transactionBitLib.hash,
@@ -834,12 +833,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             outputs.add(TransactionDetails.Item(addressBitLib, output.value!!.value, false))
         }
 
-        var height : Int
-        try {
-            height = transactionBitcoinJ.confidence.appearedAtChainHeight
-        } catch (e : IllegalStateException) {
-            height = 0
-        }
+        var height = transactionBitcoinJ.confidence.depthInBlocks
         val transactionDetails : TransactionDetails = TransactionDetails(Sha256Hash.fromString(hash),
                 height,
                 (transactionBitcoinJ.updateTime.time / 1000).toInt(), inputs.toTypedArray(),
