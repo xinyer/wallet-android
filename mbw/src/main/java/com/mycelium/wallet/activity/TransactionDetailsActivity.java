@@ -146,18 +146,23 @@ public class TransactionDetailsActivity extends Activity {
       String rawInputs = cursor.getString(cursor.getColumnIndex(TransactionContract.TransactionDetails.INPUTS));
       String rawOutputs = cursor.getString(cursor.getColumnIndex(TransactionContract.TransactionDetails.OUTPUTS));
 
-      TransactionDetails.Item[] inputs = null ;
-      TransactionDetails.Item[] outputs = null;
+      TransactionDetails.Item[] inputs = extract(rawInputs);
+      TransactionDetails.Item[] outputs = extract(rawOutputs);
+      return new TransactionDetails(hash, height, time, inputs, outputs, rawSize);
+   }
 
-      List<Address> toAddresses = new ArrayList<>();
-      String rawToAddresses = cursor.getString(cursor.getColumnIndex(TransactionContract.TransactionSummary.TO_ADDRESSES));
-      if (!TextUtils.isEmpty(rawToAddresses)) {
-         String[] addresses = rawToAddresses.split(",");
-         for (String addr : addresses) {
-            toAddresses.add(Address.fromString(addr));
+   private TransactionDetails.Item[] extract(String data) {
+      List<TransactionDetails.Item> result = new ArrayList<>();
+      if (!TextUtils.isEmpty(data)) {
+         String[] dataParts = data.split(",");
+         for (String in : dataParts) {
+            String[] inParts = in.split(" BTC");
+            long value = Long.valueOf(inParts[0]);
+            Address address = Address.fromString(inParts[1]);
+            result.add(new TransactionDetails.Item(address, value, false));
          }
       }
-      return new TransactionDetails(hash, height, time, inputs, outputs, rawSize);
+      return result.toArray(new TransactionDetails.Item[result.size()]);
    }
 
    private void updateUi() {

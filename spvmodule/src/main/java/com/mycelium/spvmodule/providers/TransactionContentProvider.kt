@@ -80,7 +80,7 @@ class TransactionContentProvider : ContentProvider() {
                     val inputsBuilder = StringBuilder()
                     for (input in transactionDetails.inputs) {
                         if (inputsBuilder.isNotEmpty()) {
-                            inputsBuilder.append("")
+                            inputsBuilder.append(",")
                         }
                         inputsBuilder.append("${input.value} BTC")
                         inputsBuilder.append("${input.address}")
@@ -90,7 +90,7 @@ class TransactionContentProvider : ContentProvider() {
                     val outputsBuilder = StringBuilder()
                     for (output in transactionDetails.outputs) {
                         if (outputsBuilder.isNotEmpty()) {
-                            outputsBuilder.append("")
+                            outputsBuilder.append(",")
                         }
                         outputsBuilder.append("${output.value} BTC")
                         outputsBuilder.append("${output.address}")

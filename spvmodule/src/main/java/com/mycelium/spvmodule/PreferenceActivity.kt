@@ -79,17 +79,22 @@ class PreferenceActivity : AppCompatActivity() {
         val rawInputs = cursor.getString(cursor.getColumnIndex(TransactionContract.TransactionDetails.INPUTS))
         val rawOutputs = cursor.getString(cursor.getColumnIndex(TransactionContract.TransactionDetails.OUTPUTS))
 
-        val inputs: Array<TransactionDetails.Item>? = null
-        val outputs: Array<TransactionDetails.Item>? = null
+        val inputs = extract(rawInputs)
+        val outputs = extract(rawOutputs)
+        return TransactionDetails(hash, height, time, inputs, outputs, rawSize)
+    }
 
-        val toAddresses = ArrayList<Address>()
-        val rawToAddresses = cursor.getString(cursor.getColumnIndex(TransactionContract.TransactionSummary.TO_ADDRESSES))
-        if (!TextUtils.isEmpty(rawToAddresses)) {
-            val addresses = rawToAddresses.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-            for (addr in addresses) {
-                toAddresses.add(Address.fromString(addr))
+    private fun extract(data: String): Array<TransactionDetails.Item> {
+        val result = ArrayList<TransactionDetails.Item>()
+        if (!TextUtils.isEmpty(data)) {
+            val dataParts = data.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+            for (input in dataParts) {
+                val inputParts = input.split(" BTC".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                val value = java.lang.Long.valueOf(inputParts[0])!!
+                val address = Address.fromString(inputParts[1])
+                result.add(TransactionDetails.Item(address, value, false))
             }
         }
-        return TransactionDetails(hash, height, time, inputs, outputs, rawSize)
+        return result.toTypedArray()
     }
 }
