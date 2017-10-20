@@ -802,9 +802,19 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         val inputs: MutableList<TransactionDetails.Item> = mutableListOf()
 
         for (input in transactionBitcoinJ.inputs) {
-            val addressBitcoinJ = input.scriptSig.getToAddress(walletAccount.networkParameters)
-            val addressBitLib : Address = Address.fromString(addressBitcoinJ.toBase58(), networkParametersBitlib)
-            inputs.add(TransactionDetails.Item(addressBitLib, input.value!!.value, input.isCoinBase))
+            val connectedOutput = input.outpoint.connectedOutput
+            if(connectedOutput == null) {
+                inputs.add(TransactionDetails.Item(Address.getNullAddress(networkParametersBitlib),
+                        if(input.value != null) {
+                            input.value!!.value
+                        } else {
+                            0
+                        }, input.isCoinBase))
+            } else {
+                val addressBitcoinJ = connectedOutput.scriptPubKey.getToAddress(walletAccount.networkParameters)
+                val addressBitLib: Address = Address.fromString(addressBitcoinJ.toBase58(), networkParametersBitlib)
+                inputs.add(TransactionDetails.Item(addressBitLib, input.value!!.value, input.isCoinBase))
+            }
         }
 
         val outputs: MutableList<TransactionDetails.Item> = mutableListOf()
