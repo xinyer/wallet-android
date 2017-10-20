@@ -718,12 +718,12 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             return transactionsSummary
         }
         val transactions = walletAccount.getTransactions(false).sortedWith(kotlin.Comparator {
-            o1, o2 -> o1.updateTime.compareTo(o2.updateTime) })
+            o1, o2 -> o2.updateTime.compareTo(o1.updateTime) })
+
         for (transactionBitcoinJ in transactions) {
             val transactionBitLib : com.mrd.bitlib.model.Transaction =
                     com.mrd.bitlib.model.Transaction.fromBytes(transactionBitcoinJ.bitcoinSerialize())
 
-            transactionBitcoinJ.isAnyOutputSpent
             // Outputs
             val satoshis: Long = 0
             val toAddresses = java.util.ArrayList<Address>()
