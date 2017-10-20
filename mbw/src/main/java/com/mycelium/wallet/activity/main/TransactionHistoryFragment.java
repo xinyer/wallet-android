@@ -223,8 +223,8 @@ public class TransactionHistoryFragment extends Fragment {
       } else {
          _root.findViewById(R.id.llNoRecords).setVisibility(View.GONE);
          _root.findViewById(R.id.lvTransactionHistory).setVisibility(View.VISIBLE);
-         Wrapper wrapper = new Wrapper(getActivity(), history);
-         ((ListView) _root.findViewById(R.id.lvTransactionHistory)).setAdapter(wrapper);
+         TransactionHistoryAdapter transactionHistoryAdapter = new TransactionHistoryAdapter(getActivity(), history);
+         ((ListView) _root.findViewById(R.id.lvTransactionHistory)).setAdapter(transactionHistoryAdapter);
          refreshList();
       }
    }
