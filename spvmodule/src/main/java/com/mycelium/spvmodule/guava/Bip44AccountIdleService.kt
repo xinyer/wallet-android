@@ -782,10 +782,13 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         return transactionsSummary.toList()
     }
 
-    fun getTransactionDetails(accountIndex: Int, hash: String) : TransactionDetails {
+    fun getTransactionDetails(accountIndex: Int, hash: String) : TransactionDetails? {
         propagate(Constants.CONTEXT)
         Log.d(LOG_TAG, "getTransactionDetails, accountIndex = $accountIndex, hash = $hash")
-        val walletAccount : Wallet = walletsAccountsMap.get(accountIndex)!!
+        val walletAccount = walletsAccountsMap.get(accountIndex)
+        if (walletAccount == null) {
+            return null
+        }
         val transactionBitcoinJ = walletAccount.getTransaction(
                 org.bitcoinj.core.Sha256Hash.wrap(hash))!!
 

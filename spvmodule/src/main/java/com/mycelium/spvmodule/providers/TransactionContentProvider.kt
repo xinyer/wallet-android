@@ -85,6 +85,10 @@ class TransactionContentProvider : ContentProvider() {
                     val transactionDetails = Bip44AccountIdleService.getInstance()
                             .getTransactionDetails(accountIndex.toInt(), hash)
 
+                    if (transactionDetails == null) {
+                        return cursor
+                    }
+
                     val columnValues = mutableListOf<Any?>()
                     columnValues.add(transactionDetails.hash.toHex())       //TransactionContract.Transaction._ID
                     columnValues.add(transactionDetails.height)             //TransactionContract.Transaction.HEIGHT
