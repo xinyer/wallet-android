@@ -23,7 +23,9 @@ public class TransactionContract {
         public static final String HEIGHT = "height";
         public static final String CONFIRMATIONS = "confirmations";
         public static final String IS_QUEUED_OUTGOING = "isQueuedOutgoing";
-        public static final String CONFIRMATION_RISK_PROFILE = "confirmationRiskProfile";
+        public static final String CONFIRMATION_RISK_PROFILE_LENGTH = "confirmationRiskProfileLength";
+        public static final String CONFIRMATION_RISK_PROFILE_RBF_RISK = "confirmationRiskProfileRbfRisk";
+        public static final String CONFIRMATION_RISK_PROFILE_DOUBLE_SPEND = "confirmationRiskProfileDoubleSpend";
         public static final String DESTINATION_ADDRESS = "destinationAddress";
         public static final String TO_ADDRESSES = "toAddresses";
         public static final String ACCOUNT_INDEX = "accountIndex";

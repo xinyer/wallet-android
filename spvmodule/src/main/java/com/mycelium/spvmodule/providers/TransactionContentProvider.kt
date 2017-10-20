@@ -42,16 +42,25 @@ class TransactionContentProvider : ContentProvider() {
 
                     for(rowItem in transactionsSummary) {
                         val columnValues = mutableListOf<Any?>()
-                        columnValues.add(rowItem.txid.toHex())                          //TransactionContract.Transaction._ID
-                        columnValues.add(rowItem.value.value.toPlainString())           //TransactionContract.Transaction.VALUE
-                        columnValues.add(if (rowItem.isIncoming) 1 else 0)              //TransactionContract.Transaction.IS_INCOMING
-                        columnValues.add(rowItem.time)                                  //TransactionContract.Transaction.TIME
-                        columnValues.add(rowItem.height)                                //TransactionContract.Transaction.HEIGHT
-                        columnValues.add(rowItem.confirmations)                         //TransactionContract.Transaction.CONFIRMATIONS
-                        columnValues.add(if (rowItem.isQueuedOutgoing) 1 else 0)        //TransactionContract.Transaction.IS_QUEUED_OUTGOING
-                        columnValues.add(rowItem.confirmationRiskProfile.toString())    //TransactionContract.Transaction.CONFIRMATION_RISK_PROFILE
+                        columnValues.add(rowItem.txid.toHex())                          //TransactionContract.TransactionSummary._ID
+                        columnValues.add(rowItem.value.value.toPlainString())           //TransactionContract.TransactionSummary.VALUE
+                        columnValues.add(if (rowItem.isIncoming) 1 else 0)              //TransactionContract.TransactionSummary.IS_INCOMING
+                        columnValues.add(rowItem.time)                                  //TransactionContract.TransactionSummary.TIME
+                        columnValues.add(rowItem.height)                                //TransactionContract.TransactionSummary.HEIGHT
+                        columnValues.add(rowItem.confirmations)                         //TransactionContract.TransactionSummary.CONFIRMATIONS
+                        columnValues.add(if (rowItem.isQueuedOutgoing) 1 else 0)        //TransactionContract.TransactionSummary.IS_QUEUED_OUTGOING
+                        if (rowItem.confirmationRiskProfile.isPresent) {
+                            val confirmationRiskProfile = rowItem.confirmationRiskProfile.get()
+                            columnValues.add(confirmationRiskProfile.unconfirmedChainLength)      //TransactionContract.TransactionSummary.CONFIRMATION_RISK_PROFILE_LENGTH
+                            columnValues.add(confirmationRiskProfile.hasRbfRisk)                  //TransactionContract.TransactionSummary.CONFIRMATION_RISK_PROFILE_RBF_RISK
+                            columnValues.add(confirmationRiskProfile.isDoubleSpend)               //TransactionContract.TransactionSummary.CONFIRMATION_RISK_PROFILE_DOUBLE_SPEND
+                        } else {
+                            columnValues.add(-1)
+                            columnValues.add(null)
+                            columnValues.add(null)
+                        }
                         val isDestAddressPresent = rowItem.destinationAddress.isPresent
-                        columnValues.add(if (isDestAddressPresent) rowItem.destinationAddress.get().toString() else null) //TransactionContract.Transaction.DESTINATION_ADDRESS
+                        columnValues.add(if (isDestAddressPresent) rowItem.destinationAddress.get().toString() else null) //TransactionContract.TransactionSummary.DESTINATION_ADDRESS
                         val addressesBuilder = StringBuilder()
                         for (addr in rowItem.toAddresses) {
                             if (addressesBuilder.isNotEmpty()) {
@@ -59,7 +68,7 @@ class TransactionContentProvider : ContentProvider() {
                             }
                             addressesBuilder.append(addr.toString())
                         }
-                        columnValues.add(addressesBuilder.toString())       //TransactionContract.Transaction.TO_ADDRESSES
+                        columnValues.add(addressesBuilder.toString())       //TransactionContract.TransactionSummary.TO_ADDRESSES
                         cursor.addRow(columnValues)
                     }
                     return cursor

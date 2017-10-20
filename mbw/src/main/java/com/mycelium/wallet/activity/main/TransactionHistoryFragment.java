@@ -83,10 +83,12 @@ import com.mycelium.wallet.event.SelectedCurrencyChanged;
 import com.mycelium.wallet.event.SyncStopped;
 import com.mycelium.wallet.persistence.MetadataStorage;
 import com.mycelium.wapi.model.TransactionDetails;
+import com.mycelium.wapi.model.TransactionSummary;
 import com.mycelium.wapi.wallet.AbstractAccount;
 import com.mycelium.wapi.wallet.ConfirmationRiskProfileLocal;
 import com.mycelium.wapi.wallet.WalletAccount;
 import com.mycelium.wapi.wallet.WalletManager;
+import com.mycelium.wapi.wallet.bip44.Bip44Account;
 import com.mycelium.wapi.wallet.currency.CurrencyValue;
 import com.mycelium.wapi.wallet.currency.ExactBitcoinValue;
 import com.mycelium.wapi.wallet.currency.ExactCurrencyValue;
@@ -197,7 +199,7 @@ public class TransactionHistoryFragment extends Fragment {
       _addressBook = _mbwManager.getMetadataStorage().getAllAddressLabels();
    }
 
-   private void doShowDetails(com.mycelium.wapi.model.TransactionSummary selected) {
+   private void doShowDetails(TransactionSummary selected) {
       if (selected == null) {
          return;
       }
@@ -217,7 +219,7 @@ public class TransactionHistoryFragment extends Fragment {
       if (account.isArchived()) {
          return;
       }
-      List<com.mycelium.wapi.model.TransactionSummary> history = getTransactions();//account.getTransactionHistory(0, 20);
+      List<TransactionSummary> history = getTransactions();//account.getTransactionHistory(0, 20);
       if (history.isEmpty()) {
          _root.findViewById(R.id.llNoRecords).setVisibility(View.VISIBLE);
          _root.findViewById(R.id.lvTransactionHistory).setVisibility(View.GONE);
@@ -230,12 +232,12 @@ public class TransactionHistoryFragment extends Fragment {
       }
    }
 
-   private List<com.mycelium.wapi.model.TransactionSummary> getTransactions() {
-      List<com.mycelium.wapi.model.TransactionSummary> transactionSummaryList = new ArrayList<>();
+   private List<TransactionSummary> getTransactions() {
+      List<TransactionSummary> transactionSummaryList = new ArrayList<>();
       FragmentActivity context = getActivity();
       Uri uri = TransactionContract.TransactionSummary.CONTENT_URI("com.mycelium.spvmodule.test");
       String selection = TransactionContract.TransactionSummary.SELECTION_ACCOUNT_INDEX;
-      int accountIndex = ((com.mycelium.wapi.wallet.bip44.Bip44Account) _mbwManager.getSelectedAccount()).getAccountIndex();
+      int accountIndex = ((Bip44Account) _mbwManager.getSelectedAccount()).getAccountIndex();
       String[] selectionArgs = new String[]{Integer.toString(accountIndex)};
       Cursor cursor = null;
       ContentResolver contentResolver = context.getContentResolver();
@@ -243,7 +245,7 @@ public class TransactionHistoryFragment extends Fragment {
          cursor = contentResolver.query(uri, null, selection, selectionArgs, null);
          if (cursor != null) {
             while (cursor.moveToNext()) {
-               com.mycelium.wapi.model.TransactionSummary transactionSummary = from(cursor);
+               TransactionSummary transactionSummary = from(cursor);
                transactionSummaryList.add(transactionSummary);
             }
          }
@@ -255,7 +257,7 @@ public class TransactionHistoryFragment extends Fragment {
       return transactionSummaryList;
    }
 
-   private com.mycelium.wapi.model.TransactionSummary from(Cursor cursor) {
+   private TransactionSummary from(Cursor cursor) {
       String rawTxId = cursor.getString(cursor.getColumnIndex(TransactionContract.TransactionSummary._ID));
       Sha256Hash txId = Sha256Hash.fromString(rawTxId);
       String rawValue = cursor.getString(cursor.getColumnIndex(TransactionContract.TransactionSummary.VALUE));
@@ -267,7 +269,15 @@ public class TransactionHistoryFragment extends Fragment {
       int confirmations = cursor.getInt(cursor.getColumnIndex(TransactionContract.TransactionSummary.CONFIRMATIONS));
       int rawIsQueuedOutgoing = cursor.getInt(cursor.getColumnIndex(TransactionContract.TransactionSummary.IS_QUEUED_OUTGOING));
       boolean isQueuedOutgoing = rawIsQueuedOutgoing == 1;
-      ConfirmationRiskProfileLocal confirmationRiskProfile = null;//cursor.getString(cursor.getColumnIndex(TransactionContract.Transaction.CONFIRMATION_RISK_PROFILE)); //FIXME
+
+      ConfirmationRiskProfileLocal confirmationRiskProfile = null;
+      int unconfirmedChainLength = cursor.getInt(cursor.getColumnIndex(TransactionContract.TransactionSummary.CONFIRMATION_RISK_PROFILE_LENGTH));
+      if (unconfirmedChainLength > -1) {
+         boolean hasRbfRisk = cursor.getInt(cursor.getColumnIndex(TransactionContract.TransactionSummary.CONFIRMATION_RISK_PROFILE_LENGTH)) == 1;
+         boolean isDoubleSpend = cursor.getInt(cursor.getColumnIndex(TransactionContract.TransactionSummary.CONFIRMATION_RISK_PROFILE_LENGTH)) == 1;
+         confirmationRiskProfile = new ConfirmationRiskProfileLocal(unconfirmedChainLength, hasRbfRisk, isDoubleSpend);
+      }
+
       String rawDestinationAddress = cursor.getString(cursor.getColumnIndex(TransactionContract.TransactionSummary.DESTINATION_ADDRESS));
       Optional<Address> destinationAddress = Optional.absent();
       if (!TextUtils.isEmpty(rawDestinationAddress)) {
@@ -281,7 +291,7 @@ public class TransactionHistoryFragment extends Fragment {
             toAddresses.add(Address.fromString(addr));
          }
       }
-      return new com.mycelium.wapi.model.TransactionSummary(txId, value, isIncoming, time, height, confirmations, isQueuedOutgoing,
+      return new TransactionSummary(txId, value, isIncoming, time, height, confirmations, isQueuedOutgoing,
               confirmationRiskProfile, destinationAddress, toAddresses);
    }
 
@@ -300,7 +310,7 @@ public class TransactionHistoryFragment extends Fragment {
    }
 
    private class TransactionHistoryAdapter extends TransactionArrayAdapter {
-      TransactionHistoryAdapter(Context context, List<com.mycelium.wapi.model.TransactionSummary> transactions) {
+      TransactionHistoryAdapter(Context context, List<TransactionSummary> transactions) {
          super(context, transactions, TransactionHistoryFragment.this, _addressBook, false);
       }
 
@@ -316,7 +326,7 @@ public class TransactionHistoryFragment extends Fragment {
             return rowView;
          }
 
-         final com.mycelium.wapi.model.TransactionSummary record = checkNotNull(getItem(position));
+         final TransactionSummary record = checkNotNull(getItem(position));
          final ActionBarActivity actionBarActivity = (ActionBarActivity) getActivity();
 
          rowView.setOnClickListener(new View.OnClickListener() {
@@ -549,7 +559,7 @@ public class TransactionHistoryFragment extends Fragment {
       }
    };
 
-   private void setTransactionLabel(com.mycelium.wapi.model.TransactionSummary record) {
+   private void setTransactionLabel(TransactionSummary record) {
       EnterAddressLabelUtil.enterTransactionLabel(getActivity(), record.txid, _storage, transactionLabelChanged);
    }
 
@@ -562,12 +572,12 @@ public class TransactionHistoryFragment extends Fragment {
    };
 
    private class Wrapper extends EndlessAdapter {
-      private List<com.mycelium.wapi.model.TransactionSummary> _toAdd;
+      private List<TransactionSummary> _toAdd;
       private final Object _toAddLock = new Object();
       private int lastOffset;
       private int chunkSize;
 
-      private Wrapper(Context context, List<com.mycelium.wapi.model.TransactionSummary> transactions) {
+      private Wrapper(Context context, List<TransactionSummary> transactions) {
          super(new TransactionHistoryAdapter(context, transactions));
          _toAdd = new ArrayList<>();
          lastOffset = 0;
@@ -594,7 +604,7 @@ public class TransactionHistoryFragment extends Fragment {
       protected void appendCachedData() {
          synchronized (_toAddLock) {
             TransactionHistoryAdapter a = (TransactionHistoryAdapter) getWrappedAdapter();
-            for (com.mycelium.wapi.model.TransactionSummary item : _toAdd) {
+            for (TransactionSummary item : _toAdd) {
                a.add(item);
             }
             _toAdd.clear();
