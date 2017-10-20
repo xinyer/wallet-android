@@ -38,16 +38,16 @@ class TransactionContentProvider : ContentProvider() {
 
                     for(rowItem in transactionsSummary) {
                         val columnValues = mutableListOf<Any?>()
-                        columnValues.add(rowItem.txid.toHex())      //TransactionContract.Transaction._ID
-                        columnValues.add(rowItem.value.value.toPlainString())   //TransactionContract.Transaction.VALUE
-                        columnValues.add(rowItem.isIncoming)        //TransactionContract.Transaction.IS_INCOMING
-                        columnValues.add(rowItem.time)              //TransactionContract.Transaction.TIME
-                        columnValues.add(rowItem.height)            //TransactionContract.Transaction.HEIGHT
-                        columnValues.add(rowItem.confirmations)     //TransactionContract.Transaction.CONFIRMATIONS
-                        columnValues.add(rowItem.isQueuedOutgoing)  //TransactionContract.Transaction.IS_QUEUED_OUTGOING
+                        columnValues.add(rowItem.txid.toHex())                          //TransactionContract.Transaction._ID
+                        columnValues.add(rowItem.value.value.toPlainString())           //TransactionContract.Transaction.VALUE
+                        columnValues.add(if (rowItem.isIncoming) 1 else 0)              //TransactionContract.Transaction.IS_INCOMING
+                        columnValues.add(rowItem.time)                                  //TransactionContract.Transaction.TIME
+                        columnValues.add(rowItem.height)                                //TransactionContract.Transaction.HEIGHT
+                        columnValues.add(rowItem.confirmations)                         //TransactionContract.Transaction.CONFIRMATIONS
+                        columnValues.add(if (rowItem.isQueuedOutgoing) 1 else 0)        //TransactionContract.Transaction.IS_QUEUED_OUTGOING
                         columnValues.add(rowItem.confirmationRiskProfile.toString())    //TransactionContract.Transaction.CONFIRMATION_RISK_PROFILE
                         val isDestAddressPresent = rowItem.destinationAddress.isPresent
-                        columnValues.add(if (isDestAddressPresent) rowItem.destinationAddress.toString() else null) //TransactionContract.Transaction.DESTINATION_ADDRESS
+                        columnValues.add(if (isDestAddressPresent) rowItem.destinationAddress.get().toString() else null) //TransactionContract.Transaction.DESTINATION_ADDRESS
                         val addressesBuilder = StringBuilder()
                         for (addr in rowItem.toAddresses) {
                             if (addressesBuilder.isNotEmpty()) {
@@ -55,7 +55,7 @@ class TransactionContentProvider : ContentProvider() {
                             }
                             addressesBuilder.append(addr.toString())
                         }
-                        columnValues.add(rowItem.toAddresses.toString())    //TransactionContract.Transaction.TO_ADDRESSES
+                        columnValues.add(addressesBuilder.toString())    //TransactionContract.Transaction.TO_ADDRESSES
                         cursor.addRow(columnValues)
                     }
 

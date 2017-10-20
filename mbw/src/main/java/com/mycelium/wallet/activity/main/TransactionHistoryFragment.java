@@ -48,6 +48,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.view.ActionMode;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -57,6 +58,7 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import com.commonsware.cwac.endless.EndlessAdapter;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.mrd.bitlib.StandardTransactionBuilder.InsufficientFundsException;
 import com.mrd.bitlib.StandardTransactionBuilder.UnableToBuildTransactionException;
@@ -83,12 +85,15 @@ import com.mycelium.wallet.persistence.MetadataStorage;
 import com.mycelium.wapi.model.TransactionDetails;
 import com.mycelium.wapi.model.TransactionSummary;
 import com.mycelium.wapi.wallet.AbstractAccount;
+import com.mycelium.wapi.wallet.ConfirmationRiskProfileLocal;
 import com.mycelium.wapi.wallet.WalletAccount;
 import com.mycelium.wapi.wallet.WalletManager;
 import com.mycelium.wapi.wallet.currency.CurrencyValue;
 import com.mycelium.wapi.wallet.currency.ExactBitcoinValue;
+import com.mycelium.wapi.wallet.currency.ExactCurrencyValue;
 import com.squareup.otto.Subscribe;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -118,27 +123,7 @@ public class TransactionHistoryFragment extends Fragment {
             _mbwManager.getWalletManager(false).startSynchronization();
          }
       });
-      getTransactions();
       return _root;
-   }
-
-   private void getTransactions() {
-      FragmentActivity context = getActivity();
-      Uri uri = TransactionContract.Transaction.CONTENT_URI("com.mycelium.spvmodule.test");
-
-      String selection = TransactionContract.Transaction.SELECTION_ACCOUNT_INDEX;
-      int accountIndex = ((com.mycelium.wapi.wallet.bip44.Bip44Account) _mbwManager.getSelectedAccount()).getAccountIndex();
-      String[] selectionArgs = new String[]{Integer.toString(accountIndex)};
-      Cursor cursor = null;
-      ContentResolver contentResolver = context.getContentResolver();
-      try {
-         cursor = contentResolver.query(uri, null, selection, selectionArgs, null);
-         // do the work
-      } finally {
-         if (cursor != null) {
-            cursor.close();
-         }
-      }
    }
 
    @Override
@@ -232,7 +217,7 @@ public class TransactionHistoryFragment extends Fragment {
       if (account.isArchived()) {
          return;
       }
-      List<TransactionSummary> history = account.getTransactionHistory(0, 20);
+      List<TransactionSummary> history = getTransactions();//account.getTransactionHistory(0, 20);
       if (history.isEmpty()) {
          _root.findViewById(R.id.llNoRecords).setVisibility(View.VISIBLE);
          _root.findViewById(R.id.lvTransactionHistory).setVisibility(View.GONE);
@@ -243,6 +228,61 @@ public class TransactionHistoryFragment extends Fragment {
          ((ListView) _root.findViewById(R.id.lvTransactionHistory)).setAdapter(wrapper);
          refreshList();
       }
+   }
+
+   private List<TransactionSummary> getTransactions() {
+      List<TransactionSummary> transactionSummaryList = new ArrayList<>();
+      FragmentActivity context = getActivity();
+      Uri uri = TransactionContract.Transaction.CONTENT_URI("com.mycelium.spvmodule.test");
+      String selection = TransactionContract.Transaction.SELECTION_ACCOUNT_INDEX;
+      int accountIndex = ((com.mycelium.wapi.wallet.bip44.Bip44Account) _mbwManager.getSelectedAccount()).getAccountIndex();
+      String[] selectionArgs = new String[]{Integer.toString(accountIndex)};
+      Cursor cursor = null;
+      ContentResolver contentResolver = context.getContentResolver();
+      try {
+         cursor = contentResolver.query(uri, null, selection, selectionArgs, null);
+         if (cursor != null) {
+            while (cursor.moveToNext()) {
+               TransactionSummary transactionSummary = from(cursor);
+               transactionSummaryList.add(transactionSummary);
+            }
+         }
+      } finally {
+         if (cursor != null) {
+            cursor.close();
+         }
+      }
+      return transactionSummaryList;
+   }
+
+   private TransactionSummary from(Cursor cursor) {
+      String rawTxId = cursor.getString(cursor.getColumnIndex(TransactionContract.Transaction._ID));
+      Sha256Hash txId = Sha256Hash.fromString(rawTxId);
+      String rawValue = cursor.getString(cursor.getColumnIndex(TransactionContract.Transaction.VALUE));
+      CurrencyValue value = ExactCurrencyValue.from(new BigDecimal(rawValue), "BTC");
+      int rawIsIncoming = cursor.getInt(cursor.getColumnIndex(TransactionContract.Transaction.IS_INCOMING));
+      boolean isIncoming = rawIsIncoming == 1;
+      long time = cursor.getLong(cursor.getColumnIndex(TransactionContract.Transaction.TIME));
+      int height = cursor.getInt(cursor.getColumnIndex(TransactionContract.Transaction.HEIGHT));
+      int confirmations = cursor.getInt(cursor.getColumnIndex(TransactionContract.Transaction.CONFIRMATIONS));
+      int rawIsQueuedOutgoing = cursor.getInt(cursor.getColumnIndex(TransactionContract.Transaction.IS_QUEUED_OUTGOING));
+      boolean isQueuedOutgoing = rawIsQueuedOutgoing == 1;
+      ConfirmationRiskProfileLocal confirmationRiskProfile = null;//cursor.getString(cursor.getColumnIndex(TransactionContract.Transaction.CONFIRMATION_RISK_PROFILE)); //FIXME
+      String rawDestinationAddress = cursor.getString(cursor.getColumnIndex(TransactionContract.Transaction.DESTINATION_ADDRESS));
+      Optional<Address> destinationAddress = Optional.absent();
+      if (!TextUtils.isEmpty(rawDestinationAddress)) {
+         destinationAddress = Optional.of(Address.fromString(rawDestinationAddress));
+      }
+      List<Address> toAddresses = new ArrayList<>();
+      String rawToAddresses = cursor.getString(cursor.getColumnIndex(TransactionContract.Transaction.TO_ADDRESSES));
+      if (!TextUtils.isEmpty(rawToAddresses)) {
+         String[] addresses = rawToAddresses.split(",");
+         for (String addr : addresses) {
+            toAddresses.add(Address.fromString(addr));
+         }
+      }
+      return new TransactionSummary(txId, value, isIncoming, time, height, confirmations, isQueuedOutgoing,
+              confirmationRiskProfile, destinationAddress, toAddresses);
    }
 
    @Override
