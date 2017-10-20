@@ -63,7 +63,7 @@ public class TransactionContract {
         }
     }
 
-    private static String AUTHORITY(String packageName) {
+    public static String AUTHORITY(String packageName) {
         return packageName + ".providers.TransactionContentProvider";
     }
 

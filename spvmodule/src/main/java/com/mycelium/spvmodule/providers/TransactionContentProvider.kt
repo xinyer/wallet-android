@@ -142,9 +142,9 @@ class TransactionContentProvider : ContentProvider() {
 
         init {
             URI_MATCHER = UriMatcher(UriMatcher.NO_MATCH)
-            URI_MATCHER.addURI(TransactionContract.AUTHORITY(), TransactionSummary.TABLE_NAME,
+            URI_MATCHER.addURI(TransactionContract.AUTHORITY("com.mycelium.spvmodule.test"), TransactionSummary.TABLE_NAME,
                     TRANSACTIONS_LIST)
-            URI_MATCHER.addURI(TransactionContract.AUTHORITY(),
+            URI_MATCHER.addURI(TransactionContract.AUTHORITY("com.mycelium.spvmodule.test"),
                     "${TransactionContract.TransactionDetails.TABLE_NAME}/*", TRANSACTION_DETAILS)
         }
 
