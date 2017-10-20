@@ -708,6 +708,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     fun getTransactionsSummary(accountIndex: Int) : List<TransactionSummary> {
+        propagate(Constants.CONTEXT)
         Log.d(LOG_TAG, "getTransactionsSummary, accountIndex = $accountIndex")
         val transactionsSummary = mutableListOf<TransactionSummary>()
         val walletAccount = walletsAccountsMap.get(accountIndex)
