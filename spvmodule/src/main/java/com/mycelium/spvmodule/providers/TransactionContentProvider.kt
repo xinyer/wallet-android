@@ -6,6 +6,7 @@ import android.content.UriMatcher
 import android.database.Cursor
 import android.database.MatrixCursor
 import android.net.Uri
+import android.util.Log
 import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.spvmodule.guava.Bip44AccountIdleService
 import com.mycelium.spvmodule.providers.TransactionContract.TransactionSummary
@@ -21,6 +22,8 @@ class TransactionContentProvider : ContentProvider() {
 
     var communicationManager: CommunicationManager? = null
 
+    val LOG_TAG = this::class.java.simpleName
+
     override fun onCreate(): Boolean {
         communicationManager = CommunicationManager.getInstance(context)
         return true
@@ -34,6 +37,7 @@ class TransactionContentProvider : ContentProvider() {
         when (match) {
             TRANSACTIONS_LIST ->
                 if (selection!!.contentEquals(TransactionSummary.SELECTION_ACCOUNT_INDEX)) {
+                    Log.d(LOG_TAG, "query, TRANSACTIONS_LIST")
                     val accountIndex = selectionArgs!!.get(0)
 
                     val transactionsSummary =
