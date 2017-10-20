@@ -127,7 +127,8 @@ public class TransactionHistoryFragment extends Fragment {
       Uri uri = TransactionContract.Transaction.CONTENT_URI("com.mycelium.spvmodule.test");
 
       String selection = TransactionContract.Transaction.SELECTION_ACCOUNT_INDEX;
-      String[] selectionArgs = new String[]{"1"};
+      int accountIndex = ((com.mycelium.wapi.wallet.bip44.Bip44Account) _mbwManager.getSelectedAccount()).getAccountIndex();
+      String[] selectionArgs = new String[]{Integer.toString(accountIndex)};
       Cursor cursor = null;
       ContentResolver contentResolver = context.getContentResolver();
       try {
