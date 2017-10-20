@@ -717,7 +717,8 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         if (walletAccount == null) {
             return transactionsSummary
         }
-        val transactions = walletAccount!!.getTransactions(false)
+        val transactions = walletAccount.getTransactions(false).sortedWith(kotlin.Comparator {
+            o1, o2 -> o1.updateTime.compareTo(o2.updateTime) })
         for (transactionBitcoinJ in transactions) {
             val transactionBitLib : com.mrd.bitlib.model.Transaction =
                     com.mrd.bitlib.model.Transaction.fromBytes(transactionBitcoinJ.bitcoinSerialize())
@@ -781,12 +782,12 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         return transactionsSummary.toList()
     }
 
-    fun getTransactionDetails(accountIndex: Int, hash: Sha256Hash) : TransactionDetails {
+    fun getTransactionDetails(accountIndex: Int, hash: String) : TransactionDetails {
         propagate(Constants.CONTEXT)
         Log.d(LOG_TAG, "getTransactionDetails, accountIndex = $accountIndex, hash = $hash")
         val walletAccount : Wallet = walletsAccountsMap.get(accountIndex)!!
         val transactionBitcoinJ = walletAccount.getTransaction(
-                org.bitcoinj.core.Sha256Hash.wrap(hash.bytes))!!
+                org.bitcoinj.core.Sha256Hash.wrap(hash))!!
 
         val networkParametersBitlib : NetworkParameters = {
             when(walletAccount.networkParameters.id) {
@@ -814,7 +815,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             outputs.add(TransactionDetails.Item(addressBitLib, output.value!!.value, false))
         }
 
-        val transactionDetails : TransactionDetails = TransactionDetails(hash,
+        val transactionDetails : TransactionDetails = TransactionDetails(Sha256Hash.fromString(hash),
                 transactionBitcoinJ.confidence.appearedAtChainHeight,
                 (transactionBitcoinJ.updateTime.time / 1000).toInt(), inputs.toTypedArray(),
                 outputs.toTypedArray(), transactionBitcoinJ.optimalEncodingMessageSize)

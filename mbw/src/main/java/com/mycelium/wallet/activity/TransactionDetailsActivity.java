@@ -68,8 +68,8 @@ public class TransactionDetailsActivity extends Activity {
    @SuppressWarnings("deprecation")
    private static final LayoutParams FPWC = new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT, 1);
    private static final LayoutParams WCWC = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, 1);
-   private TransactionDetails _tx;
-   private TransactionSummary _txs;
+   private TransactionDetails _transactionDetails;
+   private TransactionSummary _transactionSummary;
    private int _white_color;
    private MbwManager _mbwManager;
    private boolean coluMode = false;
@@ -88,8 +88,8 @@ public class TransactionDetailsActivity extends Activity {
       _mbwManager = MbwManager.getInstance(this.getApplication());
 
       Sha256Hash txid = (Sha256Hash) getIntent().getSerializableExtra("transaction");
-      _tx = _mbwManager.getSelectedAccount().getTransactionDetails(txid);
-      _txs = _mbwManager.getSelectedAccount().getTransactionSummary(txid);
+      _transactionDetails = _mbwManager.getSelectedAccount().getTransactionDetails(txid);
+      _transactionSummary = _mbwManager.getSelectedAccount().getTransactionSummary(txid);
 
       if(_mbwManager.getSelectedAccount() instanceof ColuAccount) {
          coluMode = true;
@@ -103,14 +103,14 @@ public class TransactionDetailsActivity extends Activity {
       // Set Hash
       TransactionDetailsLabel tvHash = ((TransactionDetailsLabel) findViewById(R.id.tvHash));
       tvHash.setColuMode(coluMode);
-      tvHash.setTransaction(_tx);
+      tvHash.setTransaction(_transactionDetails);
 
 
       // Set Confirmed
-      int confirmations = _tx.calculateConfirmations(_mbwManager.getSelectedAccount().getBlockChainHeight());
+      int confirmations = _transactionDetails.calculateConfirmations(_mbwManager.getSelectedAccount().getBlockChainHeight());
       String confirmed;
-      if (_tx.height > 0) {
-         confirmed = getResources().getString(R.string.confirmed_in_block, _tx.height);
+      if (_transactionDetails.height > 0) {
+         confirmed = getResources().getString(R.string.confirmed_in_block, _transactionDetails.height);
       } else {
          confirmed = getResources().getString(R.string.no);
       }
@@ -119,7 +119,7 @@ public class TransactionDetailsActivity extends Activity {
       TransactionConfirmationsDisplay confirmationsDisplay = (TransactionConfirmationsDisplay) findViewById(R.id.tcdConfirmations);
       TextView confirmationsCount = (TextView) findViewById(R.id.tvConfirmations);
 
-      if (_txs!=null && _txs.isQueuedOutgoing){
+      if (_transactionSummary !=null && _transactionSummary.isQueuedOutgoing){
          confirmationsDisplay.setNeedsBroadcast();
          confirmationsCount.setText("");
          confirmed = getResources().getString(R.string.transaction_not_broadcasted_info);
@@ -132,7 +132,7 @@ public class TransactionDetailsActivity extends Activity {
       ((TextView) findViewById(R.id.tvConfirmed)).setText(confirmed);
 
       // Set Date & Time
-      Date date = new Date(_tx.time * 1000L);
+      Date date = new Date(_transactionDetails.time * 1000L);
       Locale locale = getResources().getConfiguration().locale;
       DateFormat dayFormat = DateFormat.getDateInstance(DateFormat.LONG, locale);
       String dateString = dayFormat.format(date);
@@ -143,26 +143,26 @@ public class TransactionDetailsActivity extends Activity {
 
       // Set Inputs
       LinearLayout inputs = (LinearLayout) findViewById(R.id.llInputs);
-      if(_tx.inputs != null) {
-         for (TransactionDetails.Item item : _tx.inputs) {
+      if(_transactionDetails.inputs != null) {
+         for (TransactionDetails.Item item : _transactionDetails.inputs) {
             inputs.addView(getItemView(item));
          }
       }
 
       // Set Outputs
       LinearLayout outputs = (LinearLayout) findViewById(R.id.llOutputs);
-      if(_tx.outputs != null) {
-         for (TransactionDetails.Item item : _tx.outputs) {
+      if(_transactionDetails.outputs != null) {
+         for (TransactionDetails.Item item : _transactionDetails.outputs) {
             outputs.addView(getItemView(item));
          }
       }
 
       // Set Fee
-      final long txFeeTotal = getFee(_tx);
+      final long txFeeTotal = getFee(_transactionDetails);
       String fee = _mbwManager.getBtcValueString(txFeeTotal);
 
-    if (_tx.rawSize > 0) {
-      final long txFeePerSat = txFeeTotal / _tx.rawSize;
+    if (_transactionDetails.rawSize > 0) {
+      final long txFeePerSat = txFeeTotal / _transactionDetails.rawSize;
       if (txFeePerSat > 0) {
         fee += String.format("\n%d sat/byte", txFeePerSat);
         ((TextView) findViewById(R.id.tvFee)).setText(fee);

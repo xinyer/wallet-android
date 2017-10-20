@@ -4,11 +4,14 @@ import android.content.ContentProvider
 import android.content.ContentValues
 import android.content.UriMatcher
 import android.database.Cursor
+import android.database.MatrixCursor
 import android.net.Uri
 import com.mycelium.modularizationtools.CommunicationManager
+import com.mycelium.spvmodule.SpvModuleApplication
 import com.mycelium.spvmodule.guava.Bip44AccountIdleService
-import com.mycelium.spvmodule.providers.TransactionContract.Transaction
-import com.mycelium.spvmodule.providers.data.TransactionCursor
+import com.mycelium.spvmodule.providers.TransactionContract.TransactionSummary
+import com.mycelium.spvmodule.providers.data.TransactionDetailsCursor
+import com.mycelium.spvmodule.providers.data.TransactionsSummaryCursor
 
 
 /**
@@ -23,18 +26,19 @@ class TransactionContentProvider : ContentProvider() {
         return true
     }
 
-    override fun query(uri: Uri?, projection: Array<out String>?, selection: String?, selectionArgs: Array<out String>?, sortOrder: String?): Cursor {
+    override fun query(uri: Uri?, projection: Array<out String>?, selection: String?,
+                       selectionArgs: Array<out String>?, sortOrder: String?): Cursor {
         checkSignature(callingPackage)
-        var cursor = TransactionCursor(0)
+        var cursor = MatrixCursor(emptyArray(), 0)
         val match = URI_MATCHER.match(uri)
         when (match) {
-            TRANSACTION_LIST ->
-                if (selection!!.contentEquals(Transaction.SELECTION_ACCOUNT_INDEX)) {
+            TRANSACTIONS_LIST ->
+                if (selection!!.contentEquals(TransactionSummary.SELECTION_ACCOUNT_INDEX)) {
                     val accountIndex = selectionArgs!!.get(0)
 
                     val transactionsSummary =
                             Bip44AccountIdleService.getInstance().getTransactionsSummary(accountIndex.toInt())
-                    cursor = TransactionCursor(transactionsSummary.size)
+                    cursor = TransactionsSummaryCursor(transactionsSummary.size)
 
                     for(rowItem in transactionsSummary) {
                         val columnValues = mutableListOf<Any?>()
@@ -58,8 +62,45 @@ class TransactionContentProvider : ContentProvider() {
                         columnValues.add(addressesBuilder.toString())    //TransactionContract.Transaction.TO_ADDRESSES
                         cursor.addRow(columnValues)
                     }
-
                     return cursor
+                }
+            TRANSACTION_DETAILS ->
+                if (selection!!.contentEquals(TransactionSummary.SELECTION_ACCOUNT_INDEX + " AND "
+                        + TransactionSummary.SELECTION_ID)) {
+                    cursor = TransactionDetailsCursor()
+                    val accountIndex = selectionArgs!!.get(0)
+                    val hash = selectionArgs.get(1)
+                    val transactionDetails = Bip44AccountIdleService.getInstance()
+                            .getTransactionDetails(accountIndex.toInt(), hash)
+
+
+
+
+                    val columnValues = mutableListOf<Any?>()
+                    columnValues.add(transactionDetails.hash.toHex())                          //TransactionContract.Transaction._ID
+                    columnValues.add(transactionDetails.height)           //TransactionContract.Transaction.VALUE
+                    columnValues.add(transactionDetails.rawSize)              //TransactionContract.Transaction.IS_INCOMING
+                    val inputsBuilder = StringBuilder()
+                    for (input in transactionDetails.inputs) {
+                        if (inputsBuilder.isNotEmpty()) {
+                            inputsBuilder.append("")
+                        }
+                        inputsBuilder.append("${input.value} BTC")
+                        inputsBuilder.append("${input.address}")
+                    }
+                    columnValues.add(inputsBuilder.toString())    //TransactionContract.Transaction.TO_ADDRESSES
+
+                    val outputsBuilder = StringBuilder()
+                    for (output in transactionDetails.outputs) {
+                        if (outputsBuilder.isNotEmpty()) {
+                            outputsBuilder.append("")
+                        }
+                        outputsBuilder.append("${output.value} BTC")
+                        outputsBuilder.append("${output.address}")
+                    }
+                    columnValues.add(outputsBuilder.toString())    //TransactionContract.Transaction.TO_ADDRESSES
+                    cursor.addRow(columnValues)
+
                 }
             else -> {
                 // Do nothing.
@@ -87,7 +128,7 @@ class TransactionContentProvider : ContentProvider() {
     override fun getType(uri: Uri): String? {
         checkSignature(callingPackage)
         return when (URI_MATCHER.match(uri)) {
-            TRANSACTION_LIST -> Transaction.CONTENT_TYPE
+            TRANSACTIONS_LIST -> TransactionSummary.CONTENT_TYPE
             else -> throw IllegalArgumentException("Unknown URI " + uri)
         }
     }
@@ -96,18 +137,21 @@ class TransactionContentProvider : ContentProvider() {
 
         val URI_MATCHER: UriMatcher
 
-        private val TRANSACTION_LIST = 1
+        private val TRANSACTIONS_LIST = 1
+        private val TRANSACTION_DETAILS = 2
 
         init {
             URI_MATCHER = UriMatcher(UriMatcher.NO_MATCH)
-            URI_MATCHER.addURI("*", Transaction.TABLE_NAME, TRANSACTION_LIST)
+            URI_MATCHER.addURI(TransactionContract.AUTHORITY(), TransactionSummary.TABLE_NAME,
+                    TRANSACTIONS_LIST)
+            URI_MATCHER.addURI(TransactionContract.AUTHORITY(),
+                    "${TransactionContract.TransactionDetails.TABLE_NAME}/*", TRANSACTION_DETAILS)
         }
 
-        private fun getTableFromMatch(match: Int): String {
-            return when (match) {
-                TRANSACTION_LIST -> Transaction.TABLE_NAME
-                else -> throw IllegalArgumentException("Unknown match " + match)
-            }
+        private fun getTableFromMatch(match: Int): String = when (match) {
+            TRANSACTIONS_LIST -> TransactionSummary.TABLE_NAME
+            TRANSACTION_DETAILS -> TransactionSummary.TABLE_NAME
+            else -> throw IllegalArgumentException("Unknown match " + match)
         }
     }
 }
