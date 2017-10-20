@@ -18,8 +18,10 @@ import com.google.common.util.concurrent.AbstractScheduledService
 import com.google.common.util.concurrent.ListenableFuture
 import com.mrd.bitlib.model.Address
 import com.mrd.bitlib.model.NetworkParameters
+import com.mrd.bitlib.util.Sha256Hash
 import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.spvmodule.*
+import com.mycelium.wapi.model.TransactionDetails
 import com.mycelium.wapi.model.TransactionEx
 import com.mycelium.wapi.model.TransactionSummary
 import com.mycelium.wapi.wallet.currency.ExactBitcoinValue
@@ -779,7 +781,48 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         return transactionsSummary.toList()
     }
 
-    inner class DownloadProgressTrackerExt : DownloadProgressTracker() {
+    fun getTransactionDetails(accountIndex: Int, hash: Sha256Hash) : TransactionDetails {
+        propagate(Constants.CONTEXT)
+        Log.d(LOG_TAG, "getTransactionDetails, accountIndex = $accountIndex, hash = $hash")
+        val walletAccount : Wallet = walletsAccountsMap.get(accountIndex)!!
+        val transactionBitcoinJ = walletAccount.getTransaction(
+                org.bitcoinj.core.Sha256Hash.wrap(hash.bytes))!!
+
+        val networkParametersBitlib : NetworkParameters = {
+            when(walletAccount.networkParameters.id) {
+                org.bitcoinj.core.NetworkParameters.ID_MAINNET -> NetworkParameters.productionNetwork
+                org.bitcoinj.core.NetworkParameters.ID_TESTNET -> NetworkParameters.testNetwork
+                else -> {
+                    throw Error("Wrong network parameters")
+                }
+            }
+        }.invoke()
+
+        val inputs: MutableList<TransactionDetails.Item> = mutableListOf()
+
+        for (input in transactionBitcoinJ.inputs) {
+            val addressBitcoinJ = input.scriptSig.getToAddress(walletAccount.networkParameters)
+            val addressBitLib : Address = Address.fromString(addressBitcoinJ.toBase58(), networkParametersBitlib)
+            inputs.add(TransactionDetails.Item(addressBitLib, input.value!!.value, input.isCoinBase))
+        }
+
+        val outputs: MutableList<TransactionDetails.Item> = mutableListOf()
+
+        for (output in transactionBitcoinJ.outputs) {
+            val addressBitcoinJ = output.scriptPubKey.getToAddress(walletAccount.networkParameters)
+            val addressBitLib : Address = Address.fromString(addressBitcoinJ.toBase58(), networkParametersBitlib)
+            outputs.add(TransactionDetails.Item(addressBitLib, output.value!!.value, false))
+        }
+
+        val transactionDetails : TransactionDetails = TransactionDetails(hash,
+                transactionBitcoinJ.confidence.appearedAtChainHeight,
+                (transactionBitcoinJ.updateTime.time / 1000).toInt(), inputs.toTypedArray(),
+                outputs.toTypedArray(), transactionBitcoinJ.optimalEncodingMessageSize)
+        return transactionDetails
+    }
+
+
+        inner class DownloadProgressTrackerExt : DownloadProgressTracker() {
         override fun onChainDownloadStarted(peer: Peer?, blocksLeft: Int) {
             Log.d(LOG_TAG, "onChainDownloadStarted(), Blockchain's download is starting. " +
                     "Blocks left to download is $blocksLeft, peer = $peer")
