@@ -7,9 +7,9 @@ import android.database.Cursor
 import android.database.MatrixCursor
 import android.net.Uri
 import com.mycelium.modularizationtools.CommunicationManager
-import com.mycelium.spvmodule.SpvModuleApplication
 import com.mycelium.spvmodule.guava.Bip44AccountIdleService
 import com.mycelium.spvmodule.providers.TransactionContract.TransactionSummary
+import com.mycelium.spvmodule.providers.TransactionContract.TransactionDetails
 import com.mycelium.spvmodule.providers.data.TransactionDetailsCursor
 import com.mycelium.spvmodule.providers.data.TransactionsSummaryCursor
 
@@ -59,27 +59,24 @@ class TransactionContentProvider : ContentProvider() {
                             }
                             addressesBuilder.append(addr.toString())
                         }
-                        columnValues.add(addressesBuilder.toString())    //TransactionContract.Transaction.TO_ADDRESSES
+                        columnValues.add(addressesBuilder.toString())       //TransactionContract.Transaction.TO_ADDRESSES
                         cursor.addRow(columnValues)
                     }
                     return cursor
                 }
             TRANSACTION_DETAILS ->
-                if (selection!!.contentEquals(TransactionSummary.SELECTION_ACCOUNT_INDEX + " AND "
-                        + TransactionSummary.SELECTION_ID)) {
+                if (selection!!.contentEquals(TransactionSummary.SELECTION_ACCOUNT_INDEX)) {
                     cursor = TransactionDetailsCursor()
                     val accountIndex = selectionArgs!!.get(0)
-                    val hash = selectionArgs.get(1)
+                    val hash = uri!!.lastPathSegment
                     val transactionDetails = Bip44AccountIdleService.getInstance()
                             .getTransactionDetails(accountIndex.toInt(), hash)
 
-
-
-
                     val columnValues = mutableListOf<Any?>()
-                    columnValues.add(transactionDetails.hash.toHex())                          //TransactionContract.Transaction._ID
-                    columnValues.add(transactionDetails.height)           //TransactionContract.Transaction.VALUE
-                    columnValues.add(transactionDetails.rawSize)              //TransactionContract.Transaction.IS_INCOMING
+                    columnValues.add(transactionDetails.hash.toHex())       //TransactionContract.Transaction._ID
+                    columnValues.add(transactionDetails.height)             //TransactionContract.Transaction.HEIGHT
+                    columnValues.add(transactionDetails.time)               //TransactionContract.Transaction.TIME
+                    columnValues.add(transactionDetails.rawSize)            //TransactionContract.Transaction.RAW_SIZE
                     val inputsBuilder = StringBuilder()
                     for (input in transactionDetails.inputs) {
                         if (inputsBuilder.isNotEmpty()) {
@@ -88,7 +85,7 @@ class TransactionContentProvider : ContentProvider() {
                         inputsBuilder.append("${input.value} BTC")
                         inputsBuilder.append("${input.address}")
                     }
-                    columnValues.add(inputsBuilder.toString())    //TransactionContract.Transaction.TO_ADDRESSES
+                    columnValues.add(inputsBuilder.toString())              //TransactionContract.Transaction.INPUTS
 
                     val outputsBuilder = StringBuilder()
                     for (output in transactionDetails.outputs) {
@@ -98,7 +95,7 @@ class TransactionContentProvider : ContentProvider() {
                         outputsBuilder.append("${output.value} BTC")
                         outputsBuilder.append("${output.address}")
                     }
-                    columnValues.add(outputsBuilder.toString())    //TransactionContract.Transaction.TO_ADDRESSES
+                    columnValues.add(outputsBuilder.toString())             //TransactionContract.Transaction.OUTPUTS
                     cursor.addRow(columnValues)
 
                 }
@@ -129,28 +126,28 @@ class TransactionContentProvider : ContentProvider() {
         checkSignature(callingPackage)
         return when (URI_MATCHER.match(uri)) {
             TRANSACTIONS_LIST -> TransactionSummary.CONTENT_TYPE
+            TRANSACTION_DETAILS -> TransactionDetails.CONTENT_TYPE
             else -> throw IllegalArgumentException("Unknown URI " + uri)
         }
     }
 
     companion object {
 
-        val URI_MATCHER: UriMatcher
+        val URI_MATCHER: UriMatcher = UriMatcher(UriMatcher.NO_MATCH)
 
         private val TRANSACTIONS_LIST = 1
         private val TRANSACTION_DETAILS = 2
 
         init {
-            URI_MATCHER = UriMatcher(UriMatcher.NO_MATCH)
-            URI_MATCHER.addURI(TransactionContract.AUTHORITY("com.mycelium.spvmodule.test"), TransactionSummary.TABLE_NAME,
-                    TRANSACTIONS_LIST)
             URI_MATCHER.addURI(TransactionContract.AUTHORITY("com.mycelium.spvmodule.test"),
-                    "${TransactionContract.TransactionDetails.TABLE_NAME}/*", TRANSACTION_DETAILS)
+                    TransactionSummary.TABLE_NAME, TRANSACTIONS_LIST)
+            URI_MATCHER.addURI(TransactionContract.AUTHORITY("com.mycelium.spvmodule.test"),
+                    "${TransactionDetails.TABLE_NAME}/*", TRANSACTION_DETAILS)
         }
 
         private fun getTableFromMatch(match: Int): String = when (match) {
             TRANSACTIONS_LIST -> TransactionSummary.TABLE_NAME
-            TRANSACTION_DETAILS -> TransactionSummary.TABLE_NAME
+            TRANSACTION_DETAILS -> TransactionDetails.TABLE_NAME
             else -> throw IllegalArgumentException("Unknown match " + match)
         }
     }

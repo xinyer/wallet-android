@@ -15,7 +15,6 @@ public class TransactionContract {
     public static class TransactionSummary {
         public static final String TABLE_NAME = "txn"; // "transaction" is an SQL reserved word.
         public static final String CONTENT_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/vnd.com.mycelium.transaction";
-        public static final String CONTENT_ITEM_TYPE = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/vnd.com.mycelium.transaction";
 
         public static final String _ID = "_id";
         public static final String VALUE = "value";
@@ -42,7 +41,6 @@ public class TransactionContract {
     public static class TransactionDetails {
         public static final String TABLE_NAME = "txndtls"; // "transaction" is an SQL reserved word.
         public static final String CONTENT_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/vnd.com.mycelium.transaction";
-        public static final String CONTENT_ITEM_TYPE = ContentResolver.CURSOR_ITEM_BASE_TYPE + "/vnd.com.mycelium.transaction";
 
         public static final String _ID = "_id";
 

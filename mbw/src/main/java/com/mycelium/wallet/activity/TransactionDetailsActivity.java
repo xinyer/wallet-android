@@ -36,12 +36,19 @@ package com.mycelium.wallet.activity;
 
 import java.math.BigDecimal;
 import java.text.DateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ContentResolver;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.WindowManager;
@@ -50,8 +57,12 @@ import android.widget.LinearLayout.LayoutParams;
 import android.widget.TextView;
 
 import android.widget.Toast;
+
+import com.google.common.base.Optional;
+import com.mrd.bitlib.model.Address;
 import com.mrd.bitlib.util.CoinUtil;
 import com.mrd.bitlib.util.Sha256Hash;
+import com.mycelium.spvmodule.providers.TransactionContract;
 import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.R;
 import com.mycelium.wallet.Utils;
@@ -62,6 +73,9 @@ import com.mycelium.wallet.colu.ColuAccount;
 import com.mycelium.wallet.colu.json.ColuTxDetailsItem;
 import com.mycelium.wapi.model.TransactionDetails;
 import com.mycelium.wapi.model.TransactionSummary;
+import com.mycelium.wapi.wallet.ConfirmationRiskProfileLocal;
+import com.mycelium.wapi.wallet.currency.CurrencyValue;
+import com.mycelium.wapi.wallet.currency.ExactCurrencyValue;
 
 public class TransactionDetailsActivity extends Activity {
 
@@ -88,6 +102,7 @@ public class TransactionDetailsActivity extends Activity {
       _mbwManager = MbwManager.getInstance(this.getApplication());
 
       Sha256Hash txid = (Sha256Hash) getIntent().getSerializableExtra("transaction");
+      getTransactionDetails(txid);
       _transactionDetails = _mbwManager.getSelectedAccount().getTransactionDetails(txid);
       _transactionSummary = _mbwManager.getSelectedAccount().getTransactionSummary(txid);
 
@@ -97,6 +112,53 @@ public class TransactionDetailsActivity extends Activity {
          coluMode = false;
       }
       updateUi();
+   }
+
+   private TransactionDetails getTransactionDetails(Sha256Hash txid) {
+      TransactionDetails transactionDetails = null;
+      Uri uri = Uri.withAppendedPath(TransactionContract.TransactionDetails.CONTENT_URI("com.mycelium.spvmodule.test"), txid.toString());
+      String selection = TransactionContract.TransactionDetails.SELECTION_ACCOUNT_INDEX;
+      int accountIndex = ((com.mycelium.wapi.wallet.bip44.Bip44Account) _mbwManager.getSelectedAccount()).getAccountIndex();
+      String[] selectionArgs = new String[]{Integer.toString(accountIndex)};
+      Cursor cursor = null;
+      ContentResolver contentResolver = getContentResolver();
+      try {
+         cursor = contentResolver.query(uri, null, selection, selectionArgs, null);
+         if (cursor != null) {
+            while (cursor.moveToNext()) {
+               transactionDetails = from(cursor);
+            }
+         }
+      } finally {
+         if (cursor != null) {
+            cursor.close();
+         }
+      }
+      return transactionDetails;
+   }
+
+   private TransactionDetails from(Cursor cursor) {
+      String rawTxId = cursor.getString(cursor.getColumnIndex(TransactionContract.TransactionDetails._ID));
+      Sha256Hash hash = Sha256Hash.fromString(rawTxId);
+      int height = cursor.getInt(cursor.getColumnIndex(TransactionContract.TransactionDetails.HEIGHT));
+      int time = cursor.getInt(cursor.getColumnIndex(TransactionContract.TransactionDetails.TIME));
+      int rawSize = cursor.getInt(cursor.getColumnIndex(TransactionContract.TransactionDetails.RAW_SIZE));
+
+      String rawInputs = cursor.getString(cursor.getColumnIndex(TransactionContract.TransactionDetails.INPUTS));
+      String rawOutputs = cursor.getString(cursor.getColumnIndex(TransactionContract.TransactionDetails.OUTPUTS));
+
+      TransactionDetails.Item[] inputs = null ;
+      TransactionDetails.Item[] outputs = null;
+
+      List<Address> toAddresses = new ArrayList<>();
+      String rawToAddresses = cursor.getString(cursor.getColumnIndex(TransactionContract.TransactionSummary.TO_ADDRESSES));
+      if (!TextUtils.isEmpty(rawToAddresses)) {
+         String[] addresses = rawToAddresses.split(",");
+         for (String addr : addresses) {
+            toAddresses.add(Address.fromString(addr));
+         }
+      }
+      return new TransactionDetails(hash, height, time, inputs, outputs, rawSize);
    }
 
    private void updateUi() {
