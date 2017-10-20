@@ -204,6 +204,7 @@ public class TransactionHistoryFragment extends Fragment {
       // Open transaction details
       Intent intent = new Intent(getActivity(), TransactionDetailsActivity.class);
       intent.putExtra("transaction", selected.txid);
+      intent.putExtra("isQueuedOutgoing", selected.isQueuedOutgoing);
       startActivity(intent);
    }
 

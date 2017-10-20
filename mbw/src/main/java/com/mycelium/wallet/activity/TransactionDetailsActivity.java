@@ -83,7 +83,7 @@ public class TransactionDetailsActivity extends Activity {
    private static final LayoutParams FPWC = new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT, 1);
    private static final LayoutParams WCWC = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, 1);
    private TransactionDetails _transactionDetails;
-   private TransactionSummary _transactionSummary;
+   boolean _isQueuedOutgoing;
    private int _white_color;
    private MbwManager _mbwManager;
    private boolean coluMode = false;
@@ -102,9 +102,8 @@ public class TransactionDetailsActivity extends Activity {
       _mbwManager = MbwManager.getInstance(this.getApplication());
 
       Sha256Hash txid = (Sha256Hash) getIntent().getSerializableExtra("transaction");
-      getTransactionDetails(txid);
-      _transactionDetails = _mbwManager.getSelectedAccount().getTransactionDetails(txid);
-      _transactionSummary = _mbwManager.getSelectedAccount().getTransactionSummary(txid);
+      _transactionDetails = getTransactionDetails(txid);
+      _isQueuedOutgoing = getIntent().getBooleanExtra("isQueuedOutgoing", false);
 
       if(_mbwManager.getSelectedAccount() instanceof ColuAccount) {
          coluMode = true;
@@ -116,7 +115,7 @@ public class TransactionDetailsActivity extends Activity {
 
    private TransactionDetails getTransactionDetails(Sha256Hash txid) {
       TransactionDetails transactionDetails = null;
-      Uri uri = Uri.withAppendedPath(TransactionContract.TransactionDetails.CONTENT_URI("com.mycelium.spvmodule.test"), txid.toString());
+      Uri uri = Uri.withAppendedPath(TransactionContract.TransactionDetails.CONTENT_URI("com.mycelium.spvmodule.test"), txid.toHex());
       String selection = TransactionContract.TransactionDetails.SELECTION_ACCOUNT_INDEX;
       int accountIndex = ((com.mycelium.wapi.wallet.bip44.Bip44Account) _mbwManager.getSelectedAccount()).getAccountIndex();
       String[] selectionArgs = new String[]{Integer.toString(accountIndex)};
@@ -181,7 +180,7 @@ public class TransactionDetailsActivity extends Activity {
       TransactionConfirmationsDisplay confirmationsDisplay = (TransactionConfirmationsDisplay) findViewById(R.id.tcdConfirmations);
       TextView confirmationsCount = (TextView) findViewById(R.id.tvConfirmations);
 
-      if (_transactionSummary !=null && _transactionSummary.isQueuedOutgoing){
+      if (_isQueuedOutgoing){
          confirmationsDisplay.setNeedsBroadcast();
          confirmationsCount.setText("");
          confirmed = getResources().getString(R.string.transaction_not_broadcasted_info);
