@@ -755,8 +755,9 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                 }
             }
             val confirmations : Int = transactionBitcoinJ.confidence.depthInBlocks
-            val isQueuedOutgoing = transactionBitcoinJ.isPending
-
+            //val isQueuedOutgoing = (transactionBitcoinJ.isPending
+             //       || transactionBitcoinJ.confidence == TransactionConfidence.ConfidenceType.BUILDING)
+            val isQueuedOutgoing = false //TODO Change the UI so MBW understand BitcoinJ confidence type.
             val destAddressOptional : Optional<Address> = if(destAddress != null) {
                 Optional.of(destAddress)
             } else {
@@ -772,7 +773,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             var height : Int
             height = transactionBitcoinJ.confidence.depthInBlocks
             if(height <= 0 ) {
-                continue
+                //continue
             }
             val transactionSummary = TransactionSummary(transactionBitLib.hash,
                     bitcoinValue,
