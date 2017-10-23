@@ -86,11 +86,12 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         if(walletsAccountsMap.isNotEmpty()) {
             propagate(Constants.CONTEXT)
             counterCheckImpediments++
-            countercheckIfDownloadIsIdling++
-            if(counterCheckImpediments.rem(10) == 0 || counterCheckImpediments == 1) {
-                //We do that every ten minutes
+            if(counterCheckImpediments.rem(2) == 0 || counterCheckImpediments == 1) {
+                //We do that every two minutes
                 checkImpediments()
             }
+
+            countercheckIfDownloadIsIdling++
             if(countercheckIfDownloadIsIdling.rem(2) == 0) {
                 //We do that every two minutes
                 checkIfDownloadIsIdling()
@@ -291,6 +292,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         Log.d(LOG_TAG, "checkImpediments, peergroup.isRunning = ${peerGroup!!.isRunning},"
                 + "downloadProgressTracker condition is "
                 + "${(downloadProgressTracker == null || downloadProgressTracker!!.future.isDone)}")
+        counterCheckImpediments = 0
         //Second condition (downloadProgressTracker) prevent the case where the peergroup is
         // currently downloading the blockchain.
         if(peerGroup!!.isRunning
@@ -781,8 +783,8 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                     transactionBitcoinJ.updateTime.time / 1000,
                     height,
                     confirmations, isQueuedOutgoing, null, destAddressOptional, toAddresses)
-            Log.d(LOG_TAG, "getTransactionsSummary, accountIndex = $accountIndex, " +
-                    "transactionSummary = ${transactionSummary.toString()} ")
+            //Log.d(LOG_TAG, "getTransactionsSummary, accountIndex = $accountIndex, " +
+            //       "transactionSummary = ${transactionSummary.toString()} ")
             transactionsSummary.add(transactionSummary)
         }
         return transactionsSummary.toList()
@@ -835,7 +837,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         }
 
         var height = transactionBitcoinJ.confidence.depthInBlocks
-        val transactionDetails : TransactionDetails = TransactionDetails(Sha256Hash.fromString(hash),
+        val transactionDetails = TransactionDetails(Sha256Hash.fromString(hash),
                 height,
                 (transactionBitcoinJ.updateTime.time / 1000).toInt(), inputs.toTypedArray(),
                 outputs.toTypedArray(), transactionBitcoinJ.optimalEncodingMessageSize)
