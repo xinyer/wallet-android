@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <changelog>
+    <release version="3.0.0" versioncode="300000">
+        <change>SPV Technology Preview: This is the first release using Mycelium modular architecture.</change>
+        <change>You will need to install Mycelium SPV module for it to work.</change>
+        <change>Known bugs: balance updates are delayed.</change>
+        <change>Your feedback is welcome!</change>
+    </release>
     <release version="2.9.3" versioncode="290300">
         <change>bugs fixed</change>
         <change>custom fees</change>

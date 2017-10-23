@@ -141,7 +141,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         private val LOG_TAG: String? = this::class.java.simpleName
 
         fun getMbwModuleName(): String = when (BuildConfig.APPLICATION_ID) {
-            "com.mycelium.spvmodule_testrelease" -> "com.mycelium.testnetwallet_spore"
+            "com.mycelium.spvmodule_testrelease" -> "com.mycelium.testnetwallet"
             "com.mycelium.spvmodule.test" -> "com.mycelium.devwallet_spore"
             else -> throw RuntimeException("No mbw module defined for BuildConfig " + BuildConfig.APPLICATION_ID)
         }

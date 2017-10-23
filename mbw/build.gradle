@@ -106,8 +106,8 @@ android {
     buildToolsVersion androidSdkBuildVersion
 
     defaultConfig {
-        versionCode 290300
-        versionName '2.9.3'
+        versionCode 300000
+        versionName '3.0.0'
         multiDexEnabled true
     }
 
@@ -183,7 +183,7 @@ android {
             targetSdkVersion 23
             minSdkVersion 19
 
-            applicationId 'com.mycelium.testnetwallet_spore'
+            applicationId 'com.mycelium.testnetwallet'
             versionName = defaultConfig.versionName + '-TESTNET'
             signingConfig signingConfigs.btctestnet
         }

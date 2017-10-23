@@ -110,7 +110,7 @@ public class WalletApplication extends MultiDexApplication implements ModuleMess
 
    public static String getSpvModuleName() {
       switch(BuildConfig.APPLICATION_ID) {
-         case "com.mycelium.testnetwallet_spore": return "com.mycelium.spvmodule_testrelease";
+         case "com.mycelium.testnetwallet": return "com.mycelium.spvmodule_testrelease";
          case "com.mycelium.devwallet_spore": return "com.mycelium.spvmodule.test";
          default: throw new RuntimeException("No spv module defined for BuildConfig " + BuildConfig.APPLICATION_ID);
       }

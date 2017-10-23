@@ -747,7 +747,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
             for (transactionOutput in transactionBitcoinJ.outputs) {
                 val toAddress = Address.fromString(
-                        transactionOutput.scriptPubKey.getToAddress(walletAccount!!.networkParameters)
+                        transactionOutput.scriptPubKey.getToAddress(walletAccount.networkParameters)
                                 .toBase58(), networkParametersBitlib)
                 if (!transactionOutput.isMine(walletAccount)) {
                     destAddress = toAddress

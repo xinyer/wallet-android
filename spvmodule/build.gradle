@@ -22,8 +22,8 @@ android {
         applicationId "com.mycelium.spvmodule"
         minSdkVersion 19
         targetSdkVersion 25
-        versionCode 1
-        versionName "1.0"
+        versionCode 300000
+        versionName "3.0.0.0"
         multiDexEnabled true
     }
 
@@ -33,7 +33,7 @@ android {
 
     buildTypes {
         all {
-            minifyEnabled true
+            minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard.cfg'
         }
         debug {
