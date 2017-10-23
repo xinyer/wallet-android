@@ -12,11 +12,19 @@ import android.support.v4.content.LocalBroadcastManager
 import android.text.format.DateUtils
 import android.util.Log
 import android.widget.Toast
+import com.google.common.base.Optional
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.AbstractScheduledService
 import com.google.common.util.concurrent.ListenableFuture
+import com.mrd.bitlib.model.Address
+import com.mrd.bitlib.model.NetworkParameters
+import com.mrd.bitlib.util.Sha256Hash
 import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.spvmodule.*
+import com.mycelium.wapi.model.TransactionDetails
+import com.mycelium.wapi.model.TransactionEx
+import com.mycelium.wapi.model.TransactionSummary
+import com.mycelium.wapi.wallet.currency.ExactBitcoinValue
 import org.bitcoinj.core.*
 import org.bitcoinj.core.Context.propagate
 import org.bitcoinj.core.listeners.DownloadProgressTracker
@@ -78,11 +86,12 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         if(walletsAccountsMap.isNotEmpty()) {
             propagate(Constants.CONTEXT)
             counterCheckImpediments++
-            countercheckIfDownloadIsIdling++
-            if(counterCheckImpediments.rem(10) == 0 || counterCheckImpediments == 1) {
-                //We do that every ten minutes
+            if(counterCheckImpediments.rem(2) == 0 || counterCheckImpediments == 1) {
+                //We do that every two minutes
                 checkImpediments()
             }
+
+            countercheckIfDownloadIsIdling++
             if(countercheckIfDownloadIsIdling.rem(2) == 0) {
                 //We do that every two minutes
                 checkIfDownloadIsIdling()
@@ -283,6 +292,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         Log.d(LOG_TAG, "checkImpediments, peergroup.isRunning = ${peerGroup!!.isRunning},"
                 + "downloadProgressTracker condition is "
                 + "${(downloadProgressTracker == null || downloadProgressTracker!!.future.isDone)}")
+        counterCheckImpediments = 0
         //Second condition (downloadProgressTracker) prevent the case where the peergroup is
         // currently downloading the blockchain.
         if(peerGroup!!.isRunning
@@ -701,7 +711,141 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         }
     }
 
-    inner class DownloadProgressTrackerExt : DownloadProgressTracker() {
+    fun getTransactionsSummary(accountIndex: Int) : List<TransactionSummary> {
+        propagate(Constants.CONTEXT)
+        Log.d(LOG_TAG, "getTransactionsSummary, accountIndex = $accountIndex")
+        val transactionsSummary = mutableListOf<TransactionSummary>()
+        val walletAccount = walletsAccountsMap.get(accountIndex)
+        if (walletAccount == null) {
+            return transactionsSummary
+        }
+        val transactions = walletAccount.getTransactions(false).sortedWith(kotlin.Comparator {
+            o1, o2 -> o2.updateTime.compareTo(o1.updateTime) })
+
+        for (transactionBitcoinJ in transactions) {
+            val transactionBitLib : com.mrd.bitlib.model.Transaction =
+                    com.mrd.bitlib.model.Transaction.fromBytes(transactionBitcoinJ.bitcoinSerialize())
+
+            // Outputs
+            val satoshis: Long = 0
+            val toAddresses = java.util.ArrayList<Address>()
+            var destAddress: Address? = null
+            val valueSentToMe = transactionBitcoinJ.getValueSentToMe(walletAccount)
+            if(valueSentToMe.isPositive) {
+                satoshis.plus(valueSentToMe.value)
+            }
+
+            val networkParametersBitlib : NetworkParameters = {
+                when(walletAccount.networkParameters.id) {
+                    org.bitcoinj.core.NetworkParameters.ID_MAINNET -> NetworkParameters.productionNetwork
+                    org.bitcoinj.core.NetworkParameters.ID_TESTNET -> NetworkParameters.testNetwork
+                    else -> {
+                        throw Error("Wrong network parameters")
+                    }
+                }
+            }.invoke()
+
+            for (transactionOutput in transactionBitcoinJ.outputs) {
+                val toAddress = Address.fromString(
+                        transactionOutput.scriptPubKey.getToAddress(walletAccount!!.networkParameters)
+                                .toBase58(), networkParametersBitlib)
+                if (!transactionOutput.isMine(walletAccount)) {
+                    destAddress = toAddress
+                }
+                if(toAddress != Address.getNullAddress(networkParametersBitlib)) {
+                    toAddresses.add(toAddress)
+                }
+            }
+            val confirmations : Int = transactionBitcoinJ.confidence.depthInBlocks
+            //val isQueuedOutgoing = (transactionBitcoinJ.isPending
+             //       || transactionBitcoinJ.confidence == TransactionConfidence.ConfidenceType.BUILDING)
+            val isQueuedOutgoing = false //TODO Change the UI so MBW understand BitcoinJ confidence type.
+            val destAddressOptional : Optional<Address> = if(destAddress != null) {
+                Optional.of(destAddress)
+            } else {
+                Optional.absent()
+            }
+            val bitcoinJValue = transactionBitcoinJ.getValue(walletAccount)
+            val isIncoming = bitcoinJValue.isPositive
+            val bitcoinValue = if(bitcoinJValue.isPositive) {
+                ExactBitcoinValue.from(bitcoinJValue.value)
+            } else {
+                ExactBitcoinValue.from(bitcoinJValue.value * -1)
+            }
+            var height : Int
+            height = transactionBitcoinJ.confidence.depthInBlocks
+            if(height <= 0 ) {
+                //continue
+            }
+            val transactionSummary = TransactionSummary(transactionBitLib.hash,
+                    bitcoinValue,
+                    isIncoming,
+                    transactionBitcoinJ.updateTime.time / 1000,
+                    height,
+                    confirmations, isQueuedOutgoing, null, destAddressOptional, toAddresses)
+            //Log.d(LOG_TAG, "getTransactionsSummary, accountIndex = $accountIndex, " +
+            //       "transactionSummary = ${transactionSummary.toString()} ")
+            transactionsSummary.add(transactionSummary)
+        }
+        return transactionsSummary.toList()
+    }
+
+    fun getTransactionDetails(accountIndex: Int, hash: String) : TransactionDetails? {
+        propagate(Constants.CONTEXT)
+        Log.d(LOG_TAG, "getTransactionDetails, accountIndex = $accountIndex, hash = $hash")
+        val walletAccount = walletsAccountsMap.get(accountIndex)
+        if (walletAccount == null) {
+            return null
+        }
+        val transactionBitcoinJ = walletAccount.getTransaction(
+                org.bitcoinj.core.Sha256Hash.wrap(hash))!!
+
+        val networkParametersBitlib : NetworkParameters = {
+            when(walletAccount.networkParameters.id) {
+                org.bitcoinj.core.NetworkParameters.ID_MAINNET -> NetworkParameters.productionNetwork
+                org.bitcoinj.core.NetworkParameters.ID_TESTNET -> NetworkParameters.testNetwork
+                else -> {
+                    throw Error("Wrong network parameters")
+                }
+            }
+        }.invoke()
+
+        val inputs: MutableList<TransactionDetails.Item> = mutableListOf()
+
+        for (input in transactionBitcoinJ.inputs) {
+            val connectedOutput = input.outpoint.connectedOutput
+            if(connectedOutput == null) {
+                inputs.add(TransactionDetails.Item(Address.getNullAddress(networkParametersBitlib),
+                        if(input.value != null) {
+                            input.value!!.value
+                        } else {
+                            0
+                        }, input.isCoinBase))
+            } else {
+                val addressBitcoinJ = connectedOutput.scriptPubKey.getToAddress(walletAccount.networkParameters)
+                val addressBitLib: Address = Address.fromString(addressBitcoinJ.toBase58(), networkParametersBitlib)
+                inputs.add(TransactionDetails.Item(addressBitLib, input.value!!.value, input.isCoinBase))
+            }
+        }
+
+        val outputs: MutableList<TransactionDetails.Item> = mutableListOf()
+
+        for (output in transactionBitcoinJ.outputs) {
+            val addressBitcoinJ = output.scriptPubKey.getToAddress(walletAccount.networkParameters)
+            val addressBitLib : Address = Address.fromString(addressBitcoinJ.toBase58(), networkParametersBitlib)
+            outputs.add(TransactionDetails.Item(addressBitLib, output.value!!.value, false))
+        }
+
+        var height = transactionBitcoinJ.confidence.depthInBlocks
+        val transactionDetails = TransactionDetails(Sha256Hash.fromString(hash),
+                height,
+                (transactionBitcoinJ.updateTime.time / 1000).toInt(), inputs.toTypedArray(),
+                outputs.toTypedArray(), transactionBitcoinJ.optimalEncodingMessageSize)
+        return transactionDetails
+    }
+
+
+        inner class DownloadProgressTrackerExt : DownloadProgressTracker() {
         override fun onChainDownloadStarted(peer: Peer?, blocksLeft: Int) {
             Log.d(LOG_TAG, "onChainDownloadStarted(), Blockchain's download is starting. " +
                     "Blocks left to download is $blocksLeft, peer = $peer")

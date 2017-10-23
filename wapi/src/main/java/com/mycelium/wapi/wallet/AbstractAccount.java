@@ -334,7 +334,7 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
    }
 
    @Override
-   public void notifyNewTransactionDiscovered(TransactionEx transactionEx,
+   public synchronized void notifyNewTransactionDiscovered(TransactionEx transactionEx,
                                               Map<OutPoint, TransactionOutput> connectedOutputs,
                                               Set<OutPoint> utxoSet, boolean fetchMissingOutputs) {
       for(OutPoint outPoint: connectedOutputs.keySet()) {

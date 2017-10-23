@@ -17,10 +17,10 @@
 
 package com.mycelium.spvmodule
 
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.view.ViewGroup.LayoutParams
+import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.widget.ScrollView
 
 class PreferenceActivity : AppCompatActivity() {
@@ -29,7 +29,7 @@ class PreferenceActivity : AppCompatActivity() {
         val sw = ScrollView(this)
         sw.id = 171415
         setContentView(sw, LayoutParams(MATCH_PARENT, MATCH_PARENT))
-        if( savedInstanceState == null) {
+        if (savedInstanceState == null) {
             val settingsFragment = SettingsFragment()
             val ft = supportFragmentManager.beginTransaction()
             ft.add(sw.id, settingsFragment)

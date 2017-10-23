@@ -770,9 +770,12 @@ public class WalletManager {
          if(_transactionFetcher.isActive()) {
             //If using SPV module, enters this condition.
            // Get adresses from all accounts
+            if(currentAccount instanceof Bip44Account) {
+               _transactionFetcher.getTransactions(((Bip44Account) currentAccount).getAccountIndex());
+            }
             for(WalletAccount account : getAllAccounts()) {
                if(account instanceof Bip44Account) {
-                  _transactionFetcher.getTransactions(((Bip44Account) account).getAccountIndex());
+                  //_transactionFetcher.getTransactions(((Bip44Account) account).getAccountIndex());
                } else {
                   // TODO: 28.09.17 sync single address accounts using spv, too.
                   if (!account.isArchived()) {
