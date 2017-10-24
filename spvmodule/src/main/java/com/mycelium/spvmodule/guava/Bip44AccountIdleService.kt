@@ -682,22 +682,22 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             Log.d(LOG_TAG, "checkIfDownloadIsIdling, activityHistory.size = ${activityHistory.size}")
             // determine if block and transaction activity is idling
             var isIdle = false
-            if (activityHistory.size == 0) {
+            if (activityHistory.isEmpty()) {
                 isIdle = true
-            }
-            for (i in activityHistory.indices) {
-                val entry = activityHistory[i]
-                /* Log.d(LOG_TAG, "checkIfDownloadIsIdling, activityHistory indice is $i, " +
+            } else {
+                for (i in activityHistory.indices) {
+                    val entry = activityHistory[i]
+                    /* Log.d(LOG_TAG, "checkIfDownloadIsIdling, activityHistory indice is $i, " +
                     "entry.numBlocksDownloaded = ${entry.numBlocksDownloaded}, " +
                     "entry.numTransactionsReceived = ${entry.numTransactionsReceived}") */
-                if (entry.numBlocksDownloaded == 0) {
-                    isIdle = true
-                    break
+                    if (entry.numBlocksDownloaded == 0) {
+                        isIdle = true
+                        break
+                    }
                 }
+                //We empty the Activity history
+                activityHistory.removeAll(activityHistory.clone() as Collection<*>)
             }
-            //We empty the Activity history
-            activityHistory.removeAll(activityHistory.clone() as Collection<*>)
-
             // if idling, shutdown service
             if (isIdle) {
                 Log.i(LOG_TAG, "Idling is detected, restart the $LOG_TAG")
