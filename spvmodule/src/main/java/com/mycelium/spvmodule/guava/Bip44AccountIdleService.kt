@@ -59,7 +59,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     private var peerGroup: PeerGroup? = null
 
     private val spvModuleApplication = SpvModuleApplication.getApplication()
-    private val sharedPreferences:SharedPreferences = spvModuleApplication.getSharedPreferences(
+    private val sharedPreferences: SharedPreferences = spvModuleApplication.getSharedPreferences(
             SHARED_PREFERENCES_FILE_NAME, Context.MODE_PRIVATE)
     //Read list of accounts indexes
     private val accountIndexStrings: ConcurrentSkipListSet<String> = ConcurrentSkipListSet<String>().apply {
@@ -68,7 +68,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     private val configuration = spvModuleApplication.configuration!!
     private val peerConnectivityListener: PeerConnectivityListener = PeerConnectivityListener()
     private val notificationManager = spvModuleApplication.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    private lateinit var blockStore : BlockStore
+    private lateinit var blockStore: BlockStore
     private var bip39Passphrase = sharedPreferences.getString(PASSPHRASE_PREF, "").split(" ")
     private var counterCheckImpediments: Int = 0
     private var countercheckIfDownloadIsIdling: Int = 0
@@ -83,16 +83,16 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
     override fun runOneIteration() {
         Log.d(LOG_TAG, "runOneIteration")
-        if(walletsAccountsMap.isNotEmpty()) {
+        if (walletsAccountsMap.isNotEmpty()) {
             propagate(Constants.CONTEXT)
             counterCheckImpediments++
-            if(counterCheckImpediments.rem(2) == 0 || counterCheckImpediments == 1) {
+            if (counterCheckImpediments.rem(2) == 0 || counterCheckImpediments == 1) {
                 //We do that every two minutes
                 checkImpediments()
             }
 
             countercheckIfDownloadIsIdling++
-            if(countercheckIfDownloadIsIdling.rem(2) == 0) {
+            if (countercheckIfDownloadIsIdling.rem(2) == 0) {
                 //We do that every two minutes
                 checkIfDownloadIsIdling()
             }
@@ -142,14 +142,14 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             val walletAccount = getAccountWallet(accountIndex)
             if (walletAccount != null) {
                 walletsAccountsMap[accountIndex] = walletAccount
-                if(walletAccount.lastBlockSeenHeight >= 0 && shouldInitializeCheckpoint == true) {
+                if (walletAccount.lastBlockSeenHeight >= 0 && shouldInitializeCheckpoint == true) {
                     shouldInitializeCheckpoint = false
                 }
             }
         }
         if (shouldInitializeCheckpoint) {
             val earliestKeyCreationTime = initializeEarliestKeyCreationTime()
-            if(earliestKeyCreationTime > 0L) {
+            if (earliestKeyCreationTime > 0L) {
                 initializeCheckpoint(earliestKeyCreationTime)
             }
         }
@@ -255,8 +255,8 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     private fun stopPeergroup() {
         Log.d(LOG_TAG, "stopPeergroup")
         propagate(Constants.CONTEXT)
-        if(peerGroup != null) {
-            if(peerGroup!!.isRunning) {
+        if (peerGroup != null) {
+            if (peerGroup!!.isRunning) {
                 peerGroup!!.stopAsync()
             }
             peerGroup!!.removeDisconnectedEventListener(peerConnectivityListener)
@@ -268,14 +268,15 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
         try {
             spvModuleApplication.unregisterReceiver(connectivityReceiver)
-        } catch (e : IllegalArgumentException) {
+        } catch (e: IllegalArgumentException) {
             //Receiver not registered.
             //Log.e(LOG_TAG, e.localizedMessage, e)
-        } catch (e : UninitializedPropertyAccessException) {}
+        } catch (e: UninitializedPropertyAccessException) {
+        }
 
         peerConnectivityListener.stop()
 
-        for(idWallet in walletsAccountsMap) {
+        for (idWallet in walletsAccountsMap) {
             idWallet.value.run {
                 saveToFile(walletFile(idWallet.key))
                 removeChangeEventListener(walletEventListener)
@@ -295,7 +296,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         counterCheckImpediments = 0
         //Second condition (downloadProgressTracker) prevent the case where the peergroup is
         // currently downloading the blockchain.
-        if(peerGroup!!.isRunning
+        if (peerGroup!!.isRunning
                 && (downloadProgressTracker == null || downloadProgressTracker!!.future.isDone)) {
             if (wakeLock == null) {
                 // if we still hold a wakelock, we don't leave it dangling to block until later.
@@ -328,9 +329,9 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         Log.i(LOG_TAG, "checkImpediments, DONE")
     }
 
-    private fun getAccountWallet(accountIndex: Int) : Wallet? {
-        var wallet : Wallet? = walletsAccountsMap[accountIndex]
-        if(wallet != null) {
+    private fun getAccountWallet(accountIndex: Int): Wallet? {
+        var wallet: Wallet? = walletsAccountsMap[accountIndex]
+        if (wallet != null) {
             return wallet
         }
         val walletFile = walletFile(accountIndex)
@@ -342,7 +343,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         return wallet
     }
 
-    private fun loadWalletFromProtobuf(accountIndex: Int, walletAccountFile: File) : Wallet {
+    private fun loadWalletFromProtobuf(accountIndex: Int, walletAccountFile: File): Wallet {
         var wallet = FileInputStream(walletAccountFile).use { walletStream ->
             try {
                 WalletProtobufSerializer().readWallet(walletStream).apply {
@@ -470,7 +471,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         }
 
         private fun changed() {
-            if(!stopped.get()) {
+            if (!stopped.get()) {
                 AsyncTask.execute {
                     propagate(Constants.CONTEXT)
                     this@Bip44AccountIdleService.changed()
@@ -510,14 +511,14 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             notification.setContentTitle(spvModuleApplication.getString(R.string.app_name))
             var contentText = spvModuleApplication.getString(R.string.notification_peers_connected_msg, peerCount)
             val daysBehind = (Date().time - blockchainState.bestChainDate.time) / DateUtils.DAY_IN_MILLIS
-            if(daysBehind > 1) {
+            if (daysBehind > 1) {
                 contentText += " " + spvModuleApplication.getString(R.string.notification_chain_status_behind, daysBehind)
             }
-            if(blockchainState.impediments.size > 0) {
+            if (blockchainState.impediments.size > 0) {
                 // TODO: this is potentially unreachable as the service stops when offline.
                 // Not sure if impediment STORAGE ever shows. Probably both should show.
-                val impedimentsString = blockchainState.impediments.joinToString {it.toString()}
-                contentText += " " +  spvModuleApplication.getString(R.string.notification_chain_status_impediment, impedimentsString)
+                val impedimentsString = blockchainState.impediments.joinToString { it.toString() }
+                contentText += " " + spvModuleApplication.getString(R.string.notification_chain_status_impediment, impedimentsString)
             }
             notification.setContentText(contentText)
 
@@ -555,7 +556,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             }
         }
         for (i in maxIndexWithActivity + 1..maxIndexWithActivity + ACCOUNT_LOOKAHEAD) {
-            if(walletsAccountsMap[i] == null) {
+            if (walletsAccountsMap[i] == null) {
                 createOneAccount(bip39Passphrase, creationTimeSeconds, i)
             }
         }
@@ -611,7 +612,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
     private val transactionsReceived = AtomicInteger()
 
-    private val walletEventListener = object: ThrottlingWalletChangeListener(APPWIDGET_THROTTLE_MS) {
+    private val walletEventListener = object : ThrottlingWalletChangeListener(APPWIDGET_THROTTLE_MS) {
         override fun onCoinsReceived(walletAccount: Wallet?, transaction: Transaction?,
                                      prevBalance: Coin?, newBalance: Coin?) {
             Log.d(LOG_TAG, "walletEventListener, onCoinsReceived")
@@ -637,7 +638,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                     }
                 }
                 val newAccountIndex = accountIndex + 1
-                if(doesWalletAccountExist(newAccountIndex + 3)) {
+                if (doesWalletAccountExist(newAccountIndex + 3)) {
                     return
                 }
                 Log.d(LOG_TAG, "walletEventListener, checkIfFirstTransaction, first transaction " +
@@ -646,11 +647,13 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                 //TODO Investigate why it is stuck while stopping.
                 val listenableFuture = peerGroup!!.stopAsync()
                 listenableFuture.addListener(
-                        Runnable { Log.d(LOG_TAG, "walletEventListener, checkIfFirstTransaction, will try to " +
-                                "addWalletAccountWithExtendedKey with newAccountIndex = $newAccountIndex")
+                        Runnable {
+                            Log.d(LOG_TAG, "walletEventListener, checkIfFirstTransaction, will try to " +
+                                    "addWalletAccountWithExtendedKey with newAccountIndex = $newAccountIndex")
                             spvModuleApplication.addWalletAccountWithExtendedKey(bip39Passphrase,
                                     walletAccount.lastBlockSeenTimeSecs + 1,
-                                    newAccountIndex) },
+                                    newAccountIndex)
+                        },
                         Executors.newSingleThreadExecutor())
             }
         }
@@ -661,7 +664,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     @Synchronized
-    private fun notifyTransactions(transactions: Set<Transaction>, utxos: Set<TransactionOutput> ) {
+    private fun notifyTransactions(transactions: Set<Transaction>, utxos: Set<TransactionOutput>) {
         if (!transactions.isEmpty()) {
             // send the new transaction and the *complete* utxo set of the account
             SpvMessageSender.sendTransactions(transactions, utxos)
@@ -670,7 +673,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
     fun sendTransactions(accountIndex: Int) {
         val walletAccount = walletsAccountsMap.get(accountIndex)
-        if(walletAccount != null) {
+        if (walletAccount != null) {
             notifyTransactions(walletAccount.getTransactions(true), walletAccount.unspents.toSet())
         }
     }
@@ -678,7 +681,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     private val activityHistory = LinkedList<ActivityHistoryEntry>()
 
     private fun checkIfDownloadIsIdling() {
-        if((downloadProgressTracker != null && !downloadProgressTracker!!.future.isDone)) {
+        if ((downloadProgressTracker != null && !downloadProgressTracker!!.future.isDone)) {
             Log.d(LOG_TAG, "checkIfDownloadIsIdling, activityHistory.size = ${activityHistory.size}")
             // determine if block and transaction activity is idling
             var isIdle = false
@@ -710,19 +713,15 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         }
     }
 
-    fun getTransactionsSummary(accountIndex: Int) : List<TransactionSummary> {
+    fun getTransactionsSummary(accountIndex: Int): List<TransactionSummary> {
         propagate(Constants.CONTEXT)
         Log.d(LOG_TAG, "getTransactionsSummary, accountIndex = $accountIndex")
         val transactionsSummary = mutableListOf<TransactionSummary>()
-        val walletAccount = walletsAccountsMap.get(accountIndex)
-        if (walletAccount == null) {
-            return transactionsSummary
-        }
-        val transactions = walletAccount.getTransactions(false).sortedWith(kotlin.Comparator {
-            o1, o2 -> o2.updateTime.compareTo(o1.updateTime) })
+        val walletAccount = walletsAccountsMap.get(accountIndex) ?: return transactionsSummary
+        val transactions = walletAccount.getTransactions(false).sortedWith(kotlin.Comparator { o1, o2 -> o2.updateTime.compareTo(o1.updateTime) })
 
         for (transactionBitcoinJ in transactions) {
-            val transactionBitLib : com.mrd.bitlib.model.Transaction =
+            val transactionBitLib: com.mrd.bitlib.model.Transaction =
                     com.mrd.bitlib.model.Transaction.fromBytes(transactionBitcoinJ.bitcoinSerialize())
 
             // Outputs
@@ -745,29 +744,29 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                 if (!transactionOutput.isMine(walletAccount)) {
                     destAddress = toAddress
                 }
-                if(toAddress != Address.getNullAddress(networkParametersBitlib)) {
+                if (toAddress != Address.getNullAddress(networkParametersBitlib)) {
                     toAddresses.add(toAddress)
                 }
             }
-            val confirmations : Int = transactionBitcoinJ.confidence.depthInBlocks
+            val confirmations: Int = transactionBitcoinJ.confidence.depthInBlocks
             //val isQueuedOutgoing = (transactionBitcoinJ.isPending
-             //       || transactionBitcoinJ.confidence == TransactionConfidence.ConfidenceType.BUILDING)
+            //       || transactionBitcoinJ.confidence == TransactionConfidence.ConfidenceType.BUILDING)
             val isQueuedOutgoing = false //TODO Change the UI so MBW understand BitcoinJ confidence type.
-            val destAddressOptional : Optional<Address> = if(destAddress != null) {
+            val destAddressOptional: Optional<Address> = if (destAddress != null) {
                 Optional.of(destAddress)
             } else {
                 Optional.absent()
             }
             val bitcoinJValue = transactionBitcoinJ.getValue(walletAccount)
             val isIncoming = bitcoinJValue.isPositive
-            val bitcoinValue = if(bitcoinJValue.isPositive) {
+            val bitcoinValue = if (bitcoinJValue.isPositive) {
                 ExactBitcoinValue.from(bitcoinJValue.value)
             } else {
                 ExactBitcoinValue.from(bitcoinJValue.value * -1)
             }
-            var height : Int
+            var height: Int
             height = transactionBitcoinJ.confidence.depthInBlocks
-            if(height <= 0 ) {
+            if (height <= 0) {
                 //continue
             }
             val transactionSummary = TransactionSummary(transactionBitLib.hash,
@@ -783,7 +782,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         return transactionsSummary.toList()
     }
 
-    fun getTransactionDetails(accountIndex: Int, hash: String) : TransactionDetails? {
+    fun getTransactionDetails(accountIndex: Int, hash: String): TransactionDetails? {
         propagate(Constants.CONTEXT)
         Log.d(LOG_TAG, "getTransactionDetails, accountIndex = $accountIndex, hash = $hash")
         val walletAccount = walletsAccountsMap.get(accountIndex)
@@ -806,9 +805,9 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
         for (input in transactionBitcoinJ.inputs) {
             val connectedOutput = input.outpoint.connectedOutput
-            if(connectedOutput == null) {
+            if (connectedOutput == null) {
                 inputs.add(TransactionDetails.Item(Address.getNullAddress(networkParametersBitlib),
-                        if(input.value != null) {
+                        if (input.value != null) {
                             input.value!!.value
                         } else {
                             0
@@ -824,11 +823,11 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
         for (output in transactionBitcoinJ.outputs) {
             val addressBitcoinJ = output.scriptPubKey.getToAddress(walletAccount.networkParameters)
-            val addressBitLib : Address = Address.fromString(addressBitcoinJ.toBase58(), networkParametersBitlib)
+            val addressBitLib: Address = Address.fromString(addressBitcoinJ.toBase58(), networkParametersBitlib)
             outputs.add(TransactionDetails.Item(addressBitLib, output.value!!.value, false))
         }
 
-        var height = transactionBitcoinJ.confidence.depthInBlocks
+        val height = transactionBitcoinJ.confidence.depthInBlocks
         val transactionDetails = TransactionDetails(Sha256Hash.fromString(hash),
                 height,
                 (transactionBitcoinJ.updateTime.time / 1000).toInt(), inputs.toTypedArray(),
@@ -837,7 +836,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
 
-        inner class DownloadProgressTrackerExt : DownloadProgressTracker() {
+    inner class DownloadProgressTrackerExt : DownloadProgressTracker() {
         override fun onChainDownloadStarted(peer: Peer?, blocksLeft: Int) {
             Log.d(LOG_TAG, "onChainDownloadStarted(), Blockchain's download is starting. " +
                     "Blocks left to download is $blocksLeft, peer = $peer")
