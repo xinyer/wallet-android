@@ -695,8 +695,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                         break
                     }
                 }
-                //We empty the Activity history
-                activityHistory.removeAll(activityHistory.clone() as Collection<*>)
+                activityHistory.clear()
             }
             // if idling, shutdown service
             if (isIdle) {
@@ -727,23 +726,17 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                     com.mrd.bitlib.model.Transaction.fromBytes(transactionBitcoinJ.bitcoinSerialize())
 
             // Outputs
-            val satoshis: Long = 0
             val toAddresses = java.util.ArrayList<Address>()
             var destAddress: Address? = null
-            val valueSentToMe = transactionBitcoinJ.getValueSentToMe(walletAccount)
-            if(valueSentToMe.isPositive) {
-                satoshis.plus(valueSentToMe.value)
-            }
 
-            val networkParametersBitlib : NetworkParameters = {
-                when(walletAccount.networkParameters.id) {
-                    org.bitcoinj.core.NetworkParameters.ID_MAINNET -> NetworkParameters.productionNetwork
-                    org.bitcoinj.core.NetworkParameters.ID_TESTNET -> NetworkParameters.testNetwork
-                    else -> {
-                        throw Error("Wrong network parameters")
+            val networkParametersBitlib: NetworkParameters =
+                    when (walletAccount.networkParameters.id) {
+                        org.bitcoinj.core.NetworkParameters.ID_MAINNET -> NetworkParameters.productionNetwork
+                        org.bitcoinj.core.NetworkParameters.ID_TESTNET -> NetworkParameters.testNetwork
+                        else -> {
+                            throw Error("Wrong network parameters")
+                        }
                     }
-                }
-            }.invoke()
 
             for (transactionOutput in transactionBitcoinJ.outputs) {
                 val toAddress = Address.fromString(
@@ -800,15 +793,14 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         val transactionBitcoinJ = walletAccount.getTransaction(
                 org.bitcoinj.core.Sha256Hash.wrap(hash))!!
 
-        val networkParametersBitlib : NetworkParameters = {
-            when(walletAccount.networkParameters.id) {
-                org.bitcoinj.core.NetworkParameters.ID_MAINNET -> NetworkParameters.productionNetwork
-                org.bitcoinj.core.NetworkParameters.ID_TESTNET -> NetworkParameters.testNetwork
-                else -> {
-                    throw Error("Wrong network parameters")
+        val networkParametersBitlib: NetworkParameters =
+                when (walletAccount.networkParameters.id) {
+                    org.bitcoinj.core.NetworkParameters.ID_MAINNET -> NetworkParameters.productionNetwork
+                    org.bitcoinj.core.NetworkParameters.ID_TESTNET -> NetworkParameters.testNetwork
+                    else -> {
+                        throw Error("Wrong network parameters")
+                    }
                 }
-            }
-        }.invoke()
 
         val inputs: MutableList<TransactionDetails.Item> = mutableListOf()
 
@@ -856,7 +848,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
         private var lastChainHeight = 0
 
-
         override fun onBlocksDownloaded(peer: Peer, block: Block, filteredBlock: FilteredBlock?,
                                         blocksLeft: Int) {
             val now = System.currentTimeMillis()
@@ -865,7 +856,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
             if (now - lastMessageTime.get() > BLOCKCHAIN_STATE_BROADCAST_THROTTLE_MS
                     || blocksLeft == 0) {
-                AsyncTask.execute(runnable)
+                AsyncTask.execute(reportProgress)
             }
             super.onBlocksDownloaded(peer, block, filteredBlock, blocksLeft)
         }
@@ -899,7 +890,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             */
         }
 
-        private val runnable = Runnable {
+        private val reportProgress = {
             lastMessageTime.set(System.currentTimeMillis())
             configuration.maybeIncrementBestChainHeightEver(blockChain!!.chainHead.height)
             broadcastBlockchainState()
