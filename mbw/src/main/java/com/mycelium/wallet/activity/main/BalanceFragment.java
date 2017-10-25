@@ -37,12 +37,16 @@ package com.mycelium.wallet.activity.main;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -56,6 +60,7 @@ import com.google.common.base.Preconditions;
 import com.mrd.bitlib.model.Address;
 import com.mycelium.modularizationtools.CommunicationManager;
 import com.mycelium.spvmodule.IntentContract;
+import com.mycelium.spvmodule.providers.TransactionContract;
 import com.mycelium.wallet.Constants;
 import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.R;
@@ -76,10 +81,12 @@ import com.mycelium.wallet.event.RefreshingExchangeRatesFailed;
 import com.mycelium.wallet.event.SelectedAccountChanged;
 import com.mycelium.wallet.event.SelectedCurrencyChanged;
 import com.mycelium.wallet.event.SyncStopped;
+import com.mycelium.wapi.model.TransactionSummary;
 import com.mycelium.wapi.wallet.WalletAccount;
 import com.mycelium.wapi.wallet.bip44.Bip44Account;
 import com.mycelium.wapi.wallet.currency.CurrencyBasedBalance;
 import com.mycelium.wapi.wallet.currency.CurrencyValue;
+import com.mycelium.wapi.wallet.currency.ExactBitcoinValue;
 import com.mycelium.wapi.wallet.currency.ExactCurrencyValue;
 import com.squareup.otto.Subscribe;
 
@@ -194,17 +201,31 @@ public class BalanceFragment extends Fragment {
          return;
       }
       WalletAccount account = Preconditions.checkNotNull(_mbwManager.getSelectedAccount());
-      CurrencyBasedBalance balance;
+      CurrencyBasedBalance balance = CurrencyBasedBalance.ZERO_BITCOIN_BALANCE;
+
+      FragmentActivity context = getActivity();
+
+      Uri uri = TransactionContract.AccountBalance.CONTENT_URI("com.mycelium.spvmodule.test");
+      String selection = TransactionContract.AccountBalance.SELECTION_ACCOUNT_INDEX;
+      int accountIndex = ((Bip44Account) _mbwManager.getSelectedAccount()).getAccountIndex();
+      String[] selectionArgs = new String[]{Integer.toString(accountIndex)};
+      Cursor cursor = null;
+      ContentResolver contentResolver = context.getContentResolver();
       try {
-         balance = Preconditions.checkNotNull(account.getCurrencyBasedBalance());
-      } catch (IllegalArgumentException ex){
-         _mbwManager.reportIgnoredException(ex);
-         balance = CurrencyBasedBalance.ZERO_BITCOIN_BALANCE;
+         cursor = contentResolver.query(uri, null, selection, selectionArgs, null);
+         if (cursor != null) {
+            while (cursor.moveToNext()) {
+               balance = from(cursor);
+            }
+         }
+      } finally {
+         if (cursor != null) {
+            cursor.close();
+         }
       }
 
       WalletAccount selectedAccount = _mbwManager.getSelectedAccount();
       if(_mbwManager.isSpvMode() && selectedAccount instanceof Bip44Account) {
-         int accountIndex = ((Bip44Account) selectedAccount).getAccountIndex();
          Intent waitingIntent = IntentContract.WaitingIntents.createIntent(accountIndex);
          WalletApplication.sendToSpv(waitingIntent);
       }
@@ -261,6 +282,16 @@ public class BalanceFragment extends Fragment {
              tvBtcRate.setText(getResources().getString(R.string.btc_rate, currency, converted, _mbwManager.getExchangeRateManager().getCurrentExchangeSourceName()));
           }
       }
+   }
+
+   private CurrencyBasedBalance from(Cursor cursor) {
+      String uselessId = cursor.getString(cursor.getColumnIndex(TransactionContract.AccountBalance._ID));
+      Long confirmed = cursor.getLong(cursor.getColumnIndex(TransactionContract.AccountBalance.CONFIRMED));
+      Long receiving = cursor.getLong(cursor.getColumnIndex(TransactionContract.AccountBalance.RECEIVING));
+      Long sending = cursor.getLong(cursor.getColumnIndex(TransactionContract.AccountBalance.SENDING));
+
+      return new CurrencyBasedBalance(ExactBitcoinValue.from(confirmed),
+          ExactBitcoinValue.from(sending), ExactBitcoinValue.from(receiving));
    }
 
    public BroadcastReceiver waitingIntentsReceiver = new BroadcastReceiver() {

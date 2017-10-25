@@ -8,7 +8,8 @@ import com.mycelium.spvmodule.providers.TransactionContract
  */
 class AccountBalanceCursor()
     : MatrixCursor(arrayOf(TransactionContract.AccountBalance._ID,
-        TransactionContract.AccountBalance.BALANCE),
+        TransactionContract.AccountBalance.CONFIRMED, TransactionContract.AccountBalance.SENDING,
+        TransactionContract.AccountBalance.RECEIVING),
         1) {
 
 }

@@ -69,7 +69,10 @@ public class TransactionContract {
 
         public static final String _ID = "_id";
 
-        public static final String BALANCE = "balance";
+        public static final String CONFIRMED = "confirmed";
+        public static final String SENDING = "sending";
+        public static final String RECEIVING = "receiving";
+
         public static final String ACCOUNT_INDEX = "accountIndex";
 
         public static final String SELECTION_ACCOUNT_INDEX = ACCOUNT_INDEX + " = ?";

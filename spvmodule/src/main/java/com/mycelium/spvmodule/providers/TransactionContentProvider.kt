@@ -121,11 +121,14 @@ class TransactionContentProvider : ContentProvider() {
                 if (selection!!.contentEquals(TransactionSummary.SELECTION_ACCOUNT_INDEX)) {
                     cursor = AccountBalanceCursor()
                     val accountIndex = selectionArgs!!.get(0)
-                    val accountBalance = Bip44AccountIdleService.getInstance()
-                            .getAccountBalance(accountIndex.toInt())
                     val columnValues = mutableListOf<Any?>()
-                    columnValues.add(accountIndex)       //TransactionContract.AccountBalance._ID
-                    columnValues.add(accountBalance)             //TransactionContract.AccountBalance.BALANCE
+                    columnValues.add(accountIndex)  //TransactionContract.AccountBalance._ID
+                    columnValues.add(Bip44AccountIdleService.getInstance()
+                            .getAccountBalance(accountIndex.toInt())) //TransactionContract.AccountBalance.CONFIRMED
+                    columnValues.add(Bip44AccountIdleService.getInstance()
+                            .getAccountSending(accountIndex.toInt()))  //TransactionContract.AccountBalance.CONFIRMED
+                    columnValues.add(Bip44AccountIdleService.getInstance()
+                            .getAccountReceiving(accountIndex.toInt()))  //TransactionContract.AccountBalance.CONFIRMED
                     cursor.addRow(columnValues)
                 }
             else -> {

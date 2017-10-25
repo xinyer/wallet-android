@@ -21,6 +21,7 @@ import com.mrd.bitlib.model.NetworkParameters
 import com.mrd.bitlib.util.Sha256Hash
 import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.spvmodule.*
+import com.mycelium.spvmodule.SettingsFragment.Companion.LOG_TAG
 import com.mycelium.wapi.model.TransactionDetails
 import com.mycelium.wapi.model.TransactionEx
 import com.mycelium.wapi.model.TransactionSummary
@@ -840,6 +841,36 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         Log.d(LOG_TAG, "getAccountBalance, accountIndex = $accountIndex")
         val walletAccount = walletsAccountsMap.get(accountIndex)
         return walletAccount!!.getBalance(Wallet.BalanceType.ESTIMATED).getValue()
+    }
+
+    fun getAccountReceiving(accountIndex: Int): Long {
+        propagate(Constants.CONTEXT)
+        Log.d(LOG_TAG, "getAccountReceiving, accountIndex = $accountIndex")
+        val walletAccount = walletsAccountsMap.get(accountIndex)
+        var receiving = 0L
+        for (transaction in walletAccount!!.pendingTransactions) {
+            if (transaction.getValueSentToMe(walletAccount)
+                    .minus(transaction.getValueSentFromMe(walletAccount)).isPositive) {
+                receiving += transaction.getValueSentToMe(walletAccount)
+                                .minus(transaction.getValueSentFromMe(walletAccount)).value
+                    }
+        }
+        return receiving
+    }
+
+    fun getAccountSending(accountIndex: Int): Long {
+        propagate(Constants.CONTEXT)
+        Log.d(LOG_TAG, "getAccountSending, accountIndex = $accountIndex")
+        val walletAccount = walletsAccountsMap.get(accountIndex)
+        var sending = 0L
+        for (transaction in walletAccount!!.pendingTransactions) {
+            if (transaction.getValueSentFromMe(walletAccount)
+                    .minus(transaction.getValueSentToMe(walletAccount)).isPositive) {
+                sending += transaction.getValueSentFromMe(walletAccount)
+                        .minus(transaction.getValueSentToMe(walletAccount)).value
+            }
+        }
+        return sending
     }
 
 
