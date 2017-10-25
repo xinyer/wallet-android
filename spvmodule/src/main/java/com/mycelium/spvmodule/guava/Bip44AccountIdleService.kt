@@ -844,6 +844,13 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         return transactionDetails
     }
 
+    fun getAccountBalance(accountIndex: Int): Long {
+        propagate(Constants.CONTEXT)
+        Log.d(LOG_TAG, "getAccountBalance, accountIndex = $accountIndex")
+        val walletAccount = walletsAccountsMap.get(accountIndex)
+        return walletAccount!!.getBalance(Wallet.BalanceType.ESTIMATED).getValue()
+    }
+
 
         inner class DownloadProgressTrackerExt : DownloadProgressTracker() {
         override fun onChainDownloadStarted(peer: Peer?, blocksLeft: Int) {
@@ -977,4 +984,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         val tmpWallet = walletsAccountsMap.get(accountIndex)
         return !(tmpWallet == null)
     }
+
+    
 }

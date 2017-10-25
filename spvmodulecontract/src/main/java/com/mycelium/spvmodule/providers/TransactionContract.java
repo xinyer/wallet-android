@@ -63,6 +63,22 @@ public class TransactionContract {
         }
     }
 
+    public static class AccountBalance {
+        public static final String TABLE_NAME = "acntblc"; // "transaction" is an SQL reserved word.
+        public static final String CONTENT_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/vnd.com.mycelium.transaction";
+
+        public static final String _ID = "_id";
+
+        public static final String BALANCE = "balance";
+        public static final String ACCOUNT_INDEX = "accountIndex";
+
+        public static final String SELECTION_ACCOUNT_INDEX = ACCOUNT_INDEX + " = ?";
+
+        public static Uri CONTENT_URI(String packageName) {
+            return Uri.withAppendedPath(AUTHORITY_URI(packageName), TABLE_NAME);
+        }
+    }
+
     public static String AUTHORITY(String packageName) {
         return packageName + ".providers.TransactionContentProvider";
     }

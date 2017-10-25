@@ -11,6 +11,7 @@ import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.spvmodule.guava.Bip44AccountIdleService
 import com.mycelium.spvmodule.providers.TransactionContract.TransactionSummary
 import com.mycelium.spvmodule.providers.TransactionContract.TransactionDetails
+import com.mycelium.spvmodule.providers.data.AccountBalanceCursor
 import com.mycelium.spvmodule.providers.data.TransactionDetailsCursor
 import com.mycelium.spvmodule.providers.data.TransactionsSummaryCursor
 
@@ -116,6 +117,17 @@ class TransactionContentProvider : ContentProvider() {
                     cursor.addRow(columnValues)
 
                 }
+            ACCOUNT_BALANCE ->
+                if (selection!!.contentEquals(TransactionSummary.SELECTION_ACCOUNT_INDEX)) {
+                    cursor = AccountBalanceCursor()
+                    val accountIndex = selectionArgs!!.get(0)
+                    val accountBalance = Bip44AccountIdleService.getInstance()
+                            .getAccountBalance(accountIndex.toInt())
+                    val columnValues = mutableListOf<Any?>()
+                    columnValues.add(accountIndex)       //TransactionContract.AccountBalance._ID
+                    columnValues.add(accountBalance)             //TransactionContract.AccountBalance.BALANCE
+                    cursor.addRow(columnValues)
+                }
             else -> {
                 // Do nothing.
             }
@@ -144,6 +156,7 @@ class TransactionContentProvider : ContentProvider() {
         return when (URI_MATCHER.match(uri)) {
             TRANSACTIONS_LIST -> TransactionSummary.CONTENT_TYPE
             TRANSACTION_DETAILS -> TransactionDetails.CONTENT_TYPE
+            ACCOUNT_BALANCE -> TransactionContract.AccountBalance.CONTENT_TYPE
             else -> throw IllegalArgumentException("Unknown URI " + uri)
         }
     }
@@ -154,12 +167,15 @@ class TransactionContentProvider : ContentProvider() {
 
         private val TRANSACTIONS_LIST = 1
         private val TRANSACTION_DETAILS = 2
+        private val ACCOUNT_BALANCE = 3
 
         init {
             URI_MATCHER.addURI(TransactionContract.AUTHORITY("com.mycelium.spvmodule.test"),
                     TransactionSummary.TABLE_NAME, TRANSACTIONS_LIST)
             URI_MATCHER.addURI(TransactionContract.AUTHORITY("com.mycelium.spvmodule.test"),
                     "${TransactionDetails.TABLE_NAME}/*", TRANSACTION_DETAILS)
+            URI_MATCHER.addURI(TransactionContract.AUTHORITY("com.mycelium.spvmodule.test"),
+                    TransactionContract.AccountBalance.TABLE_NAME, ACCOUNT_BALANCE)
         }
 
         private fun getTableFromMatch(match: Int): String = when (match) {
