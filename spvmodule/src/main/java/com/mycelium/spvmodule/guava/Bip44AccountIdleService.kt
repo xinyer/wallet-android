@@ -838,9 +838,13 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
     fun getAccountBalance(accountIndex: Int): Long {
         propagate(Constants.CONTEXT)
-        Log.d(LOG_TAG, "getAccountBalance, accountIndex = $accountIndex")
         val walletAccount = walletsAccountsMap.get(accountIndex)
-        return walletAccount!!.getBalance(Wallet.BalanceType.ESTIMATED).getValue()
+        Log.d(LOG_TAG, "getAccountBalance, accountIndex = $accountIndex, " +
+                "walletAccount = $walletAccount ")
+        if(walletAccount == null) {
+            return -1
+        }
+        return walletAccount.getBalance(Wallet.BalanceType.ESTIMATED).getValue()
     }
 
     fun getAccountReceiving(accountIndex: Int): Long {
