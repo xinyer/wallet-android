@@ -4,6 +4,7 @@ apply plugin: 'kotlin-android'
 repositories {
     mavenLocal()
     jcenter()
+    google()
 }
 
 android {
@@ -62,6 +63,8 @@ android {
             keyPassword 'android'
         }
     }
+    flavorDimensions "flavor"
+
     productFlavors {
         btctestnet {
             targetSdkVersion 23
