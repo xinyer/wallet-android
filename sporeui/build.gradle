@@ -32,6 +32,7 @@ android {
 }
 
 repositories {
+    google()
     maven { url 'https://jitpack.io' }
 
     // https://github.com/davideas/FlexibleAdapter#setup
@@ -46,7 +47,9 @@ dependencies {
     compile 'com.android.support:appcompat-v7:25.2.0'
     compile "com.android.support:animated-vector-drawable:25.2.0"
     compile "com.android.support:design:25.2.0"
-    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    compile ("org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version") {
+        exclude(group: 'org.jetbrains', module: 'annotations')
+    }
     compile 'com.pawegio.kandroid:kandroid:0.6.7@aar'
 
     compile 'com.squareup.flow:flow:1.0.0-alpha'
@@ -86,6 +89,7 @@ dependencies {
 }
 
 buildscript {
+    google()
     repositories {
         jcenter()
     }
@@ -94,5 +98,6 @@ buildscript {
     }
 }
 repositories {
+    google()
     jcenter()
 }

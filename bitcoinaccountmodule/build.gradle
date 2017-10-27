@@ -2,6 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 repositories {
+    google()
     jcenter()
 }
 
@@ -43,5 +44,7 @@ dependencies {
     testCompile "junit:junit:$junitVersion"
     compile project(includePrefix +':bitcoinaccountmodulecontract')
     compile project(includePrefix +':myceliummodularizationtools')
-    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version" {
+        exclude group: 'org.jetbrains', module: 'annotations'
+    }
 }

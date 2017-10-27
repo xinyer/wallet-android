@@ -2,9 +2,9 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 repositories {
+    google()
     mavenLocal()
     jcenter()
-    google()
 }
 
 android {
@@ -96,7 +96,9 @@ dependencies {
 
     compile project(includePrefix +':spvmodulecontract')
     compile project(includePrefix +':myceliummodularizationtools')
-    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    compile ("org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version") {
+        exclude(group: 'org.jetbrains', module: 'annotations')
+    }
     compile(guavaArtifact) {
         force = true
     }

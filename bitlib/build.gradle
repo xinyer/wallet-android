@@ -9,6 +9,7 @@ compileTestJava {
 }
 
 repositories {
+    google()
     mavenLocal()
     jcenter()
 }

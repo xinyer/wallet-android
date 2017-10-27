@@ -32,11 +32,16 @@ dependencies {
     }
     compile "com.android.support:appcompat-v7:$androidSupportVersion"
     testCompile "junit:junit:$junitVersion"
-    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+    compile("org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version") {
+        exclude (group: 'org.jetbrains', module: 'annotations')
+    }
+    compile ("org.jetbrains.kotlin:kotlin-reflect:$kotlin_version") {
+        exclude(group: 'org.jetbrains', module: 'annotations')
+    }
     compile 'com.google.code.gson:gson:2.3'
 }
 
 repositories {
+    google()
     jcenter()
 }
