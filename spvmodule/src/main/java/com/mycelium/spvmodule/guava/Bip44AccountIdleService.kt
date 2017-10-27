@@ -36,6 +36,7 @@ import org.bitcoinj.store.SPVBlockStore
 import org.bitcoinj.utils.Threading
 import org.bitcoinj.wallet.*
 import java.io.*
+import java.lang.Math.abs
 import java.net.InetSocketAddress
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -755,11 +756,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             }
             val bitcoinJValue = transactionBitcoinJ.getValue(walletAccount)
             val isIncoming = bitcoinJValue.isPositive
-            val bitcoinValue = if (bitcoinJValue.isPositive) {
-                ExactBitcoinValue.from(bitcoinJValue.value)
-            } else {
-                ExactBitcoinValue.from(bitcoinJValue.value * -1)
-            }
+            val bitcoinValue =  ExactBitcoinValue.from(abs(bitcoinJValue.value))
             var height: Int
             height = transactionBitcoinJ.confidence.depthInBlocks
             if (height <= 0) {
@@ -836,7 +833,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         val walletAccount = walletsAccountsMap.get(accountIndex)
         Log.d(LOG_TAG, "getAccountBalance, accountIndex = $accountIndex, " +
                 "walletAccount = $walletAccount ")
-        return walletAccount?.getBalance(Wallet.BalanceType.ESTIMATED)?.getValue()?: -1
+        return walletAccount?.getBalance(Wallet.BalanceType.ESTIMATED)?.getValue()?: 0
     }
 
     fun getAccountReceiving(accountIndex: Int): Long {
