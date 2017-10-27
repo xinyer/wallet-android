@@ -91,7 +91,7 @@ dependencies {
     compile "com.android.support:appcompat-v7:$androidSupportVersion"
     compile "com.android.support:support-v4:$androidSupportVersion"
     compile "com.android.support:preference-v7:$androidSupportVersion"
-    compile 'com.android.support:multidex:1.0.1'
+    compile 'com.android.support:multidex:1.0.2'
     compile 'org.bitcoinj:bitcoinj-core:0.15-SNAPSHOT'
 
     compile project(includePrefix +':spvmodulecontract')

@@ -15,12 +15,7 @@ import com.mycelium.spvmodule.providers.data.AccountBalanceCursor
 import com.mycelium.spvmodule.providers.data.TransactionDetailsCursor
 import com.mycelium.spvmodule.providers.data.TransactionsSummaryCursor
 
-
-/**
- * Created by Nelson on 17/10/2017.
- */
 class TransactionContentProvider : ContentProvider() {
-
     var communicationManager: CommunicationManager? = null
 
     val LOG_TAG = this::class.java.simpleName
@@ -32,6 +27,7 @@ class TransactionContentProvider : ContentProvider() {
 
     override fun query(uri: Uri?, projection: Array<out String>?, selection: String?,
                        selectionArgs: Array<out String>?, sortOrder: String?): Cursor {
+        val service = Bip44AccountIdleService.getInstance()
         checkSignature(callingPackage)
         var cursor = MatrixCursor(emptyArray(), 0)
         val match = URI_MATCHER.match(uri)
@@ -41,8 +37,7 @@ class TransactionContentProvider : ContentProvider() {
                     Log.d(LOG_TAG, "query, TRANSACTIONS_LIST")
                     val accountIndex = selectionArgs!!.get(0)
 
-                    val transactionsSummary =
-                            Bip44AccountIdleService.getInstance().getTransactionsSummary(accountIndex.toInt())
+                    val transactionsSummary = service.getTransactionsSummary(accountIndex.toInt())
                     cursor = TransactionsSummaryCursor(transactionsSummary.size)
 
                     for(rowItem in transactionsSummary) {
@@ -83,8 +78,7 @@ class TransactionContentProvider : ContentProvider() {
                     cursor = TransactionDetailsCursor()
                     val accountIndex = selectionArgs!!.get(0)
                     val hash = uri!!.lastPathSegment
-                    val transactionDetails = Bip44AccountIdleService.getInstance()
-                            .getTransactionDetails(accountIndex.toInt(), hash)
+                    val transactionDetails = service.getTransactionDetails(accountIndex.toInt(), hash)
 
                     if (transactionDetails == null) {
                         return cursor
@@ -121,14 +115,12 @@ class TransactionContentProvider : ContentProvider() {
                 if (selection!!.contentEquals(TransactionSummary.SELECTION_ACCOUNT_INDEX)) {
                     cursor = AccountBalanceCursor()
                     val accountIndex = selectionArgs!!.get(0)
-                    val columnValues = mutableListOf<Any?>()
-                    columnValues.add(accountIndex)  //TransactionContract.AccountBalance._ID
-                    columnValues.add(Bip44AccountIdleService.getInstance()
-                            .getAccountBalance(accountIndex.toInt())) //TransactionContract.AccountBalance.CONFIRMED
-                    columnValues.add(Bip44AccountIdleService.getInstance()
-                            .getAccountSending(accountIndex.toInt()))  //TransactionContract.AccountBalance.CONFIRMED
-                    columnValues.add(Bip44AccountIdleService.getInstance()
-                            .getAccountReceiving(accountIndex.toInt()))  //TransactionContract.AccountBalance.CONFIRMED
+                    val columnValues = mutableListOf<Any?>().apply {
+                        add(accountIndex)  //TransactionContract.AccountBalance._ID
+                        add(service.getAccountBalance(accountIndex.toInt())) //TransactionContract.AccountBalance.CONFIRMED
+                        add(service.getAccountSending(accountIndex.toInt()))  //TransactionContract.AccountBalance.CONFIRMED
+                        add(service.getAccountReceiving(accountIndex.toInt()))
+                    }  //TransactionContract.AccountBalance.CONFIRMED
                     cursor.addRow(columnValues)
                 }
             else -> {
@@ -165,7 +157,6 @@ class TransactionContentProvider : ContentProvider() {
     }
 
     companion object {
-
         val URI_MATCHER: UriMatcher = UriMatcher(UriMatcher.NO_MATCH)
 
         private val TRANSACTIONS_LIST = 1

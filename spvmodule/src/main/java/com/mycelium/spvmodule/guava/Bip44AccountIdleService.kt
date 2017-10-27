@@ -15,15 +15,11 @@ import android.widget.Toast
 import com.google.common.base.Optional
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.AbstractScheduledService
-import com.google.common.util.concurrent.ListenableFuture
 import com.mrd.bitlib.model.Address
 import com.mrd.bitlib.model.NetworkParameters
 import com.mrd.bitlib.util.Sha256Hash
-import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.spvmodule.*
-import com.mycelium.spvmodule.SettingsFragment.Companion.LOG_TAG
 import com.mycelium.wapi.model.TransactionDetails
-import com.mycelium.wapi.model.TransactionEx
 import com.mycelium.wapi.model.TransactionSummary
 import com.mycelium.wapi.wallet.currency.ExactBitcoinValue
 import org.bitcoinj.core.*
@@ -49,7 +45,6 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
-import kotlin.collections.ArrayList
 
 class Bip44AccountIdleService : AbstractScheduledService() {
     private val walletsAccountsMap: ConcurrentHashMap<Int, Wallet> = ConcurrentHashMap()
@@ -841,18 +836,15 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         val walletAccount = walletsAccountsMap.get(accountIndex)
         Log.d(LOG_TAG, "getAccountBalance, accountIndex = $accountIndex, " +
                 "walletAccount = $walletAccount ")
-        if(walletAccount == null) {
-            return -1
-        }
-        return walletAccount.getBalance(Wallet.BalanceType.ESTIMATED).getValue()
+        return walletAccount?.getBalance(Wallet.BalanceType.ESTIMATED)?.getValue()?: -1
     }
 
     fun getAccountReceiving(accountIndex: Int): Long {
         propagate(Constants.CONTEXT)
         Log.d(LOG_TAG, "getAccountReceiving, accountIndex = $accountIndex")
-        val walletAccount = walletsAccountsMap.get(accountIndex)
+        val walletAccount = walletsAccountsMap.get(accountIndex)?: return 0
         var receiving = 0L
-        for (transaction in walletAccount!!.pendingTransactions) {
+        for (transaction in walletAccount.pendingTransactions) {
             if (transaction.getValueSentToMe(walletAccount)
                     .minus(transaction.getValueSentFromMe(walletAccount)).isPositive) {
                 receiving += transaction.getValueSentToMe(walletAccount)
@@ -865,9 +857,9 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     fun getAccountSending(accountIndex: Int): Long {
         propagate(Constants.CONTEXT)
         Log.d(LOG_TAG, "getAccountSending, accountIndex = $accountIndex")
-        val walletAccount = walletsAccountsMap.get(accountIndex)
+        val walletAccount = walletsAccountsMap.get(accountIndex)?: return 0
         var sending = 0L
-        for (transaction in walletAccount!!.pendingTransactions) {
+        for (transaction in walletAccount.pendingTransactions) {
             if (transaction.getValueSentFromMe(walletAccount)
                     .minus(transaction.getValueSentToMe(walletAccount)).isPositive) {
                 sending += transaction.getValueSentFromMe(walletAccount)
