@@ -185,6 +185,8 @@ public class WapiClient implements Wapi {
             }
          } catch (RuntimeException e) {
             logError("Send request fail", e);
+         } catch (InterruptedException|ExecutionException e) {
+            e.printStackTrace();
          }
          // Try the next server
          _serverEndpoints.switchToNextEndpoint();
