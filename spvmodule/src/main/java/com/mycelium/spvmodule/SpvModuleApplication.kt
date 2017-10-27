@@ -115,6 +115,10 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
         Bip44AccountIdleService.getInstance().sendTransactions(accountIndex)
     }
 
+    fun launchBlockchainScanIfNecessary() {
+        Bip44AccountIdleService.getInstance().checkImpediments()
+    }
+
     fun maxConnectedPeers(): Int =
             if (activityManager!!.memoryClass <= Constants.MEMORY_CLASS_LOWEND) {
                 4

@@ -285,7 +285,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     @Synchronized
-    private fun checkImpediments() {
+    internal fun checkImpediments() {
         Log.d(LOG_TAG, "checkImpediments, peergroup.isRunning = ${peerGroup!!.isRunning},"
                 + "downloadProgressTracker condition is "
                 + "${(downloadProgressTracker == null || downloadProgressTracker!!.future.isDone)}")

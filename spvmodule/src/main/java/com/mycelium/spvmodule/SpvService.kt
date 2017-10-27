@@ -92,6 +92,7 @@ class SpvService : IntentService("SpvService") {
                         SpvMessageSender.requestPrivateKey(accountIndex)
                         return
                     } else {
+                        application.launchBlockchainScanIfNecessary()
                         application.sendTransactions(accountIndex)
                     }
                 }
