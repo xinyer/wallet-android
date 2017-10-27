@@ -8,6 +8,7 @@ import android.database.MatrixCursor
 import android.net.Uri
 import android.util.Log
 import com.mycelium.modularizationtools.CommunicationManager
+import com.mycelium.spvmodule.BuildConfig
 import com.mycelium.spvmodule.guava.Bip44AccountIdleService
 import com.mycelium.spvmodule.providers.TransactionContract.TransactionSummary
 import com.mycelium.spvmodule.providers.TransactionContract.TransactionDetails
@@ -164,11 +165,11 @@ class TransactionContentProvider : ContentProvider() {
         private val ACCOUNT_BALANCE = 3
 
         init {
-            URI_MATCHER.addURI(TransactionContract.AUTHORITY("com.mycelium.spvmodule.test"),
+            URI_MATCHER.addURI(TransactionContract.AUTHORITY(BuildConfig.APPLICATION_ID),
                     TransactionSummary.TABLE_NAME, TRANSACTIONS_LIST)
-            URI_MATCHER.addURI(TransactionContract.AUTHORITY("com.mycelium.spvmodule.test"),
+            URI_MATCHER.addURI(TransactionContract.AUTHORITY(BuildConfig.APPLICATION_ID),
                     "${TransactionDetails.TABLE_NAME}/*", TRANSACTION_DETAILS)
-            URI_MATCHER.addURI(TransactionContract.AUTHORITY("com.mycelium.spvmodule.test"),
+            URI_MATCHER.addURI(TransactionContract.AUTHORITY(BuildConfig.APPLICATION_ID),
                     TransactionContract.AccountBalance.TABLE_NAME, ACCOUNT_BALANCE)
         }
 
