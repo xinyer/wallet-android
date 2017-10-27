@@ -721,7 +721,7 @@ public class ColuManager implements AccountProvider {
     }
 
     public void getBalances() throws Exception {
-        Log.e(TAG, "ColuManager::getBalances start");
+        Log.d(TAG, "ColuManager::getBalances start");
         for (HashMap.Entry entry : coluAccounts.entrySet()) {
             Log.e(TAG, "ColuManager::getBalances in loop");
             UUID uuid = (UUID) entry.getKey();
