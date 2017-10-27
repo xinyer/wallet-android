@@ -188,41 +188,6 @@ public class ExchangeRateManager implements ExchangeRateProvider {
                }
             }
          }
-         if(rmcApiClient != null) {
-            RmcApiClient rmcApiClient = new RmcApiClient(networkParameters);
-            Float rate = rmcApiClient.exchangeUsdRmcRate();
-            if(rate != null) {
-               rmcRate = rate;
-               getPreferences().edit().putFloat(USD_RMC, rmcRate).apply();
-               storage.storeExchangeRate("USD", "RMC", RMC_MARKET_NAME, rmcRate.toString());
-            } else {
-               Optional<String> rateValue = storage.getExchangeRate("USD", "RMC", RMC_MARKET_NAME);
-               if (rateValue.isPresent()) {
-                  rmcRate = Float.parseFloat(rateValue.get());
-               }
-            }
-            rate = rmcApiClient.exchangeEthUsdRate();
-            if(rate != null) {
-               ethRate = rate;
-               storage.storeExchangeRate("ETH", "USD", KRAKEN_MARKET_NAME, ethRate.toString());
-            } else {
-               Optional<String> rateValue = storage.getExchangeRate("ETH", "USD", KRAKEN_MARKET_NAME);
-               if (rateValue.isPresent()) {
-                  ethRate = Float.parseFloat(rateValue.get());
-               }
-            }
-
-            rate = rmcApiClient.exchangeBtcUsdRate();
-
-            if (rate != null) {
-               usdRate = rate;
-            } else {
-               Optional<String> rateValue = storage.getExchangeRate("BTC", "USD", KRAKEN_MARKET_NAME);
-               if (rateValue.isPresent()) {
-                  usdRate = Float.parseFloat(rateValue.get());
-               }
-            }
-         }
       }
    }
 
