@@ -47,7 +47,6 @@ import android.content.ContentResolver;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v4.app.FragmentActivity;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.View;
@@ -58,7 +57,6 @@ import android.widget.TextView;
 
 import android.widget.Toast;
 
-import com.google.common.base.Optional;
 import com.mrd.bitlib.model.Address;
 import com.mrd.bitlib.util.CoinUtil;
 import com.mrd.bitlib.util.Sha256Hash;
@@ -72,10 +70,8 @@ import com.mycelium.wallet.activity.util.TransactionDetailsLabel;
 import com.mycelium.wallet.colu.ColuAccount;
 import com.mycelium.wallet.colu.json.ColuTxDetailsItem;
 import com.mycelium.wapi.model.TransactionDetails;
-import com.mycelium.wapi.model.TransactionSummary;
-import com.mycelium.wapi.wallet.ConfirmationRiskProfileLocal;
-import com.mycelium.wapi.wallet.currency.CurrencyValue;
-import com.mycelium.wapi.wallet.currency.ExactCurrencyValue;
+
+import static com.mycelium.wallet.WalletApplication.getSpvModuleName;
 
 public class TransactionDetailsActivity extends Activity {
 
@@ -115,7 +111,7 @@ public class TransactionDetailsActivity extends Activity {
 
    private TransactionDetails getTransactionDetails(Sha256Hash txid) {
       TransactionDetails transactionDetails = null;
-      Uri uri = Uri.withAppendedPath(TransactionContract.TransactionDetails.CONTENT_URI("com.mycelium.spvmodule.test"), txid.toHex());
+      Uri uri = Uri.withAppendedPath(TransactionContract.TransactionDetails.CONTENT_URI(getSpvModuleName()), txid.toHex());
       String selection = TransactionContract.TransactionDetails.SELECTION_ACCOUNT_INDEX;
       int accountIndex = ((com.mycelium.wapi.wallet.bip44.Bip44Account) _mbwManager.getSelectedAccount()).getAccountIndex();
       String[] selectionArgs = new String[]{Integer.toString(accountIndex)};

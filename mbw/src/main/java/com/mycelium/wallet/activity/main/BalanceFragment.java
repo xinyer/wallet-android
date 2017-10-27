@@ -58,7 +58,6 @@ import android.widget.TextView;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.mrd.bitlib.model.Address;
-import com.mycelium.modularizationtools.CommunicationManager;
 import com.mycelium.spvmodule.IntentContract;
 import com.mycelium.spvmodule.providers.TransactionContract;
 import com.mycelium.wallet.Constants;
@@ -81,7 +80,6 @@ import com.mycelium.wallet.event.RefreshingExchangeRatesFailed;
 import com.mycelium.wallet.event.SelectedAccountChanged;
 import com.mycelium.wallet.event.SelectedCurrencyChanged;
 import com.mycelium.wallet.event.SyncStopped;
-import com.mycelium.wapi.model.TransactionSummary;
 import com.mycelium.wapi.wallet.WalletAccount;
 import com.mycelium.wapi.wallet.bip44.Bip44Account;
 import com.mycelium.wapi.wallet.currency.CurrencyBasedBalance;
@@ -95,6 +93,8 @@ import java.math.BigDecimal;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+
+import static com.mycelium.wallet.WalletApplication.getSpvModuleName;
 
 public class BalanceFragment extends Fragment {
    private MbwManager _mbwManager;
@@ -205,7 +205,7 @@ public class BalanceFragment extends Fragment {
 
       FragmentActivity context = getActivity();
 
-      Uri uri = TransactionContract.AccountBalance.CONTENT_URI("com.mycelium.spvmodule.test");
+      Uri uri = TransactionContract.AccountBalance.CONTENT_URI(getSpvModuleName());
       String selection = TransactionContract.AccountBalance.SELECTION_ACCOUNT_INDEX;
       int accountIndex = ((Bip44Account) _mbwManager.getSelectedAccount()).getAccountIndex();
       String[] selectionArgs = new String[]{Integer.toString(accountIndex)};

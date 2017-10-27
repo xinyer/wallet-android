@@ -103,6 +103,7 @@ import static android.app.Activity.RESULT_OK;
 import static android.widget.Toast.LENGTH_LONG;
 import static android.widget.Toast.makeText;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.mycelium.wallet.WalletApplication.getSpvModuleName;
 
 public class TransactionHistoryFragment extends Fragment {
    private static final int SIGN_TRANSACTION_REQUEST_CODE = 0x12f4;
@@ -235,7 +236,7 @@ public class TransactionHistoryFragment extends Fragment {
    private List<TransactionSummary> getTransactions() {
       List<TransactionSummary> transactionSummaryList = new ArrayList<>();
       FragmentActivity context = getActivity();
-      Uri uri = TransactionContract.TransactionSummary.CONTENT_URI("com.mycelium.spvmodule.test");
+      Uri uri = TransactionContract.TransactionSummary.CONTENT_URI(getSpvModuleName());
       String selection = TransactionContract.TransactionSummary.SELECTION_ACCOUNT_INDEX;
       int accountIndex = ((Bip44Account) _mbwManager.getSelectedAccount()).getAccountIndex();
       String[] selectionArgs = new String[]{Integer.toString(accountIndex)};
