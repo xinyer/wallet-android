@@ -183,8 +183,8 @@ public class WapiClient implements Wapi {
                _logger.logInfo("Resetting tor");
                ((FeedbackEndpoint) serverEndpoint).onError();
             }
-         } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+         } catch (RuntimeException e) {
+            logError("Send request fail", e);
          }
          // Try the next server
          _serverEndpoints.switchToNextEndpoint();

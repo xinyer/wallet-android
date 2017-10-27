@@ -53,6 +53,7 @@ import com.mrd.bitlib.util.ByteWriter;
 import com.mrd.bitlib.util.HashUtils;
 import com.mrd.bitlib.util.Sha256Hash;
 import com.mycelium.WapiLogger;
+import com.mycelium.wallet.BuildConfig;
 import com.mycelium.wallet.ExchangeRateManager;
 import com.mycelium.wallet.colu.json.Asset;
 import com.mycelium.wallet.colu.json.ColuTxDetailsItem;
@@ -100,7 +101,6 @@ import java.util.UUID;
 //import com.colu.api.httpclient.ColuClient;
 
 public class ColuAccount extends SynchronizeAbleWalletAccount implements ExportableAccount {
-
    public static final String TAG = "ColuAccount";
 
    private static final Balance EMPTY_BALANCE = new Balance(0, 0, 0, 0, 0, 0, true, true);
@@ -108,8 +108,6 @@ public class ColuAccount extends SynchronizeAbleWalletAccount implements Exporta
    public static final int MILLISENCONDS_IN_SECOND = 1000;
 
    private final ColuManager manager;
-   private final Bus eventBus;
-   private final Handler handler;
    private final UUID uuid;
    private final ExchangeRateManager exchangeRateManager;
    private final MetadataStorage metadataStorage;
@@ -140,6 +138,10 @@ public class ColuAccount extends SynchronizeAbleWalletAccount implements Exporta
       return accountKey;
    }
 
+   public void setPrivateKey(InMemoryPrivateKey accountKey) {
+      this.accountKey = accountKey;
+   }
+
    private SingleAddressAccount linkedAccount;
 
    private String label;
@@ -148,8 +150,6 @@ public class ColuAccount extends SynchronizeAbleWalletAccount implements Exporta
                       ExchangeRateManager exchangeRateManager, Handler handler, Bus eventBus, WapiLogger logger, ColuAsset coluAsset) {
       this.accountBacking = backing;
       this.manager = manager;
-      this.eventBus = eventBus;
-      this.handler = handler;
       this.exchangeRateManager = exchangeRateManager;
       this.metadataStorage = metadataStorage;
       this.coluAsset = coluAsset;
@@ -161,11 +161,9 @@ public class ColuAccount extends SynchronizeAbleWalletAccount implements Exporta
       archived = metadataStorage.getArchived(uuid);
    }
    public ColuAccount(ColuManager manager, AccountBacking backing, MetadataStorage metadataStorage, InMemoryPrivateKey accountKey,
-                      ExchangeRateManager exchangeRateManager, Handler handler, Bus eventBus, WapiLogger logger, ColuAsset coluAsset) {
+                      ExchangeRateManager exchangeRateManager, ColuAsset coluAsset) {
       this.accountBacking = backing;
       this.manager = manager;
-      this.eventBus = eventBus;
-      this.handler = handler;
       this.exchangeRateManager = exchangeRateManager;
       this.metadataStorage = metadataStorage;
       this.coluAsset = coluAsset;
@@ -177,7 +175,6 @@ public class ColuAccount extends SynchronizeAbleWalletAccount implements Exporta
       uuid = getGuidForAsset(coluAsset, accountKey.getPublicKey().toAddress(getNetwork()).getAllAddressBytes());
 
       archived = metadataStorage.getArchived(uuid);
-
    }
 
    public static UUID getGuidForAsset(ColuAsset coluAsset, byte[] addressBytes) {
@@ -225,7 +222,6 @@ public class ColuAccount extends SynchronizeAbleWalletAccount implements Exporta
    public ColuAsset getColuAsset() {
       return coluAsset;
    }
-
 
    // if it is a fiat value convert it, otherwise take the exact value
    private long getSatoshis(BigDecimal amount, String currency) {
@@ -431,12 +427,19 @@ public class ColuAccount extends SynchronizeAbleWalletAccount implements Exporta
          long incomingSatoshi = 0;
 
          List<Address> toAddresses = new ArrayList<>();
+         Optional<Address> destinationAddress = null;
 
          for (Vout.Json vout : tx.vout) {
 
             if (vout.scriptPubKey.addresses != null) {
                for(String address : vout.scriptPubKey.addresses) {
                   toAddresses.add(Address.fromString(address));
+               }
+               if (vout.scriptPubKey.addresses.size() > 0) {
+                  Address address = Address.fromString(vout.scriptPubKey.addresses.get(0));
+                  if(!isMine(address)) {
+                     destinationAddress = Optional.fromNullable(address);
+                  }
                }
             }
 
@@ -481,7 +484,7 @@ public class ColuAccount extends SynchronizeAbleWalletAccount implements Exporta
          long time = 0;
          int height = (int)tx.blockheight;
          boolean isQueuedOutgoing = false;
-         Optional<Address> destinationAddress = null;
+
          if (extendedInfo != null) {
             time = extendedInfo.time;
          } else {
@@ -663,12 +666,14 @@ public class ColuAccount extends SynchronizeAbleWalletAccount implements Exporta
    public void archiveAccount() {
       archived = true;
       metadataStorage.storeArchived(uuid, true);
+      linkedAccount.archiveAccount();
    }
 
    @Override
    public void activateAccount() {
       archived = false;
       metadataStorage.storeArchived(uuid, false);
+      linkedAccount.activateAccount();
    }
 
    @Override
@@ -749,6 +754,10 @@ public class ColuAccount extends SynchronizeAbleWalletAccount implements Exporta
       try {
          manager.updateAccountBalance(this);
          if(linkedAccount != null) {
+            if(linkedAccount.isArchived()) {
+               // this should never been happen, but need for back compatibility
+               linkedAccount.activateAccount();
+            }
             linkedAccount.doSynchronization(SyncMode.NORMAL);
          }
       } catch (IOException e) {
@@ -934,63 +943,38 @@ public class ColuAccount extends SynchronizeAbleWalletAccount implements Exporta
    }
 
    public static class ColuAsset {
-      private static final ColuAsset mainNetAssetMT = new ColuAsset(ColuAssetType.MT, "MT","MT", "LaA8aiRBha2BcC6PCqMuK8xzZqdA3Lb6VVv41K", 7, "5babce48bfeecbcca827bfea5a655df66b3abd529e1f93c1264cb07dbe2bffe8/0");
-      private static final ColuAsset mainNetAssetMass = new ColuAsset(ColuAssetType.MASS, "MSS", "MSS", "La4szjzKfJyHQ75qgDEnbzp4qY8GQeDR5Z7h2W", 0, "ff3a31bef5aad630057ce3985d7df31cae5b5b91343e6216428a3731c69b0441/0");
-      private static final ColuAsset mainNetAssetRMC = new ColuAsset(ColuAssetType.RMC, "RMC", "RMC", "La4aGUPuNKZyC393pS2Nb4RJdk2WvmoaAdrRLZ", 4, "");
+      private static final ColuAsset assetMT = new ColuAsset(ColuAssetType.MT, "MT","MT", BuildConfig.MTAssetID, 7, "5babce48bfeecbcca827bfea5a655df66b3abd529e1f93c1264cb07dbe2bffe8/0");
+      private static final ColuAsset assetMass = new ColuAsset(ColuAssetType.MASS, "MSS", "MSS", BuildConfig.MassAssetID, 0, "ff3a31bef5aad630057ce3985d7df31cae5b5b91343e6216428a3731c69b0441/0");
+      private static final ColuAsset assetRMC = new ColuAsset(ColuAssetType.RMC, "RMC", "RMC", BuildConfig.RMCAssetID, 4, "");
 
-      private static final ColuAsset testNetAssetMT = new ColuAsset(ColuAssetType.MT, "MT","MT", "La3JCiNMGmc74rcfYiBAyTUstFgmGDRDkGGCRM", 4, "5babce48bfeecbcca827bfea5a655df66b3abd529e1f93c1264cb07dbe2bffe8/0");
-      private static final ColuAsset testNetAssetMass = new ColuAsset(ColuAssetType.MASS, "MSS", "MSS", "La4szjzKfJyHQ75qgDEnbzp4qY8GQeDR5Z7h2W", 0, "ff3a31bef5aad630057ce3985d7df31cae5b5b91343e6216428a3731c69b0441/0");
-      private static final ColuAsset testNetAssetRMC = new ColuAsset(ColuAssetType.RMC, "RMC", "RMC", "La8yFVyKmHGf4KWjcPqATZeTrSxXyzB3JRPxDc", 4, "");
-
-      private static final Map<String, ColuAsset> mainNetAssetMap = ImmutableMap.of(
-              mainNetAssetMT.id, mainNetAssetMT,
-              mainNetAssetMass.id, mainNetAssetMass,
-              mainNetAssetRMC.id, mainNetAssetRMC
+      private static final Map<String, ColuAsset> assetMap = ImmutableMap.of(
+              assetMT.id, assetMT,
+              assetMass.id, assetMass,
+              assetRMC.id, assetRMC
       );
 
-      private static final Map<String, ColuAsset> testNetAssetMap = ImmutableMap.of(
-              testNetAssetMT.id, testNetAssetMT,
-              testNetAssetMass.id, testNetAssetMass,
-              testNetAssetRMC.id, testNetAssetRMC
-      );
-
-       public static Map<String, ColuAsset> getAssetMap(NetworkParameters network) {
-         if (network == NetworkParameters.testNetwork)
-            return testNetAssetMap;
-
-          return mainNetAssetMap;
+       public static Map<String, ColuAsset> getAssetMap() {
+          return assetMap;
       }
 
-      public static final List<String> getAllAssetNames(NetworkParameters network) {
+      public static final List<String> getAllAssetNames() {
          LinkedList<String> assetNames = new LinkedList<String>();
-         for (ColuAsset asset : getAssetMap(network).values()) {
+         for (ColuAsset asset : getAssetMap().values()) {
             assetNames.add(asset.name);
          }
          return assetNames;
       }
 
-      public static final ColuAsset getByType(ColuAssetType assetType, NetworkParameters network) {
-         if (network == NetworkParameters.testNetwork) {
+      public static final ColuAsset getByType(ColuAssetType assetType) {
             switch (assetType) {
                case MT:
-                  return testNetAssetMT;
+                  return assetMT;
                case MASS:
-                  return testNetAssetMass;
+                  return assetMass;
                case RMC:
-                  return testNetAssetRMC;
+                  return assetRMC;
             }
-         } else {
-            switch (assetType) {
-               case MT:
-                  return mainNetAssetMT;
-               case MASS:
-                  return mainNetAssetMass;
-               case RMC:
-                  return mainNetAssetRMC;
-            }
-         }
-
-         return null;
+            return null;
       }
 
       final public String label;

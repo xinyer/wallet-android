@@ -690,14 +690,11 @@ public class AccountsFragment extends Fragment {
          menus.add(R.menu.record_options_menu_delete);
       }
 
-      if (account.isActive() && account.canSpend() && !(account instanceof Bip44PubOnlyAccount)
-              && !(account instanceof ColuAccount)
-              && !(Utils.checkIsLinked(account, _mbwManager.getColuManager().getAccounts().values()))) {
+      if (account.isActive() && account.canSpend() && !(account instanceof Bip44PubOnlyAccount)) {
          menus.add(R.menu.record_options_menu_sign);
       }
 
-      if (account.isActive() && !(account instanceof ColuAccount)
-              && !(Utils.checkIsLinked(account, _mbwManager.getColuManager().getAccounts().values()))) {
+      if (account.isActive()) {
          menus.add(R.menu.record_options_menu_active);
       }
 
@@ -717,7 +714,8 @@ public class AccountsFragment extends Fragment {
          menus.add(R.menu.record_options_menu_export);
       }
 
-      if (account.isActive() && account instanceof Bip44Account && !(account instanceof Bip44PubOnlyAccount)) {
+      if (account.isActive() && account instanceof Bip44Account && !(account instanceof Bip44PubOnlyAccount)
+              && walletManager.getActiveMasterseedAccounts().size() > 1) {
          if (!((Bip44Account) account).hasHadActivity()) {
             //only allow to remove unused HD acounts from the view
             menus.add(R.menu.record_options_menu_hide_unused);
@@ -1013,6 +1011,8 @@ public class AccountsFragment extends Fragment {
                MessageSigningActivity.callMe(getActivity(), coinapultManager.getAccountKey());
             } else if (_focusedAccount instanceof SingleAddressAccount) {
                MessageSigningActivity.callMe(getActivity(), (SingleAddressAccount) _focusedAccount);
+            } else if(_focusedAccount instanceof ColuAccount){
+               MessageSigningActivity.callMe(getActivity(), ((ColuAccount) _focusedAccount).getPrivateKey());
             } else {
                Intent intent = new Intent(getActivity(), HDSigningActivity.class);
                intent.putExtra("account", _focusedAccount.getId());
@@ -1219,6 +1219,10 @@ public class AccountsFragment extends Fragment {
 
    private void activate(WalletAccount account) {
       account.activateAccount();
+      WalletAccount linkedAccount = Utils.getLinkedAccount(account, _mbwManager.getColuManager().getAccounts().values());
+      if (linkedAccount != null) {
+         linkedAccount.activateAccount();
+      }
       //setselected also broadcasts AccountChanged event
       _mbwManager.setSelectedAccount(account.getId());
       updateIncludingMenus();
@@ -1314,6 +1318,10 @@ public class AccountsFragment extends Fragment {
 
          public void onClick(DialogInterface arg0, int arg1) {
             account.archiveAccount();
+            WalletAccount linkedAccount = Utils.getLinkedAccount(account, _mbwManager.getColuManager().getAccounts().values());
+            if (linkedAccount != null) {
+               linkedAccount.archiveAccount();
+            }
             _mbwManager.setSelectedAccount(_mbwManager.getWalletManager(false).getActiveAccounts().get(0).getId());
             _mbwManager.getEventBus().post(new AccountChanged(account.getId()));
             updateIncludingMenus();

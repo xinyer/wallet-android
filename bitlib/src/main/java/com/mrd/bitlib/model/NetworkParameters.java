@@ -35,17 +35,12 @@ public class NetworkParameters implements Serializable {
    private static final byte[] PRODNET_GENESIS_BLOCK;
    private static final byte[] REGTEST_GENESIS_BLOCK;
 
-   private final String _blockchain_explorer_transaction;
-
-   private final String _blockchain_explorer_address;
-
    private final HdKeyPath _bip44_coin_type;
 
    static {
       // get it via RPC:
       // getblockhash 0
       // getblock "<hash>" false
-
       TESTNET_GENESIS_BLOCK = HexUtils.toBytes("0100000043497fd7f826957108f4a30fd9cec3aeba79972084e90ead01ea3309"
             + "00000000bac8b0fa927c0ac8234287e33c5f74d38d354820e24756ad709d7038"
             + "fc5f31f020e7494dffff001d03e4b67201010000000100000000000000000000"
@@ -108,8 +103,6 @@ public class NetworkParameters implements Serializable {
             _port = 8333;
             _packetMagic = 0xf9beb4d9;
             _packetMagicBytes = new byte[]{(byte) 0xf9, (byte) 0xbe, (byte) 0xb4, (byte) 0xd9};
-            _blockchain_explorer_address = "https://blockchain.info/address/";
-            _blockchain_explorer_transaction = "https://blockchain.info/tx/";
             _bip44_coin_type = HdKeyPath.BIP44_PRODNET;
             break;
          case TESTNET:
@@ -119,8 +112,6 @@ public class NetworkParameters implements Serializable {
             _port = 18333;
             _packetMagic = 0x0b110907;
             _packetMagicBytes = new byte[]{(byte) 0x0b, (byte) 0x11, (byte) 0x09, (byte) 0x07};
-            _blockchain_explorer_address = "http://tbtc.blockr.io/address/info/";
-            _blockchain_explorer_transaction = "http://tbtc.blockr.io/tx/info/";
             _bip44_coin_type = HdKeyPath.BIP44_TESTNET;
             break;
          case REGTEST:
@@ -130,8 +121,6 @@ public class NetworkParameters implements Serializable {
             _port = 18444;
             _packetMagic = 0xfabfb5da;
             _packetMagicBytes = new byte[]{(byte) 0xfa, (byte) 0xbf, (byte) 0xb5, (byte) 0xda};
-            _blockchain_explorer_address = "(regtest)";
-            _blockchain_explorer_transaction = "(regtest)";
             _bip44_coin_type = HdKeyPath.BIP44_TESTNET;
             break;
          default:

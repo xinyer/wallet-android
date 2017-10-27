@@ -49,11 +49,7 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.view.ActionMode;
 import android.text.TextUtils;
-import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
+import android.view.*;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -65,6 +61,7 @@ import com.mrd.bitlib.StandardTransactionBuilder.UnableToBuildTransactionExcepti
 import com.mrd.bitlib.StandardTransactionBuilder.UnsignedTransaction;
 import com.mrd.bitlib.model.Address;
 import com.mrd.bitlib.model.Transaction;
+import com.mrd.bitlib.util.HexUtils;
 import com.mrd.bitlib.util.Sha256Hash;
 import com.mycelium.spvmodule.providers.TransactionContract;
 import com.mycelium.wallet.MbwManager;
@@ -77,6 +74,7 @@ import com.mycelium.wallet.activity.send.BroadcastTransactionActivity;
 import com.mycelium.wallet.activity.send.SignTransactionActivity;
 import com.mycelium.wallet.activity.util.EnterAddressLabelUtil;
 import com.mycelium.wallet.coinapult.CoinapultTransactionSummary;
+import com.mycelium.wallet.colu.ColuAccount;
 import com.mycelium.wallet.event.AddressBookChanged;
 import com.mycelium.wallet.event.ExchangeRatesRefreshed;
 import com.mycelium.wallet.event.SelectedCurrencyChanged;
@@ -96,6 +94,7 @@ import com.squareup.otto.Subscribe;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -163,7 +162,7 @@ public class TransactionHistoryFragment extends Fragment {
       if (requestCode == SIGN_TRANSACTION_REQUEST_CODE) {
          if (resultCode == RESULT_OK) {
             Transaction transaction = (Transaction) Preconditions.checkNotNull(intent.getSerializableExtra("signedTx"));
-            BroadcastTransactionActivity.callMe(getActivity(), _mbwManager.getSelectedAccount().getId(), false, transaction, "CPFP", BROADCAST_REQUEST_CODE);
+            BroadcastTransactionActivity.callMe(getActivity(), _mbwManager.getSelectedAccount().getId(), false, transaction, "CPFP", null, BROADCAST_REQUEST_CODE);
          }
       } else {
          super.onActivityResult(requestCode, resultCode, intent);
@@ -220,6 +219,8 @@ public class TransactionHistoryFragment extends Fragment {
          return;
       }
       List<TransactionSummary> history = getTransactions();//account.getTransactionHistory(0, 20);
+      Collections.sort(history);
+      Collections.reverse(history);
       if (history.isEmpty()) {
          _root.findViewById(R.id.llNoRecords).setVisibility(View.VISIBLE);
          _root.findViewById(R.id.lvTransactionHistory).setVisibility(View.GONE);
@@ -354,9 +355,7 @@ public class TransactionHistoryFragment extends Fragment {
                      checkNotNull(menu.findItem(R.id.miShowCoinapultDebug)).setVisible(record.canCoinapult());
                      checkNotNull(menu.findItem(R.id.miRebroadcastTransaction)).setVisible((record.confirmations == 0) && !record.canCoinapult());
                      checkNotNull(menu.findItem(R.id.miBumpFee)).setVisible((record.confirmations == 0) && !record.canCoinapult());
-
-                     //deletion is disabled for now, to enable, replace false with record.confirmations == 0
-                     checkNotNull(menu.findItem(R.id.miDeleteUnconfirmedTransaction)).setVisible(false);
+                     checkNotNull(menu.findItem(R.id.miDeleteUnconfirmedTransaction)).setVisible(record.confirmations == 0);
                      currentActionMode = actionMode;
                      ((ListView) _root.findViewById(R.id.lvTransactionHistory)).setItemChecked(position, true);
                   }
@@ -403,7 +402,11 @@ public class TransactionHistoryFragment extends Fragment {
                            finishActionMode();
                            break;
                         case R.id.miAddToAddressBook:
-                           EnterAddressLabelUtil.enterAddressLabel(getActivity(), _mbwManager.getMetadataStorage(), record.destinationAddress.get(), "", addressLabelChanged);
+                           String defaultName = "";
+                           if (_mbwManager.getSelectedAccount() instanceof ColuAccount) {
+                              defaultName = ((ColuAccount) _mbwManager.getSelectedAccount()).getColuAsset().name;
+                           }
+                           EnterAddressLabelUtil.enterAddressLabel(getActivity(), _mbwManager.getMetadataStorage(), record.destinationAddress.get(), defaultName, addressLabelChanged);
                            break;
                         case R.id.miCancelTransaction:
                            new AlertDialog.Builder(getActivity())
@@ -494,14 +497,27 @@ public class TransactionHistoryFragment extends Fragment {
                                             dialog.dismiss();
                                          }
                                       })
-                                      .setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
-                                         @Override
-                                         public void onClick(DialogInterface dialog, int which) {
-                                            dialog.dismiss();
-                                         }
-                                      })
+                                      .setNegativeButton(R.string.no, null)
                                       .create().show();
                            }
+                           break;
+                        case R.id.miShare:
+                           new AlertDialog.Builder(getActivity())
+                                   .setTitle(R.string.share_transaction_manually_title)
+                                   .setMessage(R.string.share_transaction_manually_description)
+                                   .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                                      @Override
+                                      public void onClick(DialogInterface dialog, int which) {
+                                         String transaction = HexUtils.toHex(_mbwManager.getSelectedAccount().getTransaction(record.txid).binary);
+                                         Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                                         shareIntent.setType("text/plain");
+                                         shareIntent.putExtra(Intent.EXTRA_TEXT, transaction);
+                                         startActivity(Intent.createChooser(shareIntent, getString(R.string.share_transaction)));
+                                         dialog.dismiss();
+                                      }
+                                   })
+                                   .setNegativeButton(R.string.no, null)
+                                   .create().show();
                            break;
                      }
                      return false;

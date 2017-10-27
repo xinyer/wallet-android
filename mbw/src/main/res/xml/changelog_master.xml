@@ -6,8 +6,31 @@
         <change>Known bugs: balance updates are delayed.</change>
         <change>Your feedback is welcome!</change>
     </release>
-    <release version="2.9.3" versioncode="290300">
-        <change>bugs fixed</change>
+    <release version="2.9.6" versioncode="290601">
+        <change>You can now buy BTC by credit card directly in EUR as well as USD</change>
+        <change>Increased limits of credit card sales: 20K USD per day and 50K USD per month</change>
+        <change>New Mycelium partner: SaferVPN to enhance your privacy at home and when travelling</change>
+        <change>Performance improvements and bug fixes</change>
+    </release>
+    <release version="2.9.5" versioncode="290502">
+        <change>Miner fee picker updated (1sat/b added).</change>
+        <change>Colored Coins utoxs protection added.</change>
+        <change>Dynamic RMC exchange rate and Total supply added.</change>
+        <change>Fixed send button not been visible on the small screen devices.</change>
+        <change>Buy/sell bitcoin button randomly disappearing fixed.</change>
+        <change>"Add to address book" feature now works in Colored Coins accounts.</change>
+        <change>Colored Coins accounts archiving issue solved.</change>
+        <change>Several minor bugfixes.</change>
+    </release>
+    <release version="2.9.4" versioncode="290403">
+        <change>sign messages with token private keys</change>
+        <change>verify signed messages</change>
+        <change>removed RMC chart</change>
+    </release>
+    <release version="2.9.3" versioncode="290302">
+        <change>bug fixed: non-utf8 passphrases are handled correctly now</change>
+        <change>bug fixed: obsolete blockr.io removed</change>
+        <change>bug fixed: private key import fixed</change>
         <change>custom fees</change>
     </release>
     <release version="2.9.2" versioncode="290209">

@@ -26,8 +26,11 @@ configurations {
 }
 
 dependencies {
-    androidTestCompile "junit:junit:$junitVersion"
-    testCompile "junit:junit:$junitVersion"
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "junit:junit:$junitVersion"
+    androidTestImplementation 'com.android.support:support-annotations:23.3.0'
+    androidTestImplementation 'com.android.support.test:runner:0.5'
+    androidTestImplementation 'com.android.support.test:rules:0.5'
 
    implementation project(includePrefix +':libs:zxing-android')
    implementation project(includePrefix +':coinapult')
@@ -46,10 +49,10 @@ dependencies {
    implementation "com.android.support:animated-vector-drawable:$androidSupportVersion"
    implementation "com.android.support:recyclerview-v7:$androidSupportVersion"
     //not upgrading. This will be removed from the core app
-    compile('com.google.android.gms:play-services-base:9.0.2') {
+    implementation('com.google.android.gms:play-services-base:9.0.2') {
         exclude module: 'support-v4'
     }
-    compile('com.google.android.gms:play-services-gcm:9.0.2') {
+    implementation('com.google.android.gms:play-services-gcm:9.0.2') {
         exclude module: 'support-v4'
     }
    implementation 'org.bitcoinj:bitcoinj-core:0.15-SNAPSHOT'
@@ -58,27 +61,22 @@ dependencies {
    implementation 'com.squareup.retrofit:retrofit:1.9.0'
 
    implementation 'com.jakewharton:butterknife:8.5.1'
-    kapt 'com.jakewharton:butterknife-compiler:8.5.1'
+   kapt 'com.jakewharton:butterknife-compiler:8.5.1'
 
    implementation 'io.reactivex:rxandroid:1.1.0'
    implementation 'com.squareup.okhttp:okhttp:2.7.5'
    implementation 'com.android.support:multidex:1.0.1'
-    compile('com.google.code.findbugs:annotations:3.0.1') {
-        exclude module: 'jsr305'
-    }
+   implementation('com.google.code.findbugs:annotations:3.0.1') {
+      exclude module: 'jsr305'
+   }
    implementation project(includePrefix +':myceliummodularizationtools')
    implementation project(includePrefix +':spvmodulecontract')
    implementation 'commons-codec:commons-codec:1.5'
     // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
    implementation 'com.google.protobuf:protobuf-java:3.1.0'
+   implementation 'com.android.support.constraint:constraint-layout:1.0.0-alpha7'
    implementation ("org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version") {
         exclude(group: 'org.jetbrains', module: 'annotations')
-    }
-    annotationProcessor 'com.jakewharton:butterknife-compiler:8.1.0'
-   implementation 'com.jjoe64:graphview:4.2.1'
-   //implementation 'org.slf4j:slf4j-api:1.7.22'
-    compile('com.github.tony19:logback-android-classic:1.1.1-6') {
-        exclude(group: 'com.google.android', module: 'android')
     }
    implementation 'com.github.tony19:logback-android-core:1.1.1-6'
 }
@@ -113,6 +111,8 @@ android {
         versionCode 300001
         versionName '3.0.0'
         multiDexEnabled true
+
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
@@ -162,6 +162,16 @@ android {
             applicationId 'com.mycelium.wallet'
             versionName = defaultConfig.versionName
             signingConfig signingConfigs.release
+
+            ext {
+                MTAssetID = "LaA8aiRBha2BcC6PCqMuK8xzZqdA3Lb6VVv41K"
+                MassAssetID = "La4szjzKfJyHQ75qgDEnbzp4qY8GQeDR5Z7h2W"
+                RMCAssetID = "La4aGUPuNKZyC393pS2Nb4RJdk2WvmoaAdrRLZ"
+                RMCApiClientURL = "https://rmc-ico.gear.mycelium.com/api/"
+                ColoredCoinsApiURLs = '{"https://coloredcoinsd.gear.mycelium.com/v3/", "https://api.coloredcoins.org/v3/"}'
+                ColuBlockExplorerApiURLs = '{"https://coloredcoins.gear.mycelium.com/api/", "https://explorer.coloredcoins.org/api/"}'
+                RMCChangeAddress = "18c91fJmVg7btPjxpwrhgwd37GkVghq9me"
+            }
         }
         dev {
             buildToolsVersion androidSdkBuildVersion
@@ -176,6 +186,16 @@ android {
 
             applicationId 'com.mycelium.devwallet_spore'
             signingConfig signingConfigs.debug
+
+            ext {
+                MTAssetID = "La3JCiNMGmc74rcfYiBAyTUstFgmGDRDkGGCRM"
+                MassAssetID = "La4szjzKfJyHQ75qgDEnbzp4qY8GQeDR5Z7h2W"
+                RMCAssetID = "La8yFVyKmHGf4KWjcPqATZeTrSxXyzB3JRPxDc"
+                RMCApiClientURL = "https://rmc-ico-test.gear.mycelium.com/api/"
+                ColoredCoinsApiURLs = '{"http://testnet.api.coloredcoins.org/v3/"}'
+                ColuBlockExplorerApiURLs = '{"http://testnet.explorer.coloredcoins.org/api/"}'
+                RMCChangeAddress = "mx92L6iuCfxQUz4cLNU4jJpfWbavVHgYj9"
+            }
         }
         devprod {
             buildToolsVersion androidSdkBuildVersion
@@ -183,6 +203,16 @@ android {
 
             applicationId 'com.mycelium.devprodwallet'
             signingConfig signingConfigs.debug
+
+            ext {
+                MTAssetID = "LaA8aiRBha2BcC6PCqMuK8xzZqdA3Lb6VVv41K"
+                MassAssetID = "La4szjzKfJyHQ75qgDEnbzp4qY8GQeDR5Z7h2W"
+                RMCAssetID = "La3bgndN7QSYqV8pWuuqbfBPyHMZRK14Tb2BPg"
+                RMCApiClientURL = "https://rmc-ico-stg.gear.mycelium.com/api/"
+                ColoredCoinsApiURLs = '{"https://coloredcoinsd.gear.mycelium.com/v3/", "https://api.coloredcoins.org/v3/"}'
+                ColuBlockExplorerApiURLs = '{"https://coloredcoins.gear.mycelium.com/api/", "https://explorer.coloredcoins.org/api/"}'
+                RMCChangeAddress = "18c91fJmVg7btPjxpwrhgwd37GkVghq9me"
+            }
         }
         btctestnet {
             targetSdkVersion 23
@@ -191,7 +221,32 @@ android {
             applicationId 'com.mycelium.testnetwallet'
             versionName = defaultConfig.versionName + '-TESTNET'
             signingConfig signingConfigs.btctestnet
+
+            ext {
+                MTAssetID = "La3JCiNMGmc74rcfYiBAyTUstFgmGDRDkGGCRM"
+                MassAssetID = "La4szjzKfJyHQ75qgDEnbzp4qY8GQeDR5Z7h2W"
+                RMCAssetID = "La8yFVyKmHGf4KWjcPqATZeTrSxXyzB3JRPxDc"
+                RMCApiClientURL = "https://rmc-ico-test.gear.mycelium.com/api/"
+                ColoredCoinsApiURLs = '{"http://testnet.api.coloredcoins.org/v3/"}'
+                ColuBlockExplorerApiURLs = '{"http://testnet.explorer.coloredcoins.org/api/"}'
+                RMCChangeAddress = "mx92L6iuCfxQUz4cLNU4jJpfWbavVHgYj9"
+            }
         }
+    }
+
+    applicationVariants.all { variant ->
+        def flavor = variant.productFlavors[0]
+        variant.buildConfigField "String", "MTAssetID", "\"${flavor.ext.MTAssetID}\""
+        variant.buildConfigField "String", "MassAssetID", "\"${flavor.ext.MassAssetID}\""
+        variant.buildConfigField "String", "RMCAssetID", "\"${flavor.ext.RMCAssetID}\""
+        variant.buildConfigField "String", "RMCApiClientURL", "\"${flavor.ext.RMCApiClientURL}\""
+        variant.buildConfigField "String[]", "ColoredCoinsApiURLs", "${flavor.ext.ColoredCoinsApiURLs}"
+        variant.buildConfigField "String[]", "ColuBlockExplorerApiURLs", "${flavor.ext.ColuBlockExplorerApiURLs}"
+        variant.buildConfigField "String", "RMCChangeAddress", "\"${flavor.ext.RMCChangeAddress}\""
+    }
+
+    testOptions {
+        unitTests.returnDefaultValues = true
     }
 }
 

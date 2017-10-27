@@ -70,10 +70,12 @@ import com.mrd.bitlib.model.Address;
 import com.mycelium.net.ServerEndpointType;
 import com.mycelium.wallet.*;
 import com.mycelium.wallet.activity.AboutActivity;
+import com.mycelium.wallet.activity.MessageVerifyActivity;
 import com.mycelium.wallet.activity.ScanActivity;
 import com.mycelium.wallet.activity.main.BalanceMasterFragment;
-import com.mycelium.wallet.activity.main.TransactionHistoryFragment;
 import com.mycelium.wallet.activity.main.RecommendationsFragment;
+import com.mycelium.wallet.activity.main.TransactionHistoryFragment;
+import com.mycelium.wallet.activity.modern.adapter.TabsAdapter;
 import com.mycelium.wallet.activity.send.InstantWalletActivity;
 import com.mycelium.wallet.activity.settings.SettingsActivity;
 import com.mycelium.wallet.coinapult.CoinapultAccount;
@@ -348,6 +350,7 @@ public class ModernMain extends ActionBarActivity {
       inflater.inflate(R.menu.export_history, menu);
       inflater.inflate(R.menu.record_options_menu_global, menu);
       inflater.inflate(R.menu.addressbook_options_global, menu);
+      inflater.inflate(R.menu.verify_message, menu);
       return true;
    }
 
@@ -447,6 +450,9 @@ public class ModernMain extends ActionBarActivity {
             break;
          case R.id.miExportHistory:
             shareTransactionHistory();
+            break;
+         case R.id.miVerifyMessage:
+            startActivity(new Intent(this, MessageVerifyActivity.class));
             break;
       }
       return super.onOptionsItemSelected(item);
