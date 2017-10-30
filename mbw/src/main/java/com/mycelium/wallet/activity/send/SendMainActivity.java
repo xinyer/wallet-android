@@ -71,7 +71,6 @@ import com.mrd.bitlib.model.Address;
 import com.mrd.bitlib.model.OutputList;
 import com.mrd.bitlib.model.Transaction;
 import com.mrd.bitlib.model.UnspentTransactionOutput;
-import com.mycelium.modularizationtools.CommunicationManager;
 import com.mycelium.paymentrequest.PaymentRequestException;
 import com.mycelium.paymentrequest.PaymentRequestInformation;
 import com.mycelium.spvmodule.IntentContract;
@@ -471,7 +470,7 @@ public class SendMainActivity extends Activity {
                 btSend.setEnabled(_transactionStatus == TransactionStatus.OK);
                 ScrollView scrollView = (ScrollView) findViewById(R.id.root);
 
-                if(showSendBtn && scrollView.getMaxScrollAmount() - scrollView.getScaleY() > 0) {
+                if (showSendBtn && scrollView.getMaxScrollAmount() - scrollView.getScaleY() > 0) {
                     scrollView.smoothScrollBy(0, scrollView.getMaxScrollAmount());
                     showSendBtn = false;
                 }
@@ -899,32 +898,25 @@ public class SendMainActivity extends Activity {
                 return TransactionStatus.MissingArguments;
             }
         } catch (InsufficientFundsException e) {
-            makeText(this, getResources().getString(R.string.insufficient_funds), LENGTH_LONG).show();
+            if (_transactionStatus != TransactionStatus.InsufficientFunds) {
+                makeText(this, getResources().getString(R.string.insufficient_funds), LENGTH_LONG).show();
+            }
             return TransactionStatus.InsufficientFunds;
         } catch (OutputTooSmallException e1) {
-            makeText(this, getResources().getString(R.string.amount_too_small), LENGTH_LONG).show();
+            if (_transactionStatus != TransactionStatus.OutputTooSmall) {
+                makeText(this, getResources().getString(R.string.amount_too_small), LENGTH_LONG).show();
+            }
             return TransactionStatus.OutputTooSmall;
         } catch (UnableToBuildTransactionException e) {
-            makeText(this, getResources().getString(R.string.unable_to_build_tx), LENGTH_LONG).show();
+            if (_transactionStatus != TransactionStatus.MissingArguments) {
+                makeText(this, getResources().getString(R.string.unable_to_build_tx), LENGTH_LONG).show();
+            }
             // under certain conditions the max-miner-fee check fails - report it back to the server, so we can better
             // debug it
             _mbwManager.reportIgnoredException("MinerFeeException", e);
             return TransactionStatus.MissingArguments;
-         }
-      } catch (InsufficientFundsException e) {
-         makeText(this, getResources().getString(R.string.insufficient_funds), LENGTH_LONG).show();
-         return TransactionStatus.InsufficientFunds;
-      } catch (OutputTooSmallException e1) {
-         makeText(this, getResources().getString(R.string.amount_too_small), LENGTH_LONG).show();
-         return TransactionStatus.OutputTooSmall;
-      } catch (UnableToBuildTransactionException e) {
-         makeText(this, getResources().getString(R.string.unable_to_build_tx), LENGTH_LONG).show();
-         // under certain conditions the max-miner-fee check fails - report it back to the server, so we can better
-         // debug it
-         _mbwManager.reportIgnoredException("MinerFeeException", e);
-         return TransactionStatus.MissingArguments;
-      }
-   }
+        }
+    }
 
     private ColuBroadcastTxHex.Json createEmptyColuBroadcastJson() {
         ColuBroadcastTxHex.Json result = new ColuBroadcastTxHex.Json();
@@ -934,7 +926,7 @@ public class SendMainActivity extends Activity {
 
     private TransactionStatus tryCreateUnsignedColuTX(final PrepareCallback callback) {
         Log.d(TAG, "tryCreateUnsignedColuTX start");
-        if(!isColu()) {
+        if (!isColu()) {
             // if we arrive here it means account is not colu type
             Log.e(TAG, "tryCreateUnsignedColuTX: We should not arrive here.");
             return TransactionStatus.MissingArguments;
@@ -1377,10 +1369,25 @@ public class SendMainActivity extends Activity {
             int size = estimateTransactionSize(inCount, outCount);
 
             tvSatFeeValue.setText(inCount + " In- / " + outCount + " Outputs, ~" + size + " bytes");
-
-        tvFeeWarning.setVisibility(feePerKbValue == 0 ? View.VISIBLE : View.GONE);
-        if(feePerKbValue == 0) {
-            tvFeeWarning.setText(R.string.fee_is_zero);
+            long fee = _unsigned.calculateFee();
+            if (fee != size * feePerKbValue / 1000) {
+                CurrencyValue value = ExactBitcoinValue.from(fee);
+                CurrencyValue fiatValue = CurrencyValue.fromValue(value, _mbwManager.getFiatCurrency(), _mbwManager.getExchangeRateManager());
+                String fiat = Utils.getFormattedValueWithUnit(fiatValue, _mbwManager.getBitcoinDenomination());
+                fiat = fiat.isEmpty() ? "" : "(" + fiat + ")";
+                feeWarning = getString(R.string.fee_change_warning
+                        , Utils.getFormattedValueWithUnit(value, _mbwManager.getBitcoinDenomination())
+                        , fiat);
+                tvFeeWarning.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        new AlertDialog.Builder(SendMainActivity.this)
+                                .setMessage(R.string.fee_change_description)
+                                .setPositiveButton(R.string.button_ok, null).create()
+                                .show();
+                    }
+                });
+            }
         }
         tvFeeWarning.setVisibility(feeWarning != null ? View.VISIBLE : View.GONE);
         tvFeeWarning.setText(feeWarning != null ? Html.fromHtml(feeWarning) : null);
@@ -1601,12 +1608,17 @@ public class SendMainActivity extends Activity {
         }
     }
 
-   private void setReceivingAddressFromKeynode(HdKeyNode hdKeyNode) {
-      _progress = ProgressDialog.show(this, "", getString(R.string.retrieving_pubkey_address), true);
-      _receivingAcc = _mbwManager.getWalletManager(true).createUnrelatedBip44Account(hdKeyNode);
-      _xpubSyncing = true;
-      _mbwManager.getWalletManager(true).startSynchronization(_receivingAcc);
-   }
+    private String getFiatValue() {
+        long value = _amountToSend.getAsBitcoin(_mbwManager.getExchangeRateManager()).getLongValue() + _unsigned.calculateFee();
+        return _mbwManager.getCurrencySwitcher().getFormattedFiatValue(ExactBitcoinValue.from(value), true);
+    }
+
+    private void setReceivingAddressFromKeynode(HdKeyNode hdKeyNode) throws WalletManager.WalletManagerException {
+        _progress = ProgressDialog.show(this, "", getString(R.string.retrieving_pubkey_address), true);
+        _receivingAcc = _mbwManager.getWalletManager(true).createUnrelatedBip44Account(hdKeyNode);
+        _xpubSyncing = true;
+        _mbwManager.getWalletManager(true).startSynchronization(_receivingAcc);
+    }
 
     private BitcoinUriWithAddress getUriFromClipboard() {
         String content = Utils.getClipboardString(SendMainActivity.this);
@@ -1639,12 +1651,13 @@ public class SendMainActivity extends Activity {
                 String.format(getString(R.string.payment_request_error_while_getting_ack), ex.getMessage()));
     }
 
-   @Subscribe
-   public void paymentRequestAck(PaymentACK paymentACK) {
-      if (paymentACK != null) {
-         BroadcastTransactionActivity.callMe(this, _account.getId(), _isColdStorage, _signedTransaction, _transactionLabel, BROADCAST_REQUEST_CODE);
-      }
-   }
+    @Subscribe
+    public void paymentRequestAck(PaymentACK paymentACK) {
+        if (paymentACK != null) {
+            BroadcastTransactionActivity.callMe(this, _account.getId(), _isColdStorage, _signedTransaction
+                    , _transactionLabel, getFiatValue(), BROADCAST_REQUEST_CODE);
+        }
+    }
 
     @Subscribe
     public void exchangeRatesRefreshed(ExchangeRatesRefreshed event) {
