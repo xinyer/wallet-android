@@ -45,6 +45,9 @@
             backward-compatibility can go here.
 
         -->
+        <item name="colorPrimary">@color/transparent</item>
+        <item name="colorAccent">@color/color_accent</item>
+        <item name="android:windowBackground">@drawable/background_window</item>
     </style>
 
     <style name="MyceliumLauncher" parent="MyceliumModern">
@@ -55,6 +58,10 @@
     <style name="MyceliumActionBar" parent="MyceliumModern">
         <!-- Load it later in code with a lower pixel format, to save some memory
         <item name="android:windowBackground">@drawable/background_witherrors_centered</item>-->
+    </style>
+
+    <style name="MyceliumSettings" parent="MyceliumModern">
+        <item name="colorAccent">@color/lightgrey</item>
     </style>
 
     <!-- Application theme. Theme.AppCompat.Base.CompactMenu.Dialog -->
@@ -78,6 +85,28 @@
         <item name="actionButtonStyle">@style/ActionButtonStyle</item>
         <item name="android:buttonStyle">@style/MyceliumButton</item>
         <item name="android:textViewStyle">@style/MyceliumText</item>
+
+        <item name="actionBarTabBarStyle">@style/MyceliumTabBarStyle</item>
+        <item name="actionBarTabTextStyle">@style/MyceliumTabTextStyle</item>
+
+        <item name="android:actionModeBackground">@color/selectedrecord</item>
+
+        <item name="android:dropDownListViewStyle">@style/DropDownListViewStyle</item>
+        <item name="dropDownListViewStyle">@style/DropDownListViewStyle</item>
+
+    </style>
+
+    <style name="MyceliumTabBarStyle" parent="Widget.AppCompat.ActionBar.TabBar">
+        <item name="android:background">@drawable/action_bar_tab_bar_bg</item>
+    </style>
+
+    <style name="MyceliumTabTextStyle" parent="@style/Widget.AppCompat.ActionBar.TabText">
+        <item name="textAllCaps">false</item>
+    </style>
+
+    <style name="DropDownListViewStyle" parent="@style/Widget.AppCompat.ListView.DropDown">
+        <item name="android:divider">@color/grey</item>
+        <item name="android:dividerHeight">0.5dp</item>
     </style>
 
     <style name="MyceliumSlimButton" parent="android:style/Widget.Button">
