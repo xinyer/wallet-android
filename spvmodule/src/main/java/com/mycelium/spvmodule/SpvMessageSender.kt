@@ -71,5 +71,14 @@ class SpvMessageSender {
                 send(this)
             }
         }
+
+        fun notifySatoshisReceived(satoshisReceived: Long, satoshisSent: Long, accountIndex: Int) {
+            val intent = Intent("com.mycelium.wallet.notifySatoshisReceived").apply {
+                putExtra("satoshisReceived", satoshisReceived)
+                putExtra("satoshisSent", satoshisSent)
+                putExtra("accountsIndex", intArrayOf(accountIndex))
+            }
+            send(intent)
+        }
     }
 }

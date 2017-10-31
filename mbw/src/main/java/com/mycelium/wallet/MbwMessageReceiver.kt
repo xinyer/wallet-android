@@ -70,8 +70,6 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 }
                 var satoshisReceived = 0L
                 var satoshisSent = 0L
-                val mds = MbwManager.getInstance(context).metadataStorage
-                val messageAccounts = HashSet<WalletAccount>()
                 try {
                     for (confTransactionBytes in transactionsBytes) {
                         val transactionAccounts = HashSet<WalletAccount>()
@@ -155,15 +153,26 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                                 }
                             }
                         }
-                        messageAccounts.addAll(transactionAccounts)
-                    }
-                    // account has activity!
-                    if (messageAccounts.isNotEmpty()) {
-                        notifySatoshisReceived(satoshisReceived, satoshisSent, mds, messageAccounts)
                     }
                 } catch (e: Transaction.TransactionParsingException) {
                     Log.e(TAG, e.message, e)
                 }
+            }
+            "com.mycelium.wallet.notifySatoshisReceived" -> {
+                val satoshisReceived = intent.getLongExtra("satoshisReceived", 0L)
+                val satoshisSent = intent.getLongExtra("satoshisSent", 0L)
+                val mds = MbwManager.getInstance(context).metadataStorage
+                val accountsIndex = intent.getIntArrayExtra("accountsIndex")
+                val walletAccounts = mutableListOf<WalletAccount>()
+                for(accountIndex in accountsIndex) {
+                    for(walletAccount in walletManager.activeAccounts) {
+                        if(walletAccount is Bip44Account
+                                && walletAccount.getAccountIndex() == accountIndex) {
+                            walletAccounts.add(walletAccount)
+                        }
+                    }
+                }
+                notifySatoshisReceived(satoshisReceived, satoshisSent, mds, walletAccounts)
             }
             "com.mycelium.wallet.blockchainState" -> {
                 val bestChainDate = intent.getLongExtra("best_chain_date", 0L)

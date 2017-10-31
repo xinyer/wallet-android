@@ -615,6 +615,11 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             Log.d(LOG_TAG, "walletEventListener, onCoinsReceived")
             transactionsReceived.incrementAndGet()
             checkIfFirstTransaction(walletAccount)
+            for (key in walletsAccountsMap.keys()) {
+                if(walletsAccountsMap.get(key) == walletAccount) {
+                    notifySatoshisReceived(transaction!!.getValue(walletAccount).value, 0L, key)
+                }
+            }
         }
 
         override fun onCoinsSent(walletAccount: Wallet?, transaction: Transaction?,
@@ -658,6 +663,10 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         override fun onChanged(walletAccount: Wallet) {
             notifyTransactions(walletAccount.getTransactions(true), walletAccount.unspents.toSet())
         }
+    }
+
+    private fun notifySatoshisReceived(satoshisReceived: Long, satoshisSent: Long, accountIndex: Int) {
+        SpvMessageSender.notifySatoshisReceived(satoshisReceived, satoshisSent, accountIndex)
     }
 
     @Synchronized
