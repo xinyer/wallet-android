@@ -188,37 +188,6 @@ public class ExchangeRateManager implements ExchangeRateProvider {
                }
             }
          }
-         //Get rates from bitflip
-         Rate[] rates = BitflipApi.getRates();
-         if (rates != null) {
-            for (Rate rate : rates) {
-               if(rate.pair.equals("RMC:BTC")) {
-                  rateRmcBtc = (rate.buy + rate.sell) / 2;
-                  storage.storeExchangeRate("RMC", "BTC", "BitFlip", String.valueOf(rateRmcBtc));
-               }
-            }
-         } else {
-            Optional<String> rate = storage.getExchangeRate("RMC", "BTC", "BitFlip");
-            if (rate.isPresent()) {
-               rateRmcBtc = Float.parseFloat(rate.get());
-            }
-         }
-
-         //get rates from gear
-         if(rmcApiClient != null) {
-            RmcApiClient rmcApiClient = new RmcApiClient(networkParameters);
-
-            Float rate = rmcApiClient.exchangeBtcUsdRate();
-
-            if (rate != null) {
-               rateBtcUsd = rate;
-            } else {
-               Optional<String> rateValue = storage.getExchangeRate("BTC", "USD", KRAKEN_MARKET_NAME);
-               if (rateValue.isPresent()) {
-                  rateBtcUsd = Float.parseFloat(rateValue.get());
-               }
-            }
-         }
       }
    }
 
