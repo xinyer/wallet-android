@@ -883,7 +883,15 @@ public abstract class AbstractAccount extends SynchronizeAbleWalletAccount {
    }
 
    private boolean isColuDustOutput(TransactionOutputEx output) {
-      boolean isColuTransaction = isColuTransaction(TransactionEx.toTransaction(_backing.getTransaction(output.outPoint.hash)));
+      TransactionEx tx = _backing.getTransaction(output.outPoint.hash);
+
+      // If we could not retrieve the transaction information, we don't have a chance to detect
+      // whether the output came from Colu transaction or not.
+      // We assume it is NOT colu-output by default and return false
+      if (tx == null)
+         return false;
+
+      boolean isColuTransaction = isColuTransaction(TransactionEx.toTransaction(tx));
 
       if (isColuTransaction) {
          int coluDustOutputSize = this._network.isTestnet() ? COLU_MAX_DUST_OUTPUT_SIZE_TESTNET : COLU_MAX_DUST_OUTPUT_SIZE_MAINNET;
