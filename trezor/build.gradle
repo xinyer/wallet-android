@@ -3,6 +3,7 @@ apply plugin: 'com.android.library'
 buildscript {
     repositories {
         google()
+        mavenLocal()
         jcenter()
     }
 
@@ -13,6 +14,7 @@ buildscript {
 
 repositories {
     google()
+    mavenLocal()
     jcenter()
 }
 

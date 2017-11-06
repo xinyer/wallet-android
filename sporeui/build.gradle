@@ -34,7 +34,7 @@ android {
 repositories {
     google()
     maven { url 'https://jitpack.io' }
-
+    mavenLocal()
     // https://github.com/davideas/FlexibleAdapter#setup
     jcenter()
     maven {url = "http://dl.bintray.com/davideas/maven" }
@@ -90,6 +90,7 @@ dependencies {
 
 buildscript {
     google()
+    mavenLocal()
     repositories {
         jcenter()
     }
@@ -99,5 +100,6 @@ buildscript {
 }
 repositories {
     google()
+    mavenLocal()
     jcenter()
 }
