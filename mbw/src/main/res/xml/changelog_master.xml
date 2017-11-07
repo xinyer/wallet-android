@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <changelog>
+    <release version="3.0.3" versioncode="300300">
+        <change>bugfixes</change>
+        <change>merged changes mainnet wallet (master branch)</change>
+    </release>
     <release version="3.0.0" versioncode="300000">
         <change>SPV Technology Preview: This is the first release using Mycelium modular architecture.</change>
         <change>You will need to install Mycelium SPV module for it to work.</change>

@@ -108,8 +108,8 @@ android {
     buildToolsVersion androidSdkBuildVersion
 
     defaultConfig {
-        versionCode 300201
-        versionName '3.0.2'
+        versionCode 300300
+        versionName '3.0.3'
         multiDexEnabled true
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
