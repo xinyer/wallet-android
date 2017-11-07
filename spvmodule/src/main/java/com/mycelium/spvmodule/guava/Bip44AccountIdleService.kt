@@ -287,13 +287,10 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
     @Synchronized
     internal fun checkImpediments() {
-        Log.d(LOG_TAG, "checkImpediments, peergroup.isRunning = ${peerGroup!!.isRunning},"
-                + "downloadProgressTracker condition is "
-                + "${(downloadProgressTracker == null || downloadProgressTracker!!.future.isDone)}")
         counterCheckImpediments = 0
         //Second condition (downloadProgressTracker) prevent the case where the peergroup is
         // currently downloading the blockchain.
-        if (peerGroup!!.isRunning
+        if (peerGroup != null && peerGroup!!.isRunning
                 && (downloadProgressTracker == null || downloadProgressTracker!!.future.isDone)) {
             if (wakeLock == null) {
                 // if we still hold a wakelock, we don't leave it dangling to block until later.
@@ -323,7 +320,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             }
             broadcastBlockchainState()
         }
-        Log.i(LOG_TAG, "checkImpediments, DONE")
     }
 
     private fun getAccountWallet(accountIndex: Int): Wallet? {
@@ -612,7 +608,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     private val walletEventListener = object : ThrottlingWalletChangeListener(APPWIDGET_THROTTLE_MS) {
         override fun onCoinsReceived(walletAccount: Wallet?, transaction: Transaction?,
                                      prevBalance: Coin?, newBalance: Coin?) {
-            Log.d(LOG_TAG, "walletEventListener, onCoinsReceived")
             transactionsReceived.incrementAndGet()
             checkIfFirstTransaction(walletAccount)
             for (key in walletsAccountsMap.keys()) {
@@ -624,7 +619,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
         override fun onCoinsSent(walletAccount: Wallet?, transaction: Transaction?,
                                  prevBalance: Coin?, newBalance: Coin?) {
-            Log.d(LOG_TAG, "walletEventListener, onCoinsSent")
             transactionsReceived.incrementAndGet()
             checkIfFirstTransaction(walletAccount)
         }
@@ -840,8 +834,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     fun getAccountBalance(accountIndex: Int): Long {
         propagate(Constants.CONTEXT)
         val walletAccount = walletsAccountsMap.get(accountIndex)
-        Log.d(LOG_TAG, "getAccountBalance, accountIndex = $accountIndex, " +
-                "walletAccount = $walletAccount ")
+        Log.d(LOG_TAG, "getAccountBalance, accountIndex = $accountIndex")
         return walletAccount?.getBalance(Wallet.BalanceType.ESTIMATED)?.getValue()?: 0
     }
 
