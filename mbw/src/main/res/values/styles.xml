@@ -86,6 +86,7 @@
         <item name="android:buttonStyle">@style/MyceliumButton</item>
         <item name="android:textViewStyle">@style/MyceliumText</item>
 
+        <item name="actionBarTabStyle">@style/MyceliumTabStyle</item>
         <item name="actionBarTabBarStyle">@style/MyceliumTabBarStyle</item>
         <item name="actionBarTabTextStyle">@style/MyceliumTabTextStyle</item>
 
@@ -96,11 +97,14 @@
 
     </style>
 
-    <style name="MyceliumTabBarStyle" parent="Widget.AppCompat.ActionBar.TabBar">
+    <style name="MyceliumTabStyle" parent="Widget.AppCompat.Light.ActionBar.TabView">
+        <item name="android:background">@drawable/tab_indicator_material</item>
+    </style>
+    <style name="MyceliumTabBarStyle" parent="Widget.AppCompat.Light.ActionBar.TabBar">
         <item name="android:background">@drawable/action_bar_tab_bar_bg</item>
     </style>
 
-    <style name="MyceliumTabTextStyle" parent="@style/Widget.AppCompat.ActionBar.TabText">
+    <style name="MyceliumTabTextStyle" parent="Widget.AppCompat.Light.ActionBar.TabText">
         <item name="textAllCaps">false</item>
     </style>
 
