@@ -42,14 +42,16 @@ public class PackageRemovedReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        String packageName = intent.getData().getEncodedSchemeSpecificPart();
-        String spvModuleName = WalletApplication.getSpvModuleName();
-        if (spvModuleName.equals(packageName)) {
-            String action = intent.getAction();
-            if (Intent.ACTION_PACKAGE_ADDED.equals(action)) {
-                onSpvModuleInstalled();
-            } else if (Intent.ACTION_PACKAGE_REMOVED.equals(action)) {
-                onSpvModuleUninstalled();
+        if (intent.getData() != null) {
+            String packageName = intent.getData().getEncodedSchemeSpecificPart();
+            String spvModuleName = WalletApplication.getSpvModuleName();
+            if (packageName.equals(spvModuleName)) {
+                String action = intent.getAction();
+                if (Intent.ACTION_PACKAGE_ADDED.equals(action)) {
+                    onSpvModuleInstalled();
+                } else if (Intent.ACTION_PACKAGE_REMOVED.equals(action)) {
+                    onSpvModuleUninstalled();
+                }
             }
         }
     }
