@@ -86,23 +86,23 @@ if (commonDebugKeystore.exists()) {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    testCompile "junit:junit:$junitVersion"
-    compile "com.android.support:appcompat-v7:$androidSupportVersion"
-    compile "com.android.support:support-v4:$androidSupportVersion"
-    compile "com.android.support:preference-v7:$androidSupportVersion"
-    compile 'com.android.support:multidex:1.0.2'
-    compile 'org.bitcoinj:bitcoinj-core:0.15-SNAPSHOT'
+    testImplementation "junit:junit:$junitVersion"
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation "com.android.support:appcompat-v7:$androidSupportVersion"
+    implementation "com.android.support:support-v4:$androidSupportVersion"
+    implementation "com.android.support:preference-v7:$androidSupportVersion"
+    implementation 'com.android.support:multidex:1.0.2'
+    implementation 'org.bitcoinj:bitcoinj-core:0.15-SNAPSHOT'
 
-    compile project(includePrefix +':spvmodulecontract')
-    compile project(includePrefix +':myceliummodularizationtools')
-    compile ("org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version") {
+    implementation project(includePrefix +':spvmodulecontract')
+    implementation project(includePrefix +':myceliummodularizationtools')
+    implementation ("org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version") {
         exclude(group: 'org.jetbrains', module: 'annotations')
     }
-    compile(guavaArtifact) {
+    implementation(guavaArtifact) {
         force = true
     }
-    compile(project(path: ':wapi')) {
+    implementation(project(path: ':wapi')) {
         exclude module: 'annotations'
     }
 }
