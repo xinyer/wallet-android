@@ -5,6 +5,7 @@ import android.content.Intent
 import android.util.Log
 
 import com.mycelium.modularizationtools.ModuleMessageReceiver
+import com.mycelium.spvmodule.SpvModuleApplication.Companion.getMbwModuleName
 
 import org.bitcoinj.core.Transaction
 import org.bitcoinj.utils.ContextPropagatingThreadFactory
@@ -17,6 +18,11 @@ import java.net.URL
 class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
     @Synchronized
     override fun onMessage(callingPackageName: String, intent: Intent) {
+        // while sub modules might talk to each other, for now we assume that spvmodule will only ever talk to mbw:
+        if(callingPackageName != getMbwModuleName()) {
+            Log.e(LOG_TAG, "Ignoring unexpected package $callingPackageName calling with intent $intent.")
+            return
+        }
         Log.d(LOG_TAG, "onMessage($callingPackageName, ${intent.action})")
         org.bitcoinj.core.Context.propagate(Constants.CONTEXT)
         val clone = intent.clone() as Intent
@@ -35,7 +41,6 @@ class SpvMessageReceiver(private val context: Context) : ModuleMessageReceiver {
                 context.sendBroadcast(resultIntent)
                 return
             }
-
             IntentContract.SendFunds.ACTION -> {
                 clone.action = SpvService.ACTION_SEND_FUNDS
             }

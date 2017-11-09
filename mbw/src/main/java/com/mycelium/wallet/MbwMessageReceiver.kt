@@ -17,6 +17,7 @@ import com.mrd.bitlib.util.Sha256Hash
 import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.modularizationtools.ModuleMessageReceiver
 import com.mycelium.spvmodule.IntentContract
+import com.mycelium.wallet.WalletApplication.getSpvModuleName
 import com.mycelium.wallet.activity.modern.ModernMain
 import com.mycelium.wallet.event.SpvSyncChanged
 import com.mycelium.wallet.persistence.MetadataStorage
@@ -36,11 +37,15 @@ import kotlin.collections.ArrayList
 class MbwMessageReceiver constructor(private val context: Context) : ModuleMessageReceiver {
     private val eventBus: Bus = MbwManager.getInstance(context).eventBus
 
-    @Suppress("UNCHECKED_CAST")
     override fun onMessage(callingPackageName: String, intent: Intent) {
-        if(intent.action != "com.mycelium.wallet.blockchainState") {
-            Log.d(TAG, "onMessage($callingPackageName, $intent)")
+        when (callingPackageName) {
+            getSpvModuleName() -> onMessageFromSpvModule(intent)
+            else -> Log.e(TAG, "Ignoring unexpected package $callingPackageName calling with intent $intent.")
         }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun onMessageFromSpvModule(intent: Intent) {
         val walletManager = MbwManager.getInstance(context).getWalletManager(false)
         when (intent.action) {
             "com.mycelium.wallet.receivedTransactions" -> {
