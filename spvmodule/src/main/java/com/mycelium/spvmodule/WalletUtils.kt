@@ -13,7 +13,7 @@ import org.bitcoinj.core.AddressFormatException
 import org.bitcoinj.core.DumpedPrivateKey
 import org.bitcoinj.core.ECKey
 import org.bitcoinj.core.NetworkParameters
-import org.bitcoinj.core.ScriptException
+import org.bitcoinj.script.ScriptException
 import org.bitcoinj.core.Sha256Hash
 import org.bitcoinj.core.Transaction
 import org.bitcoinj.wallet.KeyChainGroup
