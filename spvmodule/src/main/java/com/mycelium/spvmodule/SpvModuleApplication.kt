@@ -84,14 +84,14 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
             return
         }
 
-        Bip44AccountIdleService.getInstance().addWalletAccount(bip39Passphrase, creationTimeSeconds, accountIndex)
+        Bip44AccountIdleService.getInstance()!!.addWalletAccount(bip39Passphrase, creationTimeSeconds, accountIndex)
         restartBip44AccountIdleService()
     }
 
     internal fun restartBip44AccountIdleService() {
         Log.d(LOG_TAG, "restartBip44AccountIdleService, stopAsync")
         try {
-            val service = Bip44AccountIdleService.getInstance().stopAsync()
+            val service = Bip44AccountIdleService.getInstance()!!.stopAsync()
             Log.d(LOG_TAG, "restartBip44AccountIdleService, awaitTerminated")
             service.awaitTerminated()
         } catch (e : Throwable) {
@@ -104,19 +104,19 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
     }
 
     fun broadcastTransaction(tx: Transaction, accountIndex: Int) {
-        Bip44AccountIdleService.getInstance().broadcastTransaction(tx, accountIndex)
+        Bip44AccountIdleService.getInstance()!!.broadcastTransaction(tx, accountIndex)
     }
 
     fun broadcastTransaction(sendRequest: SendRequest, accountIndex: Int) {
-        Bip44AccountIdleService.getInstance().broadcastTransaction(sendRequest, accountIndex)
+        Bip44AccountIdleService.getInstance()!!.broadcastTransaction(sendRequest, accountIndex)
     }
 
     fun sendTransactions(accountIndex: Int) {
-        Bip44AccountIdleService.getInstance().sendTransactions(accountIndex)
+        Bip44AccountIdleService.getInstance()!!.sendTransactions(accountIndex)
     }
 
     fun launchBlockchainScanIfNecessary() {
-        Bip44AccountIdleService.getInstance().checkImpediments()
+        Bip44AccountIdleService.getInstance()!!.checkImpediments()
     }
 
     fun maxConnectedPeers(): Int =
@@ -127,7 +127,7 @@ class SpvModuleApplication : Application(), ModuleMessageReceiver {
             }
 
     internal fun doesWalletAccountExist(accountIndex: Int): Boolean =
-            Bip44AccountIdleService.getInstance().doesWalletAccountExist(accountIndex)
+            Bip44AccountIdleService.getInstance()!!.doesWalletAccountExist(accountIndex)
 
     companion object {
         private var INSTANCE: SpvModuleApplication? = null

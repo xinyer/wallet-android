@@ -28,104 +28,106 @@ class TransactionContentProvider : ContentProvider() {
 
     override fun query(uri: Uri?, projection: Array<out String>?, selection: String?,
                        selectionArgs: Array<out String>?, sortOrder: String?): Cursor {
-        val service = Bip44AccountIdleService.getInstance()
         checkSignature(callingPackage)
         var cursor = MatrixCursor(emptyArray(), 0)
         val match = URI_MATCHER.match(uri)
-        when (match) {
-            TRANSACTIONS_LIST ->
-                if (selection!!.contentEquals(TransactionSummary.SELECTION_ACCOUNT_INDEX)) {
-                    Log.d(LOG_TAG, "query, TRANSACTIONS_LIST")
-                    val accountIndex = selectionArgs!!.get(0)
+        val service = Bip44AccountIdleService.getInstance()
+        if (service != null) {
+            when (match) {
+                TRANSACTIONS_LIST ->
+                    if (selection!!.contentEquals(TransactionSummary.SELECTION_ACCOUNT_INDEX)) {
+                        Log.d(LOG_TAG, "query, TRANSACTIONS_LIST")
+                        val accountIndex = selectionArgs!!.get(0)
 
-                    val transactionsSummary = service.getTransactionsSummary(accountIndex.toInt())
-                    cursor = TransactionsSummaryCursor(transactionsSummary.size)
+                        val transactionsSummary = service.getTransactionsSummary(accountIndex.toInt())
+                        cursor = TransactionsSummaryCursor(transactionsSummary.size)
 
-                    for(rowItem in transactionsSummary) {
-                        val columnValues = mutableListOf<Any?>()
-                        columnValues.add(rowItem.txid.toHex())                          //TransactionContract.TransactionSummary._ID
-                        columnValues.add(rowItem.value.value.toPlainString())           //TransactionContract.TransactionSummary.VALUE
-                        columnValues.add(if (rowItem.isIncoming) 1 else 0)              //TransactionContract.TransactionSummary.IS_INCOMING
-                        columnValues.add(rowItem.time)                                  //TransactionContract.TransactionSummary.TIME
-                        columnValues.add(rowItem.height)                                //TransactionContract.TransactionSummary.HEIGHT
-                        columnValues.add(rowItem.confirmations)                         //TransactionContract.TransactionSummary.CONFIRMATIONS
-                        columnValues.add(if (rowItem.isQueuedOutgoing) 1 else 0)        //TransactionContract.TransactionSummary.IS_QUEUED_OUTGOING
-                        if (rowItem.confirmationRiskProfile.isPresent) {
-                            val confirmationRiskProfile = rowItem.confirmationRiskProfile.get()
-                            columnValues.add(confirmationRiskProfile.unconfirmedChainLength)      //TransactionContract.TransactionSummary.CONFIRMATION_RISK_PROFILE_LENGTH
-                            columnValues.add(confirmationRiskProfile.hasRbfRisk)                  //TransactionContract.TransactionSummary.CONFIRMATION_RISK_PROFILE_RBF_RISK
-                            columnValues.add(confirmationRiskProfile.isDoubleSpend)               //TransactionContract.TransactionSummary.CONFIRMATION_RISK_PROFILE_DOUBLE_SPEND
-                        } else {
-                            columnValues.add(-1)
-                            columnValues.add(null)
-                            columnValues.add(null)
-                        }
-                        val isDestAddressPresent = rowItem.destinationAddress.isPresent
-                        columnValues.add(if (isDestAddressPresent) rowItem.destinationAddress.get().toString() else null) //TransactionContract.TransactionSummary.DESTINATION_ADDRESS
-                        val addressesBuilder = StringBuilder()
-                        for (addr in rowItem.toAddresses) {
-                            if (addressesBuilder.isNotEmpty()) {
-                                addressesBuilder.append(",")
+                        for (rowItem in transactionsSummary) {
+                            val columnValues = mutableListOf<Any?>()
+                            columnValues.add(rowItem.txid.toHex())                          //TransactionContract.TransactionSummary._ID
+                            columnValues.add(rowItem.value.value.toPlainString())           //TransactionContract.TransactionSummary.VALUE
+                            columnValues.add(if (rowItem.isIncoming) 1 else 0)              //TransactionContract.TransactionSummary.IS_INCOMING
+                            columnValues.add(rowItem.time)                                  //TransactionContract.TransactionSummary.TIME
+                            columnValues.add(rowItem.height)                                //TransactionContract.TransactionSummary.HEIGHT
+                            columnValues.add(rowItem.confirmations)                         //TransactionContract.TransactionSummary.CONFIRMATIONS
+                            columnValues.add(if (rowItem.isQueuedOutgoing) 1 else 0)        //TransactionContract.TransactionSummary.IS_QUEUED_OUTGOING
+                            if (rowItem.confirmationRiskProfile.isPresent) {
+                                val confirmationRiskProfile = rowItem.confirmationRiskProfile.get()
+                                columnValues.add(confirmationRiskProfile.unconfirmedChainLength)      //TransactionContract.TransactionSummary.CONFIRMATION_RISK_PROFILE_LENGTH
+                                columnValues.add(confirmationRiskProfile.hasRbfRisk)                  //TransactionContract.TransactionSummary.CONFIRMATION_RISK_PROFILE_RBF_RISK
+                                columnValues.add(confirmationRiskProfile.isDoubleSpend)               //TransactionContract.TransactionSummary.CONFIRMATION_RISK_PROFILE_DOUBLE_SPEND
+                            } else {
+                                columnValues.add(-1)
+                                columnValues.add(null)
+                                columnValues.add(null)
                             }
-                            addressesBuilder.append(addr.toString())
+                            val isDestAddressPresent = rowItem.destinationAddress.isPresent
+                            columnValues.add(if (isDestAddressPresent) rowItem.destinationAddress.get().toString() else null) //TransactionContract.TransactionSummary.DESTINATION_ADDRESS
+                            val addressesBuilder = StringBuilder()
+                            for (addr in rowItem.toAddresses) {
+                                if (addressesBuilder.isNotEmpty()) {
+                                    addressesBuilder.append(",")
+                                }
+                                addressesBuilder.append(addr.toString())
+                            }
+                            columnValues.add(addressesBuilder.toString())       //TransactionContract.TransactionSummary.TO_ADDRESSES
+                            cursor.addRow(columnValues)
                         }
-                        columnValues.add(addressesBuilder.toString())       //TransactionContract.TransactionSummary.TO_ADDRESSES
-                        cursor.addRow(columnValues)
-                    }
-                    return cursor
-                }
-            TRANSACTION_DETAILS ->
-                if (selection!!.contentEquals(TransactionSummary.SELECTION_ACCOUNT_INDEX)) {
-                    cursor = TransactionDetailsCursor()
-                    val accountIndex = selectionArgs!!.get(0)
-                    val hash = uri!!.lastPathSegment
-                    val transactionDetails = service.getTransactionDetails(accountIndex.toInt(), hash)
-
-                    if (transactionDetails == null) {
                         return cursor
                     }
+                TRANSACTION_DETAILS ->
+                    if (selection!!.contentEquals(TransactionSummary.SELECTION_ACCOUNT_INDEX)) {
+                        cursor = TransactionDetailsCursor()
+                        val accountIndex = selectionArgs!!.get(0)
+                        val hash = uri!!.lastPathSegment
+                        val transactionDetails = service.getTransactionDetails(accountIndex.toInt(), hash)
 
-                    val columnValues = mutableListOf<Any?>()
-                    columnValues.add(transactionDetails.hash.toHex())       //TransactionContract.Transaction._ID
-                    columnValues.add(transactionDetails.height)             //TransactionContract.Transaction.HEIGHT
-                    columnValues.add(transactionDetails.time)               //TransactionContract.Transaction.TIME
-                    columnValues.add(transactionDetails.rawSize)            //TransactionContract.Transaction.RAW_SIZE
-                    val inputsBuilder = StringBuilder()
-                    for (input in transactionDetails.inputs) {
-                        if (inputsBuilder.isNotEmpty()) {
-                            inputsBuilder.append(",")
+                        if (transactionDetails == null) {
+                            return cursor
                         }
-                        inputsBuilder.append("${input.value} BTC")
-                        inputsBuilder.append("${input.address}")
-                    }
-                    columnValues.add(inputsBuilder.toString())              //TransactionContract.Transaction.INPUTS
 
-                    val outputsBuilder = StringBuilder()
-                    for (output in transactionDetails.outputs) {
-                        if (outputsBuilder.isNotEmpty()) {
-                            outputsBuilder.append(",")
+                        val columnValues = mutableListOf<Any?>()
+                        columnValues.add(transactionDetails.hash.toHex())       //TransactionContract.Transaction._ID
+                        columnValues.add(transactionDetails.height)             //TransactionContract.Transaction.HEIGHT
+                        columnValues.add(transactionDetails.time)               //TransactionContract.Transaction.TIME
+                        columnValues.add(transactionDetails.rawSize)            //TransactionContract.Transaction.RAW_SIZE
+                        val inputsBuilder = StringBuilder()
+                        for (input in transactionDetails.inputs) {
+                            if (inputsBuilder.isNotEmpty()) {
+                                inputsBuilder.append(",")
+                            }
+                            inputsBuilder.append("${input.value} BTC")
+                            inputsBuilder.append("${input.address}")
                         }
-                        outputsBuilder.append("${output.value} BTC")
-                        outputsBuilder.append("${output.address}")
-                    }
-                    columnValues.add(outputsBuilder.toString())             //TransactionContract.Transaction.OUTPUTS
-                    cursor.addRow(columnValues)
+                        columnValues.add(inputsBuilder.toString())              //TransactionContract.Transaction.INPUTS
 
+                        val outputsBuilder = StringBuilder()
+                        for (output in transactionDetails.outputs) {
+                            if (outputsBuilder.isNotEmpty()) {
+                                outputsBuilder.append(",")
+                            }
+                            outputsBuilder.append("${output.value} BTC")
+                            outputsBuilder.append("${output.address}")
+                        }
+                        columnValues.add(outputsBuilder.toString())             //TransactionContract.Transaction.OUTPUTS
+                        cursor.addRow(columnValues)
+
+                    }
+                ACCOUNT_BALANCE ->
+                    if (selection!!.contentEquals(TransactionSummary.SELECTION_ACCOUNT_INDEX)) {
+                        cursor = AccountBalanceCursor()
+                        val accountIndex = selectionArgs!!.get(0)
+                        val columnValues = mutableListOf<Any?>().apply {
+                            add(accountIndex)  //TransactionContract.AccountBalance._ID
+                            add(service.getAccountBalance(accountIndex.toInt())) //TransactionContract.AccountBalance.CONFIRMED
+                            add(service.getAccountSending(accountIndex.toInt()))  //TransactionContract.AccountBalance.CONFIRMED
+                            add(service.getAccountReceiving(accountIndex.toInt()))
+                        }  //TransactionContract.AccountBalance.CONFIRMED
+                        cursor.addRow(columnValues)
+                    }
+                else -> {
+                    // Do nothing.
                 }
-            ACCOUNT_BALANCE ->
-                if (selection!!.contentEquals(TransactionSummary.SELECTION_ACCOUNT_INDEX)) {
-                    cursor = AccountBalanceCursor()
-                    val accountIndex = selectionArgs!!.get(0)
-                    val columnValues = mutableListOf<Any?>().apply {
-                        add(accountIndex)  //TransactionContract.AccountBalance._ID
-                        add(service.getAccountBalance(accountIndex.toInt())) //TransactionContract.AccountBalance.CONFIRMED
-                        add(service.getAccountSending(accountIndex.toInt()))  //TransactionContract.AccountBalance.CONFIRMED
-                        add(service.getAccountReceiving(accountIndex.toInt()))
-                    }  //TransactionContract.AccountBalance.CONFIRMED
-                    cursor.addRow(columnValues)
-                }
-            else -> {
-                // Do nothing.
             }
         }
         return cursor

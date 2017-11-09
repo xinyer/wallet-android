@@ -985,7 +985,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
     companion object {
         private var INSTANCE: Bip44AccountIdleService? = null
-        fun getInstance(): Bip44AccountIdleService = INSTANCE!!
+        fun getInstance(): Bip44AccountIdleService? = INSTANCE
         private val LOG_TAG = Bip44AccountIdleService::class.java.simpleName
         private val BLOCKCHAIN_STATE_BROADCAST_THROTTLE_MS = DateUtils.SECOND_IN_MILLIS
         private val APPWIDGET_THROTTLE_MS = DateUtils.SECOND_IN_MILLIS
