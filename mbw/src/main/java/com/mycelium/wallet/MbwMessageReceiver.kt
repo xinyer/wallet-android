@@ -10,11 +10,9 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import com.megiontechnologies.Bitcoins
-import com.mrd.bitlib.crypto.Bip39
 import com.mrd.bitlib.model.*
 import com.mrd.bitlib.model.NetworkParameters.NetworkType.*
 import com.mrd.bitlib.util.Sha256Hash
-import com.mycelium.modularizationtools.CommunicationManager
 import com.mycelium.modularizationtools.ModuleMessageReceiver
 import com.mycelium.spvmodule.IntentContract
 import com.mycelium.wallet.WalletApplication.getSpvModuleName
@@ -27,9 +25,6 @@ import com.mycelium.wapi.wallet.bip44.Bip44Account
 import com.squareup.otto.Bus
 import org.bitcoinj.core.NetworkParameters
 import org.bitcoinj.core.TransactionConfidence.ConfidenceType.*
-import org.bitcoinj.crypto.ChildNumber
-import org.bitcoinj.crypto.DeterministicKey
-import org.bitcoinj.crypto.HDKeyDerivation
 import java.nio.ByteBuffer
 import java.util.*
 import kotlin.collections.ArrayList
@@ -92,7 +87,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
 
                         for (input in transaction.inputs) {
                             val connectedOutput = fundingOutputs[input.outPoint] ?: // skip this
-                                     continue
+                                    continue
                             connectedOutputs.put(input.outPoint, connectedOutput)
                             val address = connectedOutput.script.getAddress(network)
 
@@ -170,11 +165,8 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                 val accountsIndex = intent.getIntArrayExtra("accountsIndex")
                 val walletAccounts = mutableListOf<WalletAccount>()
                 for(accountIndex in accountsIndex) {
-                    for(walletAccount in walletManager.activeAccounts) {
-                        if(walletAccount is Bip44Account
-                                && walletAccount.getAccountIndex() == accountIndex) {
-                            walletAccounts.add(walletAccount)
-                        }
+                    walletManager.activeAccounts.filterTo(walletAccounts) {
+                        it is Bip44Account && it.accountIndex == accountIndex
                     }
                 }
                 notifySatoshisReceived(satoshisReceived, satoshisSent, mds, walletAccounts)
@@ -197,7 +189,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
             }
 
             "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW" -> {
-                val _mbwManager = MbwManager.getInstance(context)
+                val mbwManager = MbwManager.getInstance(context)
                 val accountIndex = intent.getIntExtra(IntentContract.ACCOUNT_INDEX_EXTRA, -1)
                 Log.d(TAG, "com.mycelium.wallet.requestPrivateExtendedKeyCoinTypeToMBW, " +
                         "accountIndex = $accountIndex")
@@ -205,7 +197,7 @@ class MbwMessageReceiver constructor(private val context: Context) : ModuleMessa
                     Log.e(TAG, "Account Index required!")
                     return
                 }
-                val masterSeed = _mbwManager.getWalletManager(false).getMasterSeed(AesKeyCipher.defaultKeyCipher())
+                val masterSeed = mbwManager.getWalletManager(false).getMasterSeed(AesKeyCipher.defaultKeyCipher())
 
                 /*
                 val masterDeterministicKey : DeterministicKey = HDKeyDerivation.createMasterPrivateKey(masterSeed.bip32Seed)
