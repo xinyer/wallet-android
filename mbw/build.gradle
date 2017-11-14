@@ -112,6 +112,8 @@ android {
         versionName '3.0.4.0'
         multiDexEnabled true
 
+        minSdkVersion 19
+        targetSdkVersion 23
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
 
@@ -156,9 +158,6 @@ android {
 
     productFlavors {
         prodnet {
-            targetSdkVersion 23
-            minSdkVersion 19
-
             applicationId 'com.mycelium.wallet'
             versionName = defaultConfig.versionName
             signingConfig signingConfigs.release
@@ -175,7 +174,6 @@ android {
         }
         dev {
             buildToolsVersion androidSdkBuildVersion
-            minSdkVersion 21
 
             // if we are not on master, include the branchname in versionName
             def branch = getGitBranch()
@@ -199,7 +197,6 @@ android {
         }
         devprod {
             buildToolsVersion androidSdkBuildVersion
-            minSdkVersion 21
 
             applicationId 'com.mycelium.devprodwallet'
             signingConfig signingConfigs.debug
@@ -215,10 +212,7 @@ android {
             }
         }
         btctestnet {
-            targetSdkVersion 23
-            minSdkVersion 19
-
-            applicationId 'com.mycelium.testnetwallet'
+            applicationId 'com.mycelium.testnetdigitalassets'
             versionName = defaultConfig.versionName + '-TESTNET'
             signingConfig signingConfigs.btctestnet
 
