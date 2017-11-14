@@ -23,8 +23,8 @@ android {
         applicationId "com.mycelium.spvmodule"
         minSdkVersion 19
         targetSdkVersion 25
-        versionCode 300300
-        versionName "3.0.3.0"
+        versionCode 300400
+        versionName "3.0.4.0"
         multiDexEnabled true
     }
 
