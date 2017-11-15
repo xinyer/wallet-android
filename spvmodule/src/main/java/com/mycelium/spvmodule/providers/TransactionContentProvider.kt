@@ -85,31 +85,15 @@ class TransactionContentProvider : ContentProvider() {
                         if (transactionDetails == null) {
                             return cursor
                         }
-
-                        val columnValues = mutableListOf<Any?>()
-                        columnValues.add(transactionDetails.hash.toHex())       //TransactionContract.Transaction._ID
-                        columnValues.add(transactionDetails.height)             //TransactionContract.Transaction.HEIGHT
-                        columnValues.add(transactionDetails.time)               //TransactionContract.Transaction.TIME
-                        columnValues.add(transactionDetails.rawSize)            //TransactionContract.Transaction.RAW_SIZE
-                        val inputsBuilder = StringBuilder()
-                        for (input in transactionDetails.inputs) {
-                            if (inputsBuilder.isNotEmpty()) {
-                                inputsBuilder.append(",")
-                            }
-                            inputsBuilder.append("${input.value} BTC")
-                            inputsBuilder.append("${input.address}")
-                        }
-                        columnValues.add(inputsBuilder.toString())              //TransactionContract.Transaction.INPUTS
-
-                        val outputsBuilder = StringBuilder()
-                        for (output in transactionDetails.outputs) {
-                            if (outputsBuilder.isNotEmpty()) {
-                                outputsBuilder.append(",")
-                            }
-                            outputsBuilder.append("${output.value} BTC")
-                            outputsBuilder.append("${output.address}")
-                        }
-                        columnValues.add(outputsBuilder.toString())             //TransactionContract.Transaction.OUTPUTS
+                        val inputs = transactionDetails.inputs.map { "${it.value} BTC${it.address}" }.joinToString(",")
+                        val outputs = transactionDetails.outputs.map { "${it.value} BTC${it.address}" }.joinToString(",")
+                        val columnValues = arrayOf(
+                            transactionDetails.hash.toHex(), //TransactionContract.Transaction._ID
+                            transactionDetails.height,       //TransactionContract.Transaction.HEIGHT
+                            transactionDetails.time,         //TransactionContract.Transaction.TIME
+                            transactionDetails.rawSize,      //TransactionContract.Transaction.RAW_SIZE
+                            inputs,                          //TransactionContract.Transaction.INPUTS
+                            outputs)                         //TransactionContract.Transaction.OUTPUTS
                         cursor.addRow(columnValues)
 
                     }
@@ -117,12 +101,12 @@ class TransactionContentProvider : ContentProvider() {
                     if (selection!!.contentEquals(TransactionSummary.SELECTION_ACCOUNT_INDEX)) {
                         cursor = AccountBalanceCursor()
                         val accountIndex = selectionArgs!!.get(0)
-                        val columnValues = mutableListOf<Any?>().apply {
-                            add(accountIndex)  //TransactionContract.AccountBalance._ID
-                            add(service.getAccountBalance(accountIndex.toInt())) //TransactionContract.AccountBalance.CONFIRMED
-                            add(service.getAccountSending(accountIndex.toInt()))  //TransactionContract.AccountBalance.CONFIRMED
-                            add(service.getAccountReceiving(accountIndex.toInt()))
-                        }  //TransactionContract.AccountBalance.CONFIRMED
+                        val columnValues = listOf(
+                            accountIndex,                                     //TransactionContract.AccountBalance._ID
+                            service.getAccountBalance(accountIndex.toInt()),  //TransactionContract.AccountBalance.CONFIRMED
+                            service.getAccountSending(accountIndex.toInt()),  //TransactionContract.AccountBalance.SENDING
+                            service.getAccountReceiving(accountIndex.toInt()) //TransactionContract.AccountBalance.RECEIVING
+                        )
                         cursor.addRow(columnValues)
                     }
                 else -> {
