@@ -45,7 +45,7 @@ class CommunicationManager private constructor(val context: Context) {
     }
 
     private fun loadTrustedPackages() {
-        val readerDev = InputStreamReader(context.resources.openRawResource(R.raw.trusted_packages))
+        val readerDev = InputStreamReader(context.resources.assets.open("trusted_packages.json"))
         val gson = GsonBuilder().create()
         val trustedPackagesArray = gson.fromJson(readerDev, emptyArray<PackageMetaData>().javaClass)
         Log.d(LOG_TAG, "loading trust database of latest package version…")
