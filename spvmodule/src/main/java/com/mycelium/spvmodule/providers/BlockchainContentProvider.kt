@@ -33,7 +33,7 @@ class BlockchainContentProvider : ContentProvider() {
         when (match) {
             ADDRESS_LIST, TRANSACTION_LIST -> {
             }
-            ADDRESS_ID, TRANSACTION_ID -> sel = sel + " _id=" + uri.lastPathSegment
+            ADDRESS_ID, TRANSACTION_ID -> sel += " _id=" + uri.lastPathSegment
             else -> throw IllegalArgumentException("Unknown URI " + uri)
         }
         qb.tables = getTableFromMatch(match)
@@ -147,13 +147,11 @@ class BlockchainContentProvider : ContentProvider() {
             URI_MATCHER.addURI("*", TransactionOutput.TABLE_NAME + "/#", TRANSACTION_OUTPUT_ID)
         }
 
-        private fun getTableFromMatch(match: Int): String {
-            return when (match) {
-                ADDRESS_LIST, ADDRESS_ID -> Address.TABLE_NAME
-                TRANSACTION_LIST, TRANSACTION_ID -> Transaction.TABLE_NAME
-                TRANSACTION_OUTPUT_LIST, TRANSACTION_OUTPUT_ID -> TransactionOutput.TABLE_NAME
-                else -> throw IllegalArgumentException("Unknown match " + match)
-            }
+        private fun getTableFromMatch(match: Int): String = when (match) {
+            ADDRESS_LIST, ADDRESS_ID -> Address.TABLE_NAME
+            TRANSACTION_LIST, TRANSACTION_ID -> Transaction.TABLE_NAME
+            TRANSACTION_OUTPUT_LIST, TRANSACTION_OUTPUT_ID -> TransactionOutput.TABLE_NAME
+            else -> throw IllegalArgumentException("Unknown match " + match)
         }
     }
 }

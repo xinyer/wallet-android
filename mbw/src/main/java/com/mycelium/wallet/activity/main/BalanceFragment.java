@@ -197,74 +197,76 @@ public class BalanceFragment extends Fragment {
       if (!isAdded()) {
          return;
       }
-      if (_mbwManager.getSelectedAccount().isArchived()) {
-         return;
-      }
-      WalletAccount account = Preconditions.checkNotNull(_mbwManager.getSelectedAccount());
-      CurrencyBasedBalance balance = CurrencyBasedBalance.ZERO_BITCOIN_BALANCE;
+      WalletAccount selectedAccount = Preconditions.checkNotNull(_mbwManager.getSelectedAccount());
+      if(selectedAccount instanceof Bip44Account) {
+         Bip44Account account = (Bip44Account) selectedAccount;
+         if (account.isArchived()) {
+            return;
+         }
+         CurrencyBasedBalance balance = CurrencyBasedBalance.ZERO_BITCOIN_BALANCE;
 
-      FragmentActivity context = getActivity();
+         FragmentActivity context = getActivity();
 
-      Uri uri = TransactionContract.AccountBalance.CONTENT_URI(getSpvModuleName());
-      String selection = TransactionContract.AccountBalance.SELECTION_ACCOUNT_INDEX;
-      int accountIndex = ((Bip44Account) _mbwManager.getSelectedAccount()).getAccountIndex();
-      String[] selectionArgs = new String[]{Integer.toString(accountIndex)};
-      Cursor cursor = null;
-      ContentResolver contentResolver = context.getContentResolver();
-      try {
-         cursor = contentResolver.query(uri, null, selection, selectionArgs, null);
-         if (cursor != null) {
-            while (cursor.moveToNext()) {
-               balance = from(cursor);
+         Uri uri = TransactionContract.AccountBalance.CONTENT_URI(getSpvModuleName()).buildUpon().appendEncodedPath(account.getId().toString()).build();
+         String selection = TransactionContract.AccountBalance.SELECTION_ACCOUNT_INDEX;
+         int accountIndex = account.getAccountIndex();
+         String[] selectionArgs = new String[]{Integer.toString(accountIndex)};
+         Cursor cursor = null;
+         ContentResolver contentResolver = context.getContentResolver();
+         try {
+            cursor = contentResolver.query(uri, null, selection, selectionArgs, null);
+            if (cursor != null) {
+               while (cursor.moveToNext()) {
+                  balance = from(cursor);
+               }
+            }
+         } finally {
+            if (cursor != null) {
+               cursor.close();
             }
          }
-      } finally {
-         if (cursor != null) {
-            cursor.close();
+
+         if (_mbwManager.isSpvMode() && account.isDerivedFromInternalMasterseed()) {
+            Intent waitingIntent = IntentContract.WaitingIntents.createIntent(account.getAccountIndex());
+            WalletApplication.sendToSpv(waitingIntent);
          }
+
+         // Hide spend button if not canSpend()
+         int visibility = account.canSpend() ? View.VISIBLE : View.GONE;
+         _root.findViewById(R.id.btSend).setVisibility(visibility);
+
+         updateUiKnownBalance(balance);
       }
-
-      WalletAccount selectedAccount = _mbwManager.getSelectedAccount();
-      if(_mbwManager.isSpvMode() && selectedAccount instanceof Bip44Account) {
-         Intent waitingIntent = IntentContract.WaitingIntents.createIntent(accountIndex);
-         WalletApplication.sendToSpv(waitingIntent);
-      }
-
-      // Hide spend button if not canSpend()
-      int visibility = account.canSpend() ? View.VISIBLE : View.GONE;
-      _root.findViewById(R.id.btSend).setVisibility(visibility);
-
-      updateUiKnownBalance(balance);
-
       TextView tvBtcRate = (TextView) _root.findViewById(R.id.tvBtcRate);
       // show / hide components depending on account type
 //      View coluSatoshiBalanceLayout = _root.findViewById(R.id.llColuSatoshiBalance);
       View tcdFiatDisplay = _root.findViewById(R.id.tcdFiatDisplay);
-      if(account instanceof ColuAccount) {
+      if(selectedAccount instanceof ColuAccount) {
 //          coluSatoshiBalanceLayout.setVisibility(View.VISIBLE);
          tvBtcRate.setVisibility(View.VISIBLE);
-         ColuAccount coluAccount = (ColuAccount) account;
-          ColuAccount.ColuAssetType assetType = coluAccount.getColuAsset().assetType;
+         ColuAccount coluAccount = (ColuAccount) selectedAccount;
+         ColuAccount.ColuAsset coluAsset = coluAccount.getColuAsset();
+         ColuAccount.ColuAssetType assetType = coluAsset.assetType;
          if (assetType == ColuAccount.ColuAssetType.RMC ) {
             tcdFiatDisplay.setVisibility(View.VISIBLE);
-            CurrencyValue coluValue = ExactCurrencyValue.from(BigDecimal.ONE, coluAccount.getColuAsset().name);
+            CurrencyValue coluValue = ExactCurrencyValue.from(BigDecimal.ONE, coluAsset.name);
             CurrencyValue fiatValue = CurrencyValue.fromValue(coluValue, _mbwManager.getFiatCurrency(), _mbwManager.getExchangeRateManager());
             if (fiatValue != null && fiatValue.getValue() != null) {
-               tvBtcRate.setText(getString(R.string.rmc_rate, coluAccount.getColuAsset().name
+               tvBtcRate.setText(getString(R.string.rmc_rate, coluAsset.name
                        , Utils.formatFiatWithUnit(fiatValue)
                        , _mbwManager.getExchangeRateManager().getCurrentExchangeSourceName()));
             }
          } else if(assetType == ColuAccount.ColuAssetType.MASS) {
             tcdFiatDisplay.setVisibility(View.VISIBLE);
-            CurrencyValue coluValue = ExactCurrencyValue.from(BigDecimal.ONE, coluAccount.getColuAsset().name);
+            CurrencyValue coluValue = ExactCurrencyValue.from(BigDecimal.ONE, coluAsset.name);
             CurrencyValue fiatValue = CurrencyValue.fromValue(coluValue, _mbwManager.getFiatCurrency(), _mbwManager.getExchangeRateManager());
             if (fiatValue != null && fiatValue.getValue() != null) {
-               tvBtcRate.setText(getString(R.string.mss_rate, coluAccount.getColuAsset().name
+               tvBtcRate.setText(getString(R.string.mss_rate, coluAsset.name
                        , Utils.formatFiatWithUnit(fiatValue, 6)));
             }
          } else {
             tcdFiatDisplay.setVisibility(View.INVISIBLE);
-            tvBtcRate.setText(getString(R.string.exchange_source_not_available, ((ColuAccount) account).getColuAsset().name));
+            tvBtcRate.setText(getString(R.string.exchange_source_not_available, coluAsset.name));
          }
 //          TextView tvColuSatoshiBalance = (TextView) _root.findViewById(R.id.tvColuSatoshiBalance);
 //          ColuAccount coluAccount = (ColuAccount) account;
@@ -293,7 +295,7 @@ public class BalanceFragment extends Fragment {
    }
 
    private CurrencyBasedBalance from(Cursor cursor) {
-      String uselessId = cursor.getString(cursor.getColumnIndex(TransactionContract.AccountBalance._ID));
+      // String id = cursor.getString(cursor.getColumnIndex(TransactionContract.AccountBalance._ID));
       Long confirmed = cursor.getLong(cursor.getColumnIndex(TransactionContract.AccountBalance.CONFIRMED));
       Long receiving = cursor.getLong(cursor.getColumnIndex(TransactionContract.AccountBalance.RECEIVING));
       Long sending = cursor.getLong(cursor.getColumnIndex(TransactionContract.AccountBalance.SENDING));

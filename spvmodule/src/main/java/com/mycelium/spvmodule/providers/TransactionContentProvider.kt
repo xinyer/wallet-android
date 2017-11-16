@@ -12,6 +12,7 @@ import com.mycelium.spvmodule.BuildConfig
 import com.mycelium.spvmodule.guava.Bip44AccountIdleService
 import com.mycelium.spvmodule.providers.TransactionContract.TransactionSummary
 import com.mycelium.spvmodule.providers.TransactionContract.TransactionDetails
+import com.mycelium.spvmodule.providers.TransactionContract.AccountBalance
 import com.mycelium.spvmodule.providers.data.AccountBalanceCursor
 import com.mycelium.spvmodule.providers.data.TransactionDetailsCursor
 import com.mycelium.spvmodule.providers.data.TransactionsSummaryCursor
@@ -34,57 +35,41 @@ class TransactionContentProvider : ContentProvider() {
         val service = Bip44AccountIdleService.getInstance()
         if (service != null) {
             when (match) {
-                TRANSACTIONS_LIST ->
+                TRANSACTION_SUMMARY_LIST ->
                     if (selection!!.contentEquals(TransactionSummary.SELECTION_ACCOUNT_INDEX)) {
-                        Log.d(LOG_TAG, "query, TRANSACTIONS_LIST")
+                        Log.d(LOG_TAG, "query, TRANSACTION_SUMMARY_LIST")
                         val accountIndex = selectionArgs!!.get(0)
 
                         val transactionsSummary = service.getTransactionsSummary(accountIndex.toInt())
                         cursor = TransactionsSummaryCursor(transactionsSummary.size)
 
                         for (rowItem in transactionsSummary) {
-                            val columnValues = mutableListOf<Any?>()
-                            columnValues.add(rowItem.txid.toHex())                          //TransactionContract.TransactionSummary._ID
-                            columnValues.add(rowItem.value.value.toPlainString())           //TransactionContract.TransactionSummary.VALUE
-                            columnValues.add(if (rowItem.isIncoming) 1 else 0)              //TransactionContract.TransactionSummary.IS_INCOMING
-                            columnValues.add(rowItem.time)                                  //TransactionContract.TransactionSummary.TIME
-                            columnValues.add(rowItem.height)                                //TransactionContract.TransactionSummary.HEIGHT
-                            columnValues.add(rowItem.confirmations)                         //TransactionContract.TransactionSummary.CONFIRMATIONS
-                            columnValues.add(if (rowItem.isQueuedOutgoing) 1 else 0)        //TransactionContract.TransactionSummary.IS_QUEUED_OUTGOING
-                            if (rowItem.confirmationRiskProfile.isPresent) {
-                                val confirmationRiskProfile = rowItem.confirmationRiskProfile.get()
-                                columnValues.add(confirmationRiskProfile.unconfirmedChainLength)      //TransactionContract.TransactionSummary.CONFIRMATION_RISK_PROFILE_LENGTH
-                                columnValues.add(confirmationRiskProfile.hasRbfRisk)                  //TransactionContract.TransactionSummary.CONFIRMATION_RISK_PROFILE_RBF_RISK
-                                columnValues.add(confirmationRiskProfile.isDoubleSpend)               //TransactionContract.TransactionSummary.CONFIRMATION_RISK_PROFILE_DOUBLE_SPEND
-                            } else {
-                                columnValues.add(-1)
-                                columnValues.add(null)
-                                columnValues.add(null)
-                            }
-                            val isDestAddressPresent = rowItem.destinationAddress.isPresent
-                            columnValues.add(if (isDestAddressPresent) rowItem.destinationAddress.get().toString() else null) //TransactionContract.TransactionSummary.DESTINATION_ADDRESS
-                            val addressesBuilder = StringBuilder()
-                            for (addr in rowItem.toAddresses) {
-                                if (addressesBuilder.isNotEmpty()) {
-                                    addressesBuilder.append(",")
-                                }
-                                addressesBuilder.append(addr.toString())
-                            }
-                            columnValues.add(addressesBuilder.toString())       //TransactionContract.TransactionSummary.TO_ADDRESSES
+                            val riskProfile = rowItem.confirmationRiskProfile.orNull()
+                            val columnValues = arrayOf(
+                                    rowItem.txid.toHex(),                          //TransactionContract.TransactionSummary._ID
+                                    rowItem.value.value.toPlainString(),           //TransactionContract.TransactionSummary.VALUE
+                                    if (rowItem.isIncoming) 1 else 0,              //TransactionContract.TransactionSummary.IS_INCOMING
+                                    rowItem.time,                                  //TransactionContract.TransactionSummary.TIME
+                                    rowItem.height,                                //TransactionContract.TransactionSummary.HEIGHT
+                                    rowItem.confirmations,                         //TransactionContract.TransactionSummary.CONFIRMATIONS
+                                    if (rowItem.isQueuedOutgoing) 1 else 0,        //TransactionContract.TransactionSummary.IS_QUEUED_OUTGOING
+                                    riskProfile?.unconfirmedChainLength ?: -1,     //TransactionContract.TransactionSummary.CONFIRMATION_RISK_PROFILE_LENGTH
+                                    riskProfile?.hasRbfRisk,                       //TransactionContract.TransactionSummary.CONFIRMATION_RISK_PROFILE_RBF_RISK
+                                    riskProfile?.isDoubleSpend,                    //TransactionContract.TransactionSummary.CONFIRMATION_RISK_PROFILE_DOUBLE_SPEND
+                                    rowItem.destinationAddress.orNull()?.toString(),//TransactionContract.TransactionSummary.DESTINATION_ADDRESS
+                                    rowItem.toAddresses.joinToString(",")          //TransactionContract.TransactionSummary.TO_ADDRESSES
+                            )
                             cursor.addRow(columnValues)
                         }
                         return cursor
                     }
-                TRANSACTION_DETAILS ->
+                TRANSACTION_DETAILS_ID ->
                     if (selection!!.contentEquals(TransactionSummary.SELECTION_ACCOUNT_INDEX)) {
                         cursor = TransactionDetailsCursor()
                         val accountIndex = selectionArgs!!.get(0)
                         val hash = uri!!.lastPathSegment
-                        val transactionDetails = service.getTransactionDetails(accountIndex.toInt(), hash)
+                        val transactionDetails = service.getTransactionDetails(accountIndex.toInt(), hash) ?: return cursor
 
-                        if (transactionDetails == null) {
-                            return cursor
-                        }
                         val inputs = transactionDetails.inputs.map { "${it.value} BTC${it.address}" }.joinToString(",")
                         val outputs = transactionDetails.outputs.map { "${it.value} BTC${it.address}" }.joinToString(",")
                         val columnValues = arrayOf(
@@ -97,7 +82,7 @@ class TransactionContentProvider : ContentProvider() {
                         cursor.addRow(columnValues)
 
                     }
-                ACCOUNT_BALANCE ->
+                ACCOUNT_BALANCE_ID ->
                     if (selection!!.contentEquals(TransactionSummary.SELECTION_ACCOUNT_INDEX)) {
                         cursor = AccountBalanceCursor()
                         val accountIndex = selectionArgs!!.get(0)
@@ -136,32 +121,35 @@ class TransactionContentProvider : ContentProvider() {
     override fun getType(uri: Uri): String? {
         checkSignature(callingPackage)
         return when (URI_MATCHER.match(uri)) {
-            TRANSACTIONS_LIST -> TransactionSummary.CONTENT_TYPE
-            TRANSACTION_DETAILS -> TransactionDetails.CONTENT_TYPE
-            ACCOUNT_BALANCE -> TransactionContract.AccountBalance.CONTENT_TYPE
+            TRANSACTION_SUMMARY_LIST, TRANSACTION_SUMMARY_ID -> TransactionSummary.CONTENT_TYPE
+            TRANSACTION_DETAILS_LIST, TRANSACTION_DETAILS_ID -> TransactionDetails.CONTENT_TYPE
+            ACCOUNT_BALANCE_LIST, ACCOUNT_BALANCE_ID -> AccountBalance.CONTENT_TYPE
             else -> throw IllegalArgumentException("Unknown URI " + uri)
         }
     }
 
     companion object {
-        val URI_MATCHER: UriMatcher = UriMatcher(UriMatcher.NO_MATCH)
+        private val TRANSACTION_SUMMARY_LIST = 1
+        private val TRANSACTION_SUMMARY_ID = 2
+        private val TRANSACTION_DETAILS_LIST = 3
+        private val TRANSACTION_DETAILS_ID = 4
+        private val ACCOUNT_BALANCE_LIST = 5
+        private val ACCOUNT_BALANCE_ID = 6
 
-        private val TRANSACTIONS_LIST = 1
-        private val TRANSACTION_DETAILS = 2
-        private val ACCOUNT_BALANCE = 3
-
-        init {
-            URI_MATCHER.addURI(TransactionContract.AUTHORITY(BuildConfig.APPLICATION_ID),
-                    TransactionSummary.TABLE_NAME, TRANSACTIONS_LIST)
-            URI_MATCHER.addURI(TransactionContract.AUTHORITY(BuildConfig.APPLICATION_ID),
-                    "${TransactionDetails.TABLE_NAME}/*", TRANSACTION_DETAILS)
-            URI_MATCHER.addURI(TransactionContract.AUTHORITY(BuildConfig.APPLICATION_ID),
-                    TransactionContract.AccountBalance.TABLE_NAME, ACCOUNT_BALANCE)
+        private val URI_MATCHER: UriMatcher = UriMatcher(UriMatcher.NO_MATCH).apply {
+            val auth = TransactionContract.AUTHORITY(BuildConfig.APPLICATION_ID)
+            addURI(auth, TransactionSummary.TABLE_NAME, TRANSACTION_SUMMARY_LIST)
+            addURI(auth, "${TransactionSummary.TABLE_NAME}/*", TRANSACTION_SUMMARY_ID)
+            addURI(auth, TransactionDetails.TABLE_NAME, TRANSACTION_DETAILS_LIST)
+            addURI(auth, "${TransactionDetails.TABLE_NAME}/*", TRANSACTION_DETAILS_ID)
+            addURI(auth, AccountBalance.TABLE_NAME, ACCOUNT_BALANCE_LIST)
+            addURI(auth, "${AccountBalance.TABLE_NAME}/*", ACCOUNT_BALANCE_ID)
         }
 
         private fun getTableFromMatch(match: Int): String = when (match) {
-            TRANSACTIONS_LIST -> TransactionSummary.TABLE_NAME
-            TRANSACTION_DETAILS -> TransactionDetails.TABLE_NAME
+            TRANSACTION_SUMMARY_LIST, TRANSACTION_SUMMARY_ID -> TransactionSummary.TABLE_NAME
+            TRANSACTION_DETAILS_LIST, TRANSACTION_DETAILS_ID -> TransactionDetails.TABLE_NAME
+            ACCOUNT_BALANCE_LIST, ACCOUNT_BALANCE_ID -> AccountBalance.TABLE_NAME
             else -> throw IllegalArgumentException("Unknown match " + match)
         }
     }

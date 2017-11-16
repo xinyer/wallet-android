@@ -672,10 +672,8 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     }
 
     fun sendTransactions(accountIndex: Int) {
-        val walletAccount = walletsAccountsMap.get(accountIndex)
-        if (walletAccount != null) {
-            notifyTransactions(walletAccount.getTransactions(true), walletAccount.unspents.toSet())
-        }
+        val walletAccount = walletsAccountsMap.get(accountIndex) ?: return
+        notifyTransactions(walletAccount.getTransactions(true), walletAccount.unspents.toSet())
     }
 
     private val activityHistory = LinkedList<ActivityHistoryEntry>()
@@ -760,8 +758,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             val bitcoinJValue = transactionBitcoinJ.getValue(walletAccount)
             val isIncoming = bitcoinJValue.isPositive
             val bitcoinValue =  ExactBitcoinValue.from(abs(bitcoinJValue.value))
-            var height: Int
-            height = transactionBitcoinJ.confidence.depthInBlocks
+            val height = transactionBitcoinJ.confidence.depthInBlocks
             if (height <= 0) {
                 //continue
             }
@@ -781,10 +778,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
     fun getTransactionDetails(accountIndex: Int, hash: String): TransactionDetails? {
         propagate(Constants.CONTEXT)
         Log.d(LOG_TAG, "getTransactionDetails, accountIndex = $accountIndex, hash = $hash")
-        val walletAccount = walletsAccountsMap.get(accountIndex)
-        if (walletAccount == null) {
-            return null
-        }
+        val walletAccount = walletsAccountsMap.get(accountIndex) ?: return null
         val transactionBitcoinJ = walletAccount.getTransaction(
                 org.bitcoinj.core.Sha256Hash.wrap(hash))!!
 
@@ -843,12 +837,10 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         Log.d(LOG_TAG, "getAccountReceiving, accountIndex = $accountIndex")
         val walletAccount = walletsAccountsMap.get(accountIndex)?: return 0
         var receiving = 0L
-        for (transaction in walletAccount.pendingTransactions) {
-            if (transaction.getValueSentToMe(walletAccount)
-                    .minus(transaction.getValueSentFromMe(walletAccount)).isPositive) {
-                receiving += transaction.getValueSentToMe(walletAccount)
-                                .minus(transaction.getValueSentFromMe(walletAccount)).value
-                    }
+        walletAccount.pendingTransactions.forEach {
+            val sent = it.getValueSentFromMe(walletAccount)
+            val netReceived = it.getValueSentToMe(walletAccount).minus(sent)
+            receiving += if(netReceived.isPositive) netReceived.value else 0
         }
         return receiving
     }
@@ -858,12 +850,10 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         Log.d(LOG_TAG, "getAccountSending, accountIndex = $accountIndex")
         val walletAccount = walletsAccountsMap.get(accountIndex)?: return 0
         var sending = 0L
-        for (transaction in walletAccount.pendingTransactions) {
-            if (transaction.getValueSentFromMe(walletAccount)
-                    .minus(transaction.getValueSentToMe(walletAccount)).isPositive) {
-                sending += transaction.getValueSentFromMe(walletAccount)
-                        .minus(transaction.getValueSentToMe(walletAccount)).value
-            }
+        walletAccount.pendingTransactions.forEach {
+            val received = it.getValueSentToMe(walletAccount)
+            val netSent = it.getValueSentFromMe(walletAccount).minus(received)
+            sending += if(netSent.isPositive) netSent.value else 0
         }
         return sending
     }
@@ -996,10 +986,6 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         private val ACCOUNT_LOOKAHEAD = 3
     }
 
-    fun doesWalletAccountExist(accountIndex: Int): Boolean {
-        val tmpWallet = walletsAccountsMap.get(accountIndex)
-        return !(tmpWallet == null)
-    }
-
-    
+    fun doesWalletAccountExist(accountIndex: Int): Boolean =
+            null != walletsAccountsMap.get(accountIndex)
 }
