@@ -32,71 +32,69 @@ class TransactionContentProvider : ContentProvider() {
         checkSignature(callingPackage)
         var cursor = MatrixCursor(emptyArray(), 0)
         val match = URI_MATCHER.match(uri)
-        val service = Bip44AccountIdleService.getInstance()
-        if (service != null) {
-            when (match) {
-                TRANSACTION_SUMMARY_LIST ->
-                    if (selection!!.contentEquals(TransactionSummary.SELECTION_ACCOUNT_INDEX)) {
-                        Log.d(LOG_TAG, "query, TRANSACTION_SUMMARY_LIST")
-                        val accountIndex = selectionArgs!!.get(0)
+        val service = Bip44AccountIdleService.getInstance() ?: return cursor
+        when (match) {
+            TRANSACTION_SUMMARY_LIST ->
+                if (selection == TransactionSummary.SELECTION_ACCOUNT_INDEX) {
+                    Log.d(LOG_TAG, "query, TRANSACTION_SUMMARY_LIST")
+                    val accountIndex = selectionArgs!!.get(0)
 
-                        val transactionsSummary = service.getTransactionsSummary(accountIndex.toInt())
-                        cursor = TransactionsSummaryCursor(transactionsSummary.size)
+                    val transactionsSummary = service.getTransactionsSummary(accountIndex.toInt())
+                    cursor = TransactionsSummaryCursor(transactionsSummary.size)
 
-                        for (rowItem in transactionsSummary) {
-                            val riskProfile = rowItem.confirmationRiskProfile.orNull()
-                            val columnValues = arrayOf(
-                                    rowItem.txid.toHex(),                          //TransactionContract.TransactionSummary._ID
-                                    rowItem.value.value.toPlainString(),           //TransactionContract.TransactionSummary.VALUE
-                                    if (rowItem.isIncoming) 1 else 0,              //TransactionContract.TransactionSummary.IS_INCOMING
-                                    rowItem.time,                                  //TransactionContract.TransactionSummary.TIME
-                                    rowItem.height,                                //TransactionContract.TransactionSummary.HEIGHT
-                                    rowItem.confirmations,                         //TransactionContract.TransactionSummary.CONFIRMATIONS
-                                    if (rowItem.isQueuedOutgoing) 1 else 0,        //TransactionContract.TransactionSummary.IS_QUEUED_OUTGOING
-                                    riskProfile?.unconfirmedChainLength ?: -1,     //TransactionContract.TransactionSummary.CONFIRMATION_RISK_PROFILE_LENGTH
-                                    riskProfile?.hasRbfRisk,                       //TransactionContract.TransactionSummary.CONFIRMATION_RISK_PROFILE_RBF_RISK
-                                    riskProfile?.isDoubleSpend,                    //TransactionContract.TransactionSummary.CONFIRMATION_RISK_PROFILE_DOUBLE_SPEND
-                                    rowItem.destinationAddress.orNull()?.toString(),//TransactionContract.TransactionSummary.DESTINATION_ADDRESS
-                                    rowItem.toAddresses.joinToString(",")          //TransactionContract.TransactionSummary.TO_ADDRESSES
-                            )
-                            cursor.addRow(columnValues)
-                        }
-                        return cursor
-                    }
-                TRANSACTION_DETAILS_ID ->
-                    if (selection!!.contentEquals(TransactionSummary.SELECTION_ACCOUNT_INDEX)) {
-                        cursor = TransactionDetailsCursor()
-                        val accountIndex = selectionArgs!!.get(0)
-                        val hash = uri!!.lastPathSegment
-                        val transactionDetails = service.getTransactionDetails(accountIndex.toInt(), hash) ?: return cursor
-
-                        val inputs = transactionDetails.inputs.map { "${it.value} BTC${it.address}" }.joinToString(",")
-                        val outputs = transactionDetails.outputs.map { "${it.value} BTC${it.address}" }.joinToString(",")
-                        val columnValues = arrayOf(
-                            transactionDetails.hash.toHex(), //TransactionContract.Transaction._ID
-                            transactionDetails.height,       //TransactionContract.Transaction.HEIGHT
-                            transactionDetails.time,         //TransactionContract.Transaction.TIME
-                            transactionDetails.rawSize,      //TransactionContract.Transaction.RAW_SIZE
-                            inputs,                          //TransactionContract.Transaction.INPUTS
-                            outputs)                         //TransactionContract.Transaction.OUTPUTS
-                        cursor.addRow(columnValues)
-
-                    }
-                ACCOUNT_BALANCE_ID ->
-                    if (selection!!.contentEquals(TransactionSummary.SELECTION_ACCOUNT_INDEX)) {
-                        cursor = AccountBalanceCursor()
-                        val accountIndex = selectionArgs!!.get(0)
+                    for (rowItem in transactionsSummary) {
+                        val riskProfile = rowItem.confirmationRiskProfile.orNull()
                         val columnValues = listOf(
-                            accountIndex,                                     //TransactionContract.AccountBalance._ID
-                            service.getAccountBalance(accountIndex.toInt()),  //TransactionContract.AccountBalance.CONFIRMED
-                            service.getAccountSending(accountIndex.toInt()),  //TransactionContract.AccountBalance.SENDING
-                            service.getAccountReceiving(accountIndex.toInt()) //TransactionContract.AccountBalance.RECEIVING
+                                rowItem.txid.toHex(),                          //TransactionContract.TransactionSummary._ID
+                                rowItem.value.value.toPlainString(),           //TransactionContract.TransactionSummary.VALUE
+                                if (rowItem.isIncoming) 1 else 0,              //TransactionContract.TransactionSummary.IS_INCOMING
+                                rowItem.time,                                  //TransactionContract.TransactionSummary.TIME
+                                rowItem.height,                                //TransactionContract.TransactionSummary.HEIGHT
+                                rowItem.confirmations,                         //TransactionContract.TransactionSummary.CONFIRMATIONS
+                                if (rowItem.isQueuedOutgoing) 1 else 0,        //TransactionContract.TransactionSummary.IS_QUEUED_OUTGOING
+                                riskProfile?.unconfirmedChainLength ?: -1,     //TransactionContract.TransactionSummary.CONFIRMATION_RISK_PROFILE_LENGTH
+                                riskProfile?.hasRbfRisk,                       //TransactionContract.TransactionSummary.CONFIRMATION_RISK_PROFILE_RBF_RISK
+                                riskProfile?.isDoubleSpend,                    //TransactionContract.TransactionSummary.CONFIRMATION_RISK_PROFILE_DOUBLE_SPEND
+                                rowItem.destinationAddress.orNull()?.toString(),//TransactionContract.TransactionSummary.DESTINATION_ADDRESS
+                                rowItem.toAddresses.joinToString(",")          //TransactionContract.TransactionSummary.TO_ADDRESSES
                         )
                         cursor.addRow(columnValues)
                     }
-                else -> {
-                    // Do nothing.
+                    return cursor
                 }
+            TRANSACTION_DETAILS_ID ->
+                if (selection == TransactionSummary.SELECTION_ACCOUNT_INDEX) {
+                    cursor = TransactionDetailsCursor()
+                    val accountIndex = selectionArgs!!.get(0)
+                    val hash = uri!!.lastPathSegment
+                    val transactionDetails = service.getTransactionDetails(accountIndex.toInt(), hash) ?: return cursor
+
+                    val inputs = transactionDetails.inputs.map { "${it.value} BTC${it.address}" }.joinToString(",")
+                    val outputs = transactionDetails.outputs.map { "${it.value} BTC${it.address}" }.joinToString(",")
+                    val columnValues = listOf(
+                        transactionDetails.hash.toHex(), //TransactionContract.Transaction._ID
+                        transactionDetails.height,       //TransactionContract.Transaction.HEIGHT
+                        transactionDetails.time,         //TransactionContract.Transaction.TIME
+                        transactionDetails.rawSize,      //TransactionContract.Transaction.RAW_SIZE
+                        inputs,                          //TransactionContract.Transaction.INPUTS
+                        outputs)                         //TransactionContract.Transaction.OUTPUTS
+                    cursor.addRow(columnValues)
+
+                }
+            ACCOUNT_BALANCE_ID ->
+                if (selection == TransactionSummary.SELECTION_ACCOUNT_INDEX) {
+                    cursor = AccountBalanceCursor()
+                    val accountIndex = selectionArgs!!.get(0)
+                    val columnValues = listOf(
+                        accountIndex,                                     //TransactionContract.AccountBalance._ID
+                        service.getAccountBalance(accountIndex.toInt()),  //TransactionContract.AccountBalance.CONFIRMED
+                        service.getAccountSending(accountIndex.toInt()),  //TransactionContract.AccountBalance.SENDING
+                        service.getAccountReceiving(accountIndex.toInt()) //TransactionContract.AccountBalance.RECEIVING
+                    )
+                    cursor.addRow(columnValues)
+                }
+            else -> {
+                // Do nothing.
             }
         }
         return cursor
