@@ -63,7 +63,7 @@ class TransactionContentProvider : ContentProvider() {
                     return cursor
                 }
             TRANSACTION_DETAILS_ID ->
-                if (selection == TransactionSummary.SELECTION_ACCOUNT_INDEX) {
+                if (selection == TransactionDetails.SELECTION_ACCOUNT_INDEX) {
                     cursor = TransactionDetailsCursor()
                     val accountIndex = selectionArgs!!.get(0)
                     val hash = uri!!.lastPathSegment
@@ -82,7 +82,7 @@ class TransactionContentProvider : ContentProvider() {
                 }
             ACCOUNT_BALANCE_ID, ACCOUNT_BALANCE_LIST -> {
                 cursor = AccountBalanceCursor()
-                if (selection == TransactionSummary.SELECTION_ACCOUNT_INDEX) {
+                if (selection == AccountBalance.SELECTION_ACCOUNT_INDEX) {
                     // this is the ACCOUNT_BALANCE_ID case but we don't read the selection from the url (yet?)
                     listOf(selectionArgs!!.get(0).toInt())
                 } else {
