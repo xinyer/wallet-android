@@ -18,9 +18,9 @@ import com.mycelium.spvmodule.providers.data.TransactionDetailsCursor
 import com.mycelium.spvmodule.providers.data.TransactionsSummaryCursor
 
 class TransactionContentProvider : ContentProvider() {
-    var communicationManager: CommunicationManager? = null
+    private var communicationManager: CommunicationManager? = null
 
-    val LOG_TAG = this::class.java.simpleName
+    private val LOG_TAG = this::class.java.simpleName
 
     override fun onCreate(): Boolean {
         communicationManager = CommunicationManager.getInstance(context)
@@ -79,20 +79,25 @@ class TransactionContentProvider : ContentProvider() {
                         inputs,                          //TransactionContract.Transaction.INPUTS
                         outputs)                         //TransactionContract.Transaction.OUTPUTS
                     cursor.addRow(columnValues)
-
                 }
-            ACCOUNT_BALANCE_ID ->
+            ACCOUNT_BALANCE_ID, ACCOUNT_BALANCE_LIST -> {
+                cursor = AccountBalanceCursor()
                 if (selection == TransactionSummary.SELECTION_ACCOUNT_INDEX) {
-                    cursor = AccountBalanceCursor()
-                    val accountIndex = selectionArgs!!.get(0)
+                    // this is the ACCOUNT_BALANCE_ID case but we don't read the selection from the url (yet?)
+                    listOf(selectionArgs!!.get(0).toInt())
+                } else {
+                    // we assume no selection for now and return all accounts
+                    service.getAccountIndices()
+                }.forEach { accountIndex ->
                     val columnValues = listOf(
-                        accountIndex,                                     //TransactionContract.AccountBalance._ID
-                        service.getAccountBalance(accountIndex.toInt()),  //TransactionContract.AccountBalance.CONFIRMED
-                        service.getAccountSending(accountIndex.toInt()),  //TransactionContract.AccountBalance.SENDING
-                        service.getAccountReceiving(accountIndex.toInt()) //TransactionContract.AccountBalance.RECEIVING
+                            accountIndex,                             //TransactionContract.AccountBalance._ID
+                            service.getAccountBalance(accountIndex),  //TransactionContract.AccountBalance.CONFIRMED
+                            service.getAccountSending(accountIndex),  //TransactionContract.AccountBalance.SENDING
+                            service.getAccountReceiving(accountIndex) //TransactionContract.AccountBalance.RECEIVING
                     )
                     cursor.addRow(columnValues)
                 }
+            }
             else -> {
                 // Do nothing.
             }
