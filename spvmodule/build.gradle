@@ -66,6 +66,11 @@ android {
     flavorDimensions "flavor"
 
     productFlavors {
+        prodnet {
+            applicationId 'com.mycelium.module.spvbtc'
+            versionName = defaultConfig.versionName
+            signingConfig signingConfigs.release
+        }
         btctestnet {
             targetSdkVersion 23
             minSdkVersion 19
@@ -107,6 +112,18 @@ dependencies {
     }
 }
 
+if (project.hasProperty('prodKeyStore') &&
+        project.hasProperty('prodKeyAlias') &&
+        project.hasProperty('prodKeyStorePassword') &&
+        project.hasProperty('prodKeyAliasPassword')) {
+    android.signingConfigs.release.storeFile = file('../../' + prodKeyStore)
+    android.signingConfigs.release.keyAlias = prodKeyAlias
+    android.signingConfigs.release.storePassword = prodKeyStorePassword
+    android.signingConfigs.release.keyPassword = prodKeyAliasPassword
+} else {
+    android.productFlavors.prodnet.signingConfig = null
+}
+
 if (project.hasProperty('testKeyStore') &&
         project.hasProperty('testKeyAlias') &&
         project.hasProperty('testKeyStorePassword') &&
@@ -115,5 +132,6 @@ if (project.hasProperty('testKeyStore') &&
     android.signingConfigs.btctestnet.keyAlias = testKeyAlias
     android.signingConfigs.btctestnet.storePassword = testKeyStorePassword
     android.signingConfigs.btctestnet.keyPassword = testKeyAliasPassword
-    android.defaultConfig.applicationId "com.mycelium.spvmodule_testrelease"
+} else {
+    android.productFlavors.btctestnet.signingConfig = null
 }

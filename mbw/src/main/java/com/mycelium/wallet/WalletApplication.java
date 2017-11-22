@@ -112,6 +112,7 @@ public class WalletApplication extends MultiDexApplication implements ModuleMess
       switch(BuildConfig.APPLICATION_ID) {
          case "com.mycelium.testnetdigitalassets": return "com.mycelium.spvmodule_testrelease";
          case "com.mycelium.devwallet_spore": return "com.mycelium.spvmodule.test";
+         case "com.mycelium.wallet": return "com.mycelium.module.spvbtc";
          default: throw new RuntimeException("No spv module defined for BuildConfig " + BuildConfig.APPLICATION_ID);
       }
    }
