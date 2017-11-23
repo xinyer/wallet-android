@@ -13,7 +13,9 @@ import com.mycelium.spvmodule.guava.Bip44AccountIdleService
 import com.mycelium.spvmodule.providers.TransactionContract.TransactionSummary
 import com.mycelium.spvmodule.providers.TransactionContract.TransactionDetails
 import com.mycelium.spvmodule.providers.TransactionContract.AccountBalance
+import com.mycelium.spvmodule.providers.TransactionContract.CurrentReceiveAddress
 import com.mycelium.spvmodule.providers.data.AccountBalanceCursor
+import com.mycelium.spvmodule.providers.data.CurrentReceivingAddressCursor
 import com.mycelium.spvmodule.providers.data.TransactionDetailsCursor
 import com.mycelium.spvmodule.providers.data.TransactionsSummaryCursor
 
@@ -98,6 +100,24 @@ class TransactionContentProvider : ContentProvider() {
                     cursor.addRow(columnValues)
                 }
             }
+            CURRENT_RECEIVE_ADDRESS_LIST, CURRENT_RECEIVE_ADDRESS_ID -> {
+                cursor = CurrentReceivingAddressCursor()
+                if (selection == CurrentReceiveAddress.SELECTION_ACCOUNT_INDEX) {
+                    // this is the CURRENT_RECEIVE_ADDRESS_ID case but we don't read the selection from the url (yet?)
+                    val accountIndex = selectionArgs!![0].toInt()
+                    listOf(accountIndex)
+                } else {
+                    // we assume no selection for now and return all accounts
+                    service.getAccountIndices()
+                }.forEach { accountIndex ->
+                    val currentReceiveAddress = service.getAccountCurrentReceiveAddress(accountIndex)
+                    val columnValues = listOf(
+                            accountIndex,                       //TransactionContract.CurrentReceiveAddress._ID
+                            currentReceiveAddress?.toString()   //TransactionContract.CurrentReceiveAddress.ADDRESS
+                    )
+                    cursor.addRow(columnValues)
+                }
+            }
             else -> {
                 // Do nothing.
             }
@@ -127,6 +147,7 @@ class TransactionContentProvider : ContentProvider() {
             TRANSACTION_SUMMARY_LIST, TRANSACTION_SUMMARY_ID -> TransactionSummary.CONTENT_TYPE
             TRANSACTION_DETAILS_LIST, TRANSACTION_DETAILS_ID -> TransactionDetails.CONTENT_TYPE
             ACCOUNT_BALANCE_LIST, ACCOUNT_BALANCE_ID -> AccountBalance.CONTENT_TYPE
+            CURRENT_RECEIVE_ADDRESS_LIST, CURRENT_RECEIVE_ADDRESS_ID -> CurrentReceiveAddress.CONTENT_TYPE
             else -> throw IllegalArgumentException("Unknown URI " + uri)
         }
     }
@@ -138,6 +159,8 @@ class TransactionContentProvider : ContentProvider() {
         private val TRANSACTION_DETAILS_ID = 4
         private val ACCOUNT_BALANCE_LIST = 5
         private val ACCOUNT_BALANCE_ID = 6
+        private val CURRENT_RECEIVE_ADDRESS_LIST = 7
+        private val CURRENT_RECEIVE_ADDRESS_ID = 8
 
         private val URI_MATCHER: UriMatcher = UriMatcher(UriMatcher.NO_MATCH).apply {
             val auth = TransactionContract.AUTHORITY(BuildConfig.APPLICATION_ID)
@@ -147,12 +170,15 @@ class TransactionContentProvider : ContentProvider() {
             addURI(auth, "${TransactionDetails.TABLE_NAME}/*", TRANSACTION_DETAILS_ID)
             addURI(auth, AccountBalance.TABLE_NAME, ACCOUNT_BALANCE_LIST)
             addURI(auth, "${AccountBalance.TABLE_NAME}/*", ACCOUNT_BALANCE_ID)
+            addURI(auth, CurrentReceiveAddress.TABLE_NAME, CURRENT_RECEIVE_ADDRESS_LIST)
+            addURI(auth, "${CurrentReceiveAddress.TABLE_NAME}/*", CURRENT_RECEIVE_ADDRESS_ID)
         }
 
         private fun getTableFromMatch(match: Int): String = when (match) {
             TRANSACTION_SUMMARY_LIST, TRANSACTION_SUMMARY_ID -> TransactionSummary.TABLE_NAME
             TRANSACTION_DETAILS_LIST, TRANSACTION_DETAILS_ID -> TransactionDetails.TABLE_NAME
             ACCOUNT_BALANCE_LIST, ACCOUNT_BALANCE_ID -> AccountBalance.TABLE_NAME
+            CURRENT_RECEIVE_ADDRESS_LIST, CURRENT_RECEIVE_ADDRESS_ID -> CurrentReceiveAddress.TABLE_NAME
             else -> throw IllegalArgumentException("Unknown match " + match)
         }
     }

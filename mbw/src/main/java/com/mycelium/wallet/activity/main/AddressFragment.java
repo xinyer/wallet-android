@@ -34,9 +34,16 @@
 
 package com.mycelium.wallet.activity.main;
 
+import android.content.ContentResolver;
+import android.database.ContentObserver;
+import android.database.Cursor;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.v4.app.Fragment;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -48,17 +55,17 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.mrd.bitlib.model.Address;
 import com.mrd.bitlib.model.HdDerivedAddress;
+import com.mycelium.spvmodule.providers.TransactionContract;
 import com.mycelium.wallet.BitcoinUriWithAddress;
 import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.R;
 import com.mycelium.wallet.Utils;
+import com.mycelium.wallet.WalletApplication;
 import com.mycelium.wallet.activity.receive.ReceiveCoinsActivity;
 import com.mycelium.wallet.activity.util.QrImageView;
-import com.mycelium.wallet.colu.ColuAccount;
 import com.mycelium.wallet.event.AccountChanged;
 import com.mycelium.wallet.event.BalanceChanged;
 import com.mycelium.wallet.event.ReceivingAddressChanged;
-import com.mycelium.wapi.wallet.WalletAccount;
 import com.squareup.otto.Bus;
 import com.squareup.otto.Subscribe;
 
@@ -88,6 +95,8 @@ public class AddressFragment extends Fragment {
    @Override
    public void onResume() {
       getEventBus().register(this);
+      Uri uri = TransactionContract.CurrentReceiveAddress.CONTENT_URI(WalletApplication.getSpvModuleName());
+      getActivity().getContentResolver().registerContentObserver(uri, true, currentReceiveAddressObserver);
       updateUi();
       super.onResume();
    }
@@ -95,6 +104,7 @@ public class AddressFragment extends Fragment {
    @Override
    public void onPause() {
       getEventBus().unregister(this);
+      getActivity().getContentResolver().unregisterContentObserver(currentReceiveAddressObserver);
       super.onPause();
    }
 
@@ -164,19 +174,47 @@ public class AddressFragment extends Fragment {
    }
 
    public Optional<Address> getAddress() {
-      return _mbwManager.getSelectedAccount().getReceivingAddress();
+      ContentResolver cr = getActivity().getContentResolver();
+      Uri uri = TransactionContract.CurrentReceiveAddress.CONTENT_URI(WalletApplication.getSpvModuleName());
+      Cursor cursor = null;
+      try {
+         String selection = TransactionContract.CurrentReceiveAddress.SELECTION_ACCOUNT_INDEX;
+         int accountIndex = ((com.mycelium.wapi.wallet.bip44.Bip44Account) _mbwManager.getSelectedAccount()).getAccountIndex();
+         String[] selectionArgs = new String[]{Integer.toString(accountIndex)};
+         cursor = cr.query(uri, null, selection, selectionArgs, null);
+         if (cursor != null) {
+            cursor.moveToFirst();
+            String rawAddress = cursor.getString(cursor.getColumnIndex(TransactionContract.CurrentReceiveAddress.ADDRESS));
+            if (!TextUtils.isEmpty(rawAddress)) {
+               Address address = Address.fromString(rawAddress);  //FIXME we do not use NetworkParameters parameter since it doesn't support altcoins
+               return Optional.of(address);
+            }
+         }
+      } finally {
+         if (cursor != null) {
+            cursor.close();
+         }
+      }
+      return Optional.absent();
    }
 
    private class QrClickListener implements OnClickListener {
       @Override
       public void onClick(View v) {
-         Optional<Address> receivingAddress = _mbwManager.getSelectedAccount().getReceivingAddress();
+         Optional<Address> receivingAddress = getAddress();
          if (receivingAddress.isPresent()) {
             ReceiveCoinsActivity.callMe(AddressFragment.this.getActivity(),
                   receivingAddress.get(), _mbwManager.getSelectedAccount().canSpend());
          }
       }
    }
+
+   ContentObserver currentReceiveAddressObserver = new ContentObserver(new Handler(Looper.getMainLooper())) {
+      @Override
+      public void onChange(boolean selfChange) {
+         updateUi();
+      }
+   };
 
    /**
     * We got a new Receiving Address, either because the selected Account changed,

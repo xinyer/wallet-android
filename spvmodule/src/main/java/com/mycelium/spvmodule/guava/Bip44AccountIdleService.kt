@@ -19,6 +19,7 @@ import com.mrd.bitlib.model.Address
 import com.mrd.bitlib.model.NetworkParameters
 import com.mrd.bitlib.util.Sha256Hash
 import com.mycelium.spvmodule.*
+import com.mycelium.spvmodule.providers.TransactionContract
 import com.mycelium.wapi.model.TransactionDetails
 import com.mycelium.wapi.model.TransactionSummary
 import com.mycelium.wapi.wallet.currency.ExactBitcoinValue
@@ -143,6 +144,7 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                     shouldInitializeCheckpoint = false
                 }
             }
+            notifyCurrentReceiveAddress()
         }
         if (shouldInitializeCheckpoint) {
             val earliestKeyCreationTime = initializeEarliestKeyCreationTime()
@@ -661,6 +663,13 @@ class Bip44AccountIdleService : AbstractScheduledService() {
 
     private fun notifySatoshisReceived(satoshisReceived: Long, satoshisSent: Long, accountIndex: Int) {
         SpvMessageSender.notifySatoshisReceived(satoshisReceived, satoshisSent, accountIndex)
+        notifyCurrentReceiveAddress()
+    }
+
+    private fun notifyCurrentReceiveAddress() {
+        val application = SpvModuleApplication.getApplication()
+        val contentUri = TransactionContract.CurrentReceiveAddress.CONTENT_URI(application.packageName)
+        application.contentResolver.notifyChange(contentUri, null);
     }
 
     @Synchronized
@@ -858,6 +867,13 @@ class Bip44AccountIdleService : AbstractScheduledService() {
             sending += if(netSent.isPositive) netSent.value else 0
         }
         return sending
+    }
+
+    fun getAccountCurrentReceiveAddress(accountIndex: Int): org.bitcoinj.core.Address? {
+        propagate(Constants.CONTEXT)
+        Log.d(LOG_TAG, "getAccountCurrentReceiveAddress, accountIndex = $accountIndex")
+        val walletAccount = walletsAccountsMap.get(accountIndex)?: return null
+        return walletAccount.currentReceiveAddress() ?: walletAccount.freshReceiveAddress()
     }
 
     inner class DownloadProgressTrackerExt : DownloadProgressTracker() {
