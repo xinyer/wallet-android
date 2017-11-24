@@ -182,8 +182,7 @@ public class AddressFragment extends Fragment {
          int accountIndex = ((com.mycelium.wapi.wallet.bip44.Bip44Account) _mbwManager.getSelectedAccount()).getAccountIndex();
          String[] selectionArgs = new String[]{Integer.toString(accountIndex)};
          cursor = cr.query(uri, null, selection, selectionArgs, null);
-         if (cursor != null) {
-            cursor.moveToFirst();
+         if (cursor != null && cursor.moveToFirst()) {
             String rawAddress = cursor.getString(cursor.getColumnIndex(TransactionContract.CurrentReceiveAddress.ADDRESS));
             if (!TextUtils.isEmpty(rawAddress)) {
                Address address = Address.fromString(rawAddress);  //FIXME we do not use NetworkParameters parameter since it doesn't support altcoins
