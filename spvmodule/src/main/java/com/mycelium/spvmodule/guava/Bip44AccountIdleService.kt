@@ -7,6 +7,7 @@ import android.content.*
 import android.content.Context
 import android.net.ConnectivityManager
 import android.os.AsyncTask
+import android.os.Looper
 import android.os.PowerManager
 import android.support.v4.content.LocalBroadcastManager
 import android.text.format.DateUtils
@@ -348,10 +349,12 @@ class Bip44AccountIdleService : AbstractScheduledService() {
                 }
             } catch (x: FileNotFoundException) {
                 Log.e(LOG_TAG, "problem loading wallet", x)
+                Looper.prepare()
                 Toast.makeText(spvModuleApplication, x.javaClass.name, Toast.LENGTH_LONG).show()
                 restoreWalletFromBackup(accountIndex)
             } catch (x: UnreadableWalletException) {
                 Log.e(LOG_TAG, "problem loading wallet", x)
+                Looper.prepare()
                 Toast.makeText(spvModuleApplication, x.javaClass.name, Toast.LENGTH_LONG).show()
                 restoreWalletFromBackup(accountIndex)
             }
