@@ -99,11 +99,14 @@ public class TransactionContract {
         }
     }
 
-    public static class ValidateAddress {
-        public static final String TABLE_NAME = "validateaddress";
-        public static final String CONTENT_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/vnd.com.mycelium.address";
+    public static class ValidateQrCode {
+        public static final String TABLE_NAME = "validateqrcode";
+        public static final String CONTENT_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/vnd.com.mycelium.qrcode";
 
-        public static final String IS_CORRECT_ADDRESS = "isCorrectAddress";
+        public static final String QR_CODE = "qrCode";
+        public static final String IS_VALID = "isValid";
+
+        public static final String SELECTION_QR_CODE = QR_CODE + " = ?";
 
         public static Uri CONTENT_URI(String packageName) {
             return Uri.withAppendedPath(AUTHORITY_URI(packageName), TABLE_NAME);

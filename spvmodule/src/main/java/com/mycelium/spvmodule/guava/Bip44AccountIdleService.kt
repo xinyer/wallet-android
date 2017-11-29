@@ -879,15 +879,20 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         return walletAccount.currentReceiveAddress() ?: walletAccount.freshReceiveAddress()
     }
 
-    fun isValid(address :String): Boolean {
+    fun isValid(qrCode :String): Boolean {
         propagate(Constants.CONTEXT)
-        Log.d(LOG_TAG, "isValid, address = $address")
+        Log.d(LOG_TAG, "isValid, qrCode = $qrCode")
         try {
-            org.bitcoinj.core.Address.fromBase58(Constants.NETWORK_PARAMETERS, address)
-            return true
+            // FIXME very basic validation (should be similar to com.mycelium.wallet.BitcoinUri.parse(content, networkParameters))
+            if (qrCode.startsWith("bitcoin:")) {
+                val rawAddress = qrCode.removePrefix("bitcoin:")
+                org.bitcoinj.core.Address.fromBase58(Constants.NETWORK_PARAMETERS, rawAddress)
+                return true
+            }
         } catch (ex :Exception) {
-            return false
+            // ignore
         }
+        return false
     }
 
     inner class DownloadProgressTrackerExt : DownloadProgressTracker() {
