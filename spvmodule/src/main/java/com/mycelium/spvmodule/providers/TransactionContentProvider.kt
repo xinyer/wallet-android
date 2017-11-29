@@ -14,10 +14,7 @@ import com.mycelium.spvmodule.providers.TransactionContract.TransactionSummary
 import com.mycelium.spvmodule.providers.TransactionContract.TransactionDetails
 import com.mycelium.spvmodule.providers.TransactionContract.AccountBalance
 import com.mycelium.spvmodule.providers.TransactionContract.CurrentReceiveAddress
-import com.mycelium.spvmodule.providers.data.AccountBalanceCursor
-import com.mycelium.spvmodule.providers.data.CurrentReceivingAddressCursor
-import com.mycelium.spvmodule.providers.data.TransactionDetailsCursor
-import com.mycelium.spvmodule.providers.data.TransactionsSummaryCursor
+import com.mycelium.spvmodule.providers.data.*
 
 class TransactionContentProvider : ContentProvider() {
     private var communicationManager: CommunicationManager? = null
@@ -118,6 +115,14 @@ class TransactionContentProvider : ContentProvider() {
                     cursor.addRow(columnValues)
                 }
             }
+            VERIFY_ADDRESS_ID -> {
+                cursor = VerifyAddressCursor()
+                val address = selectionArgs!![0]
+                val columnValues = listOf(
+                        if (service.isValid(address)) 1 else 0
+                )
+                cursor.addRow(columnValues)
+            }
             else -> {
                 // Do nothing.
             }
@@ -161,6 +166,7 @@ class TransactionContentProvider : ContentProvider() {
         private val ACCOUNT_BALANCE_ID = 6
         private val CURRENT_RECEIVE_ADDRESS_LIST = 7
         private val CURRENT_RECEIVE_ADDRESS_ID = 8
+        private val VERIFY_ADDRESS_ID = 9
 
         private val URI_MATCHER: UriMatcher = UriMatcher(UriMatcher.NO_MATCH).apply {
             val auth = TransactionContract.AUTHORITY(BuildConfig.APPLICATION_ID)
@@ -172,6 +178,7 @@ class TransactionContentProvider : ContentProvider() {
             addURI(auth, "${AccountBalance.TABLE_NAME}/*", ACCOUNT_BALANCE_ID)
             addURI(auth, CurrentReceiveAddress.TABLE_NAME, CURRENT_RECEIVE_ADDRESS_LIST)
             addURI(auth, "${CurrentReceiveAddress.TABLE_NAME}/*", CURRENT_RECEIVE_ADDRESS_ID)
+            addURI(auth, TransactionContract.ValidateAddress.TABLE_NAME, CURRENT_RECEIVE_ADDRESS_LIST)
         }
 
         private fun getTableFromMatch(match: Int): String = when (match) {

@@ -879,6 +879,17 @@ class Bip44AccountIdleService : AbstractScheduledService() {
         return walletAccount.currentReceiveAddress() ?: walletAccount.freshReceiveAddress()
     }
 
+    fun isValid(address :String): Boolean {
+        propagate(Constants.CONTEXT)
+        Log.d(LOG_TAG, "isValid, address = $address")
+        try {
+            org.bitcoinj.core.Address.fromBase58(Constants.NETWORK_PARAMETERS, address)
+            return true
+        } catch (ex :Exception) {
+            return false
+        }
+    }
+
     inner class DownloadProgressTrackerExt : DownloadProgressTracker() {
         override fun onChainDownloadStarted(peer: Peer?, blocksLeft: Int) {
             Log.d(LOG_TAG, "onChainDownloadStarted(), Blockchain's download is starting. " +
