@@ -51,6 +51,13 @@ public class WalletApplication extends MultiDexApplication implements ModuleMess
    private ModuleMessageReceiver moduleMessageReceiver;
    private static WalletApplication INSTANCE;
 
+   public static WalletApplication getInstance() {
+      if (INSTANCE == null) {
+         throw new IllegalStateException();
+      }
+      return INSTANCE;
+   }
+
    @Override
    public void onCreate() {
       INSTANCE = this;

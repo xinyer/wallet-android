@@ -36,6 +36,7 @@ package com.mycelium.wallet;
 
 import android.content.Intent;
 import android.net.Uri;
+
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.mrd.bitlib.crypto.Bip39;
@@ -122,8 +123,8 @@ public class StringHandleConfig implements Serializable {
    public static StringHandleConfig genericScanRequest() {
       StringHandleConfig request = new StringHandleConfig();
       request.addressAction = AddressAction.SEND;
-      request.bitcoinUriWithAddressAction = BitcoinUriWithAddressAction.SEND;
-      request.bitcoinUriAction = BitcoinUriAction.SEND;
+//      request.bitcoinUriWithAddressAction = BitcoinUriWithAddressAction.SEND;
+//      request.bitcoinUriAction = BitcoinUriAction.SEND;
       request.bitIdAction = BitIdAction.LOGIN;
       request.privateKeyAction = PrivateKeyAction.COLD_SPENDING;
       request.websiteAction = WebsiteAction.HANDLE_URL;
@@ -131,6 +132,7 @@ public class StringHandleConfig implements Serializable {
       request.wordListAction = WordListAction.COLD_SPENDING;
       request.hdNodeAction = HdNodeAction.SEND_PUB_SPEND_PRIV;
       request.popAction = PopAction.SEND;
+      request.spvModuleAction = SpvModuleAction.QR_SEND;
 
       //at the moment, we just support wordlist backups
       //request.masterSeedAction = MasterSeedAction.IMPORT;
@@ -957,21 +959,52 @@ public class StringHandleConfig implements Serializable {
       }
    }
 
-   public Action privateKeyAction = Action.NONE;
-   public Action bitcoinUriWithAddressAction = Action.NONE;
-   public Action bitcoinUriAction = Action.NONE;
-   public Action addressAction = Action.NONE;
-   public Action bitIdAction = Action.NONE;
-   public Action websiteAction = Action.NONE;
-   public Action masterSeedAction = Action.NONE;
-   public Action sssShareAction = Action.NONE;
-   public Action hdNodeAction = Action.NONE;
-   public Action wordListAction = Action.NONE;
-   public Action popAction = Action.NONE;
+    public enum SpvModuleAction implements Action {
+        QR_SEND {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                MbwManager manager = MbwManager.getInstance(handlerActivity);
+                Optional<? extends BitcoinUri> uri = getUri(manager.getNetwork(), content);
+                if (!uri.isPresent()) {
+                    handlerActivity.finishError(R.string.unrecognized_format, content);
+                    //started with bitcoin: but could not be parsed, was handled
+                } else {
+                    Intent intent = SendMainActivity.getIntent(handlerActivity, MbwManager.getInstance(handlerActivity).getSelectedAccount().getId(), uri.get(), false);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
+                    handlerActivity.startActivity(intent);
+                    handlerActivity.finishOk();
+                }
+                return true;
+            }
 
-   public List<Action> getAllActions() {
-      return ImmutableList.of(popAction, privateKeyAction, bitcoinUriWithAddressAction, bitcoinUriAction,
-            addressAction, bitIdAction, websiteAction, masterSeedAction, sssShareAction, hdNodeAction, wordListAction);
-   }
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                WalletApplication application = WalletApplication.getInstance();
+                return SpvModuleQrCodeValidator.isValidQrSendRequest(application, content);
+            }
+        };
+
+        private static Optional<? extends BitcoinUri> getUri(NetworkParameters networkParameters, String content) {
+            return BitcoinUri.parse(content, networkParameters);
+        }
+    }
+
+    public Action privateKeyAction = Action.NONE;
+    public Action bitcoinUriWithAddressAction = Action.NONE;
+    public Action bitcoinUriAction = Action.NONE;
+    public Action addressAction = Action.NONE;
+    public Action bitIdAction = Action.NONE;
+    public Action websiteAction = Action.NONE;
+    public Action masterSeedAction = Action.NONE;
+    public Action sssShareAction = Action.NONE;
+    public Action hdNodeAction = Action.NONE;
+    public Action wordListAction = Action.NONE;
+    public Action popAction = Action.NONE;
+    public Action spvModuleAction = Action.NONE;
+
+    public List<Action> getAllActions() {
+        return ImmutableList.of(popAction, privateKeyAction, bitcoinUriWithAddressAction, bitcoinUriAction,
+                addressAction, bitIdAction, websiteAction, masterSeedAction, sssShareAction, hdNodeAction, wordListAction, spvModuleAction);
+    }
 
 }

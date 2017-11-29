@@ -84,7 +84,7 @@ public class TransactionContract {
 
     public static class CurrentReceiveAddress {
         public static final String TABLE_NAME = "receiveaddress";
-        public static final String CONTENT_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/vnd.com.mycelium.transaction";
+        public static final String CONTENT_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/vnd.com.mycelium.address";
 
         public static final String _ID = "_id";
 
@@ -93,6 +93,20 @@ public class TransactionContract {
         public static final String ACCOUNT_INDEX = "accountIndex";
 
         public static final String SELECTION_ACCOUNT_INDEX = ACCOUNT_INDEX + " = ?";
+
+        public static Uri CONTENT_URI(String packageName) {
+            return Uri.withAppendedPath(AUTHORITY_URI(packageName), TABLE_NAME);
+        }
+    }
+
+    public static class ValidateQrCode {
+        public static final String TABLE_NAME = "validateqrcode";
+        public static final String CONTENT_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/vnd.com.mycelium.qrcode";
+
+        public static final String QR_CODE = "qrCode";
+        public static final String IS_VALID = "isValid";
+
+        public static final String SELECTION_QR_CODE = QR_CODE + " = ?";
 
         public static Uri CONTENT_URI(String packageName) {
             return Uri.withAppendedPath(AUTHORITY_URI(packageName), TABLE_NAME);

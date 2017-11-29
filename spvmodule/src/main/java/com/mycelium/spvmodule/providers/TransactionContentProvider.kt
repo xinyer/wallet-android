@@ -14,10 +14,8 @@ import com.mycelium.spvmodule.providers.TransactionContract.TransactionSummary
 import com.mycelium.spvmodule.providers.TransactionContract.TransactionDetails
 import com.mycelium.spvmodule.providers.TransactionContract.AccountBalance
 import com.mycelium.spvmodule.providers.TransactionContract.CurrentReceiveAddress
-import com.mycelium.spvmodule.providers.data.AccountBalanceCursor
-import com.mycelium.spvmodule.providers.data.CurrentReceivingAddressCursor
-import com.mycelium.spvmodule.providers.data.TransactionDetailsCursor
-import com.mycelium.spvmodule.providers.data.TransactionsSummaryCursor
+import com.mycelium.spvmodule.providers.TransactionContract.ValidateQrCode
+import com.mycelium.spvmodule.providers.data.*
 
 class TransactionContentProvider : ContentProvider() {
     private var communicationManager: CommunicationManager? = null
@@ -118,6 +116,18 @@ class TransactionContentProvider : ContentProvider() {
                     cursor.addRow(columnValues)
                 }
             }
+            VALIDATE_QR_CODE_ID -> {
+                cursor = ValidateQrCodeCursor()
+                if (selection == ValidateQrCode.SELECTION_QR_CODE) {
+                    val qrCode = selectionArgs!![0]
+                    val isValid = service.isValid(qrCode)
+                    val columnValues = listOf(
+                            qrCode,                    //ValidateQrCode.QR_CODE
+                            if (isValid) 1 else 0       //ValidateQrCode.IS_VALID
+                    )
+                    cursor.addRow(columnValues)
+                }
+            }
             else -> {
                 // Do nothing.
             }
@@ -148,7 +158,8 @@ class TransactionContentProvider : ContentProvider() {
             TRANSACTION_DETAILS_LIST, TRANSACTION_DETAILS_ID -> TransactionDetails.CONTENT_TYPE
             ACCOUNT_BALANCE_LIST, ACCOUNT_BALANCE_ID -> AccountBalance.CONTENT_TYPE
             CURRENT_RECEIVE_ADDRESS_LIST, CURRENT_RECEIVE_ADDRESS_ID -> CurrentReceiveAddress.CONTENT_TYPE
-            else -> throw IllegalArgumentException("Unknown URI " + uri)
+            VALIDATE_QR_CODE_ID -> ValidateQrCode.CONTENT_TYPE
+            else -> null
         }
     }
 
@@ -161,6 +172,7 @@ class TransactionContentProvider : ContentProvider() {
         private val ACCOUNT_BALANCE_ID = 6
         private val CURRENT_RECEIVE_ADDRESS_LIST = 7
         private val CURRENT_RECEIVE_ADDRESS_ID = 8
+        private val VALIDATE_QR_CODE_ID = 9
 
         private val URI_MATCHER: UriMatcher = UriMatcher(UriMatcher.NO_MATCH).apply {
             val auth = TransactionContract.AUTHORITY(BuildConfig.APPLICATION_ID)
@@ -172,6 +184,7 @@ class TransactionContentProvider : ContentProvider() {
             addURI(auth, "${AccountBalance.TABLE_NAME}/*", ACCOUNT_BALANCE_ID)
             addURI(auth, CurrentReceiveAddress.TABLE_NAME, CURRENT_RECEIVE_ADDRESS_LIST)
             addURI(auth, "${CurrentReceiveAddress.TABLE_NAME}/*", CURRENT_RECEIVE_ADDRESS_ID)
+            addURI(auth, ValidateQrCode.TABLE_NAME, VALIDATE_QR_CODE_ID)
         }
 
         private fun getTableFromMatch(match: Int): String = when (match) {
@@ -179,6 +192,7 @@ class TransactionContentProvider : ContentProvider() {
             TRANSACTION_DETAILS_LIST, TRANSACTION_DETAILS_ID -> TransactionDetails.TABLE_NAME
             ACCOUNT_BALANCE_LIST, ACCOUNT_BALANCE_ID -> AccountBalance.TABLE_NAME
             CURRENT_RECEIVE_ADDRESS_LIST, CURRENT_RECEIVE_ADDRESS_ID -> CurrentReceiveAddress.TABLE_NAME
+            VALIDATE_QR_CODE_ID -> ValidateQrCode.TABLE_NAME
             else -> throw IllegalArgumentException("Unknown match " + match)
         }
     }
