@@ -1,35 +1,38 @@
 package com.mycelium.wallet.activity.rmc;
 
+import android.util.Log;
+
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.JsonObjectParser;
-import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.client.util.IOUtils;
+import com.mycelium.wallet.activity.rmc.model.BitcoinNetworkStats;
 import com.mycelium.wallet.colu.ColuAccount;
+import com.mycelium.wallet.external.rmc.remote.StatRmcFactory;
+import com.mycelium.wallet.external.rmc.remote.StatRmcService;
 
-import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.math.BigDecimal;
-import java.util.Date;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.List;
+import java.util.Map;
 
 public class BtcPoolStatisticsManager {
 
-    public static String HASHRATE_INFO_API_URL = "https://stat.rmc.one/api/stats/hashrate";
-    public static String STATS_INFO_API_URL = "https://rmc-ico.gear.mycelium.com/api/stats";
+    public static final String TAG = "RMCStatistic";
+    public static String BITCOIN_NETWORK_STATS_URL = "https://api.blockchain.info/stats";
 
     private ColuAccount coluAccount;
 
-    class PoolStatisticInfo {
-        double totalRmcHashrate;
-        double yourRmcHashrate;
+    public static class PoolStatisticInfo {
+        public long totalRmcHashrate;
+        public long yourRmcHashrate;
+        public long difficulty;
+        public long accruedIncome;
 
-        public PoolStatisticInfo(double totalRmcHashrate, double yourRmcHashrate) {
+        public PoolStatisticInfo(long totalRmcHashrate, long yourRmcHashrate) {
             this.totalRmcHashrate = totalRmcHashrate;
             this.yourRmcHashrate = yourRmcHashrate;
         }
@@ -40,59 +43,64 @@ public class BtcPoolStatisticsManager {
     }
 
     public PoolStatisticInfo getStatistics() {
-        BigDecimal rmcBalance = coluAccount.getCurrencyBasedBalance().confirmed.getValue();
-        Long hashRate = getHashRate();
-
-        if (hashRate == null)
-            return null;
-
-        double totalRmcHashrate = hashRate;
-        double yourRmcHashrate = totalRmcHashrate * rmcBalance.doubleValue() / Keys.TOTAL_RMC_ISSUED;
-        return new PoolStatisticInfo(totalRmcHashrate, yourRmcHashrate);
-    }
-
-    private Long getHashRate() {
-        HttpRequestFactory requestFactory = new NetHttpTransport()
-                .createRequestFactory(new HttpRequestInitializer() {
-                    @Override
-                    public void initialize(HttpRequest request) {
-                        request.setParser(new JsonObjectParser(new JacksonFactory()));
-                    }
-                });
+        StatRmcService service = StatRmcFactory.getService();
+        long totalRmcHashrate = -1;
         try {
-            HttpRequest request = requestFactory.buildGetRequest(new GenericUrl(HASHRATE_INFO_API_URL));
-            HttpResponse response = request.execute();
-            InputStream inputStream = response.getContent();
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            IOUtils.copy(inputStream, baos, true);
-            return Long.parseLong(baos.toString().replace("\n", ""));
-        } catch (Exception ex) {
+            totalRmcHashrate = service.getCommonHashrate();
+        } catch (Exception e) {
+            Log.e(TAG, "service.getCommonHashrate", e);
         }
-        return null;
-    }
 
-    public static String getICOEnd() {
-        HttpRequestFactory requestFactory = new NetHttpTransport()
-                .createRequestFactory(new HttpRequestInitializer() {
-                    @Override
-                    public void initialize(HttpRequest request) {
-                        request.setParser(new JsonObjectParser(new JacksonFactory()));
-                    }
-                });
+        String address = coluAccount.getAddress().toString();
+        long yourRmcHashrate = -1;
         try {
-            HttpRequest request = requestFactory.buildGetRequest(new GenericUrl(STATS_INFO_API_URL));
-            HttpResponse response = request.execute();
-            InputStream inputStream = response.getContent();
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            IOUtils.copy(inputStream, baos, true);
+            yourRmcHashrate = service.getHashrate(address);
+        } catch (Exception e) {
+            Log.e(TAG, "service.getHashrate", e);
+        }
 
-            Matcher matcher = Pattern.compile("\"end_at\":\"(.*?)\"").matcher(baos.toString());
-            if (matcher.find()) {
-                return matcher.group(1);
+        long accruedIncome = -1;
+        try {
+            accruedIncome = service.getBalance(address);
+        } catch (Exception e) {
+            Log.e(TAG, "service.getBalance", e);
+        }
+        try {
+            Map<String, List<String>> paidTransactions = service.getPaidTransactions(address);
+            if (paidTransactions != null) {
+                for (List<String> thx : paidTransactions.values()) {
+                    accruedIncome += Long.parseLong(thx.get(0));
+                }
             }
-        } catch (Exception ex) {
+        } catch (Exception e) {
+            Log.e(TAG, "service.getPaidTransactions", e);
+        }
+        PoolStatisticInfo info = new PoolStatisticInfo(totalRmcHashrate, yourRmcHashrate);
+        BitcoinNetworkStats stats = getBitcoinNetworkStats();
+        if (stats != null) {
+            info.difficulty = stats.difficulty;
+        }
+        info.accruedIncome = accruedIncome;
+        return info;
+    }
+
+    private BitcoinNetworkStats getBitcoinNetworkStats() {
+        HttpRequestFactory requestFactory = new NetHttpTransport()
+                .createRequestFactory(new HttpRequestInitializer() {
+                    @Override
+                    public void initialize(HttpRequest request) {
+                    }
+                });
+        try {
+            HttpRequest request = requestFactory.buildGetRequest(new GenericUrl(BITCOIN_NETWORK_STATS_URL));
+            HttpResponse response = request.execute();
+            InputStream inputStream = response.getContent();
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            return objectMapper.readValue(inputStream, BitcoinNetworkStats.class);
+        } catch (Exception e) {
+            Log.e("Btc Stats", "", e);
         }
         return null;
-
     }
 }

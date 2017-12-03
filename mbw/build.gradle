@@ -43,6 +43,10 @@ dependencies {
 
     implementation guavaArtifact
     implementation 'com.squareup:otto:1.3.4'
+    compile 'com.squareup.retrofit2:retrofit:2.3.0'
+    compile 'com.squareup.retrofit2:converter-gson:2.3.0'
+    compile 'com.squareup.okhttp3:logging-interceptor:3.6.0'
+
     // TODO: upgrade this! and remove the exclude support-v4 below
     implementation "com.android.support:appcompat-v7:$androidSupportVersion"
     implementation "com.android.support:support-v4:$androidSupportVersion"

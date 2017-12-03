@@ -69,895 +69,893 @@ import java.util.Locale;
 import java.util.UUID;
 
 public class StringHandleConfig implements Serializable {
-   private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = 0L;
 
-   public static StringHandleConfig returnKeyOrAddressOrUriOrKeynode() {
-      StringHandleConfig request = new StringHandleConfig();
-      request.privateKeyAction = PrivateKeyAction.RETURN;
-      request.addressAction = AddressAction.RETURN;
-      request.bitcoinUriWithAddressAction = BitcoinUriWithAddressAction.RETURN;
-      request.bitcoinUriAction = BitcoinUriAction.RETURN;
-      request.hdNodeAction = HdNodeAction.RETURN;
-      request.popAction = PopAction.SEND;
-      return request;
-   }
+    public static StringHandleConfig returnKeyOrAddressOrUriOrKeynode() {
+        StringHandleConfig request = new StringHandleConfig();
+        request.privateKeyAction = PrivateKeyAction.RETURN;
+        request.addressAction = AddressAction.RETURN;
+        request.bitcoinUriWithAddressAction = BitcoinUriWithAddressAction.RETURN;
+        request.bitcoinUriAction = BitcoinUriAction.RETURN;
+        request.hdNodeAction = HdNodeAction.RETURN;
+        request.popAction = PopAction.SEND;
+        return request;
+    }
 
-   public static StringHandleConfig returnKeyOrAddress() {
-      StringHandleConfig request = new StringHandleConfig();
-      request.privateKeyAction = PrivateKeyAction.RETURN;
-      request.addressAction = AddressAction.RETURN;
-      request.bitcoinUriWithAddressAction = BitcoinUriWithAddressAction.RETURN_ADDRESS;
-      request.sssShareAction = SssShareAction.START_COMBINING;
-      return request;
-   }
+    public static StringHandleConfig returnKeyOrAddress() {
+        StringHandleConfig request = new StringHandleConfig();
+        request.privateKeyAction = PrivateKeyAction.RETURN;
+        request.addressAction = AddressAction.RETURN;
+        request.bitcoinUriWithAddressAction = BitcoinUriWithAddressAction.RETURN_ADDRESS;
+        request.sssShareAction = SssShareAction.START_COMBINING;
+        return request;
+    }
 
-   public static StringHandleConfig returnKeyOrAddressOrHdNode() {
-      StringHandleConfig request = new StringHandleConfig();
-      request.privateKeyAction = PrivateKeyAction.RETURN;
-      request.hdNodeAction = HdNodeAction.RETURN;
-      request.addressAction = AddressAction.RETURN;
-      request.bitcoinUriWithAddressAction = BitcoinUriWithAddressAction.RETURN_ADDRESS;
-      request.sssShareAction = SssShareAction.START_COMBINING;
-      return request;
-   }
+    public static StringHandleConfig returnKeyOrAddressOrHdNode() {
+        StringHandleConfig request = new StringHandleConfig();
+        request.privateKeyAction = PrivateKeyAction.RETURN;
+        request.hdNodeAction = HdNodeAction.RETURN;
+        request.addressAction = AddressAction.RETURN;
+        request.bitcoinUriWithAddressAction = BitcoinUriWithAddressAction.RETURN_ADDRESS;
+        request.sssShareAction = SssShareAction.START_COMBINING;
+        return request;
+    }
 
-   public static StringHandleConfig spendFromColdStorage() {
-      StringHandleConfig request = new StringHandleConfig();
-      request.privateKeyAction = PrivateKeyAction.COLD_SPENDING;
-      request.addressAction = AddressAction.CHECK_BALANCE;
-      request.bitcoinUriWithAddressAction = BitcoinUriWithAddressAction.CHECK_BALANCE;
-      request.hdNodeAction = HdNodeAction.COLD_SPENDING;
-      request.sssShareAction = SssShareAction.START_COMBINING;
-      request.wordListAction = WordListAction.COLD_SPENDING;
-      return request;
-   }
+    public static StringHandleConfig spendFromColdStorage() {
+        StringHandleConfig request = new StringHandleConfig();
+        request.privateKeyAction = PrivateKeyAction.COLD_SPENDING;
+        request.addressAction = AddressAction.CHECK_BALANCE;
+        request.bitcoinUriWithAddressAction = BitcoinUriWithAddressAction.CHECK_BALANCE;
+        request.hdNodeAction = HdNodeAction.COLD_SPENDING;
+        request.sssShareAction = SssShareAction.START_COMBINING;
+        request.wordListAction = WordListAction.COLD_SPENDING;
+        return request;
+    }
 
-   public static StringHandleConfig getAddressBookScanRequest() {
-      StringHandleConfig request = new StringHandleConfig();
-      request.privateKeyAction = PrivateKeyAction.RETURN;
-      request.addressAction = AddressAction.RETURN;
-      request.bitcoinUriWithAddressAction = BitcoinUriWithAddressAction.RETURN_ADDRESS;
-      return request;
-   }
+    public static StringHandleConfig getAddressBookScanRequest() {
+        StringHandleConfig request = new StringHandleConfig();
+        request.privateKeyAction = PrivateKeyAction.RETURN;
+        request.addressAction = AddressAction.RETURN;
+        request.bitcoinUriWithAddressAction = BitcoinUriWithAddressAction.RETURN_ADDRESS;
+        return request;
+    }
 
-   public static StringHandleConfig genericScanRequest() {
-      StringHandleConfig request = new StringHandleConfig();
-      request.addressAction = AddressAction.SEND;
+    public static StringHandleConfig genericScanRequest() {
+        StringHandleConfig request = new StringHandleConfig();
+        request.addressAction = AddressAction.SEND;
 //      request.bitcoinUriWithAddressAction = BitcoinUriWithAddressAction.SEND;
 //      request.bitcoinUriAction = BitcoinUriAction.SEND;
-      request.bitIdAction = BitIdAction.LOGIN;
-      request.privateKeyAction = PrivateKeyAction.COLD_SPENDING;
-      request.websiteAction = WebsiteAction.HANDLE_URL;
-      request.sssShareAction = SssShareAction.START_COMBINING;
-      request.wordListAction = WordListAction.COLD_SPENDING;
-      request.hdNodeAction = HdNodeAction.SEND_PUB_SPEND_PRIV;
-      request.popAction = PopAction.SEND;
-      request.spvModuleAction = SpvModuleAction.QR_SEND;
+        request.bitIdAction = BitIdAction.LOGIN;
+        request.privateKeyAction = PrivateKeyAction.COLD_SPENDING;
+        request.websiteAction = WebsiteAction.HANDLE_URL;
+        request.sssShareAction = SssShareAction.START_COMBINING;
+        request.wordListAction = WordListAction.COLD_SPENDING;
+        request.hdNodeAction = HdNodeAction.SEND_PUB_SPEND_PRIV;
+        request.popAction = PopAction.SEND;
+        request.spvModuleAction = SpvModuleAction.QR_SEND;
 
-      //at the moment, we just support wordlist backups
-      //request.masterSeedAction = MasterSeedAction.IMPORT;
-      return request;
-   }
+        //at the moment, we just support wordlist backups
+        //request.masterSeedAction = MasterSeedAction.IMPORT;
+        return request;
+    }
 
-   public static StringHandleConfig getShare() {
-      StringHandleConfig request = new StringHandleConfig();
-      request.sssShareAction = SssShareAction.RETURN_SHARE;
-      return request;
-   }
+    public static StringHandleConfig getShare() {
+        StringHandleConfig request = new StringHandleConfig();
+        request.sssShareAction = SssShareAction.RETURN_SHARE;
+        return request;
+    }
 
-   public static StringHandleConfig importMasterSeed() {
-      StringHandleConfig request = new StringHandleConfig();
-      request.masterSeedAction = MasterSeedAction.IMPORT;
-      return request;
-   }
+    public static StringHandleConfig importMasterSeed() {
+        StringHandleConfig request = new StringHandleConfig();
+        request.masterSeedAction = MasterSeedAction.IMPORT;
+        return request;
+    }
 
-   private StringHandleConfig() {
-   }
+    private StringHandleConfig() {
+    }
 
-   public static StringHandleConfig verifySeedOrKey() {
-      StringHandleConfig request = new StringHandleConfig();
-      request.masterSeedAction = MasterSeedAction.VERIFY;
-      request.privateKeyAction = PrivateKeyAction.VERIFY;
-      return request;
-   }
+    public static StringHandleConfig verifySeedOrKey() {
+        StringHandleConfig request = new StringHandleConfig();
+        request.masterSeedAction = MasterSeedAction.VERIFY;
+        request.privateKeyAction = PrivateKeyAction.VERIFY;
+        return request;
+    }
 
-   public interface Action extends Serializable {
-      /**
-       * @return true if it was handled
-       */
-      boolean handle(StringHandlerActivity handlerActivity, String content);
-      boolean canHandle(NetworkParameters network, String content);
+    public interface Action extends Serializable {
+        /**
+         * @return true if it was handled
+         */
+        boolean handle(StringHandlerActivity handlerActivity, String content);
+        boolean canHandle(NetworkParameters network, String content);
 
-      Action NONE = new Action() {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            return false;
-         }
+        Action NONE = new Action() {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                return false;
+            }
 
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return false;
-         }
-      };
-   }
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return false;
+            }
+        };
+    }
 
-   public enum PrivateKeyAction implements Action {
-      IMPORT {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            Optional<InMemoryPrivateKey> key = getPrivateKey(handlerActivity.getNetwork(), content);
-            if (!key.isPresent()) return false;
+    public enum PrivateKeyAction implements Action {
+        IMPORT {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                Optional<InMemoryPrivateKey> key = getPrivateKey(handlerActivity.getNetwork(), content);
+                if (!key.isPresent()) return false;
+                try {
+                    handlerActivity.getWalletManager().createSingleAddressAccount(key.get(), AesKeyCipher.defaultKeyCipher());
+                } catch (KeyCipher.InvalidKeyCipher | WalletManager.WalletManagerException e) {
+                    throw new RuntimeException(e);
+                }
+                handlerActivity.finishOk();
+                return true;
+            }
+
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return isPrivKey(network, content);
+            }
+        },
+
+        COLD_SPENDING {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                Optional<InMemoryPrivateKey> key = getPrivateKey(handlerActivity.getNetwork(), content);
+                if (!key.isPresent()) return false;
+                UUID account = null;
+                try {
+                    account = MbwManager.getInstance(handlerActivity).createOnTheFlyAccount(key.get());
+                } catch (WalletManager.WalletManagerException e) {
+                    throw new RuntimeException(e);
+                }
+                //we dont know yet where at what to send
+                BitcoinUri uri = new BitcoinUri(null,null,null);
+                SendInitializationActivity.callMe(handlerActivity, account,uri, true);
+                handlerActivity.finishOk();
+                return true;
+            }
+
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return isPrivKey(network, content);
+            }
+        },
+
+        RETURN {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                Optional<InMemoryPrivateKey> key = getPrivateKey(handlerActivity.getNetwork(), content);
+                if (!key.isPresent()) return false;
+                handlerActivity.finishOk(key.get());
+                return true;
+            }
+
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return isPrivKey(network, content);
+            }
+        },
+
+        VERIFY {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                Optional<InMemoryPrivateKey> key = getPrivateKey(handlerActivity.getNetwork(), content);
+                if (!key.isPresent()) return false;
+
+                MbwManager mbwManager = MbwManager.getInstance(handlerActivity);
+                // Calculate the account ID that this key would have
+                UUID account = SingleAddressAccount.calculateId(key.get().getPublicKey().toAddress(mbwManager.getNetwork()));
+                // Check whether regular wallet contains the account
+                boolean success = mbwManager.getWalletManager(false).hasAccount(account)
+                || mbwManager.getColuManager().hasAccount(account);
+                for (ColuAccount.ColuAsset coluAsset : ColuAccount.ColuAsset.getAssetMap().values()) {
+                    UUID coluUUID = ColuAccount.getGuidForAsset(coluAsset, key.get().getPublicKey().toAddress(mbwManager.getNetwork()).getAllAddressBytes());
+                    success |= mbwManager.getColuManager().hasAccount(coluUUID);
+                }
+
+                if (success) {
+                    // Mark key as verified
+                    mbwManager.getMetadataStorage().setOtherAccountBackupState(account, MetadataStorage.BackupState.VERIFIED);
+                    for (ColuAccount.ColuAsset coluAsset : ColuAccount.ColuAsset.getAssetMap().values()) {
+                        UUID coluUUID = ColuAccount.getGuidForAsset(coluAsset, key.get().getPublicKey().toAddress(mbwManager.getNetwork()).getAllAddressBytes());
+                        mbwManager.getMetadataStorage().setOtherAccountBackupState(coluUUID, MetadataStorage.BackupState.VERIFIED);
+                    }
+                    handlerActivity.finishOk();
+                } else {
+                    handlerActivity.finishError(R.string.verify_backup_no_such_record);
+                }
+                return true;
+            }
+
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return isPrivKey(network, content);
+            }
+        };
+
+        static private Optional<InMemoryPrivateKey> getPrivateKey(NetworkParameters network, String content) {
+            Optional<InMemoryPrivateKey> key = InMemoryPrivateKey.fromBase58String(content, network);
+            if (key.isPresent()) return key;
+            key = InMemoryPrivateKey.fromBase58MiniFormat(content, network);
+            if (key.isPresent()) return key;
+
+            //no match
+            return Optional.absent();
+        }
+
+        static private boolean isPrivKey(NetworkParameters network, String content) {
+            return getPrivateKey(network, content).isPresent();
+        }
+    }
+
+    public enum HdNodeAction implements Action {
+        RETURN {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                try {
+                    HdKeyNode hdKey = HdKeyNode.parse(content, handlerActivity.getNetwork());
+                    handlerActivity.finishOk(hdKey);
+                    return true;
+                } catch (HdKeyNode.KeyGenerationException ex) {
+                    return false;
+                }
+            }
+
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return isKeyNode(network, content);
+            }
+        },
+        COLD_SPENDING {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                try {
+                    HdKeyNode hdKey = HdKeyNode.parse(content, handlerActivity.getNetwork());
+                    final WalletManager tempWalletManager = MbwManager.getInstance(handlerActivity).getWalletManager(true);
+                    UUID acc = tempWalletManager.createUnrelatedBip44Account(hdKey);
+                    tempWalletManager.setActiveAccount(acc);
+                    BitcoinUri uri = new BitcoinUri(null,null,null);
+                    SendInitializationActivity.callMe(handlerActivity, acc, uri, true);
+                    handlerActivity.finishOk();
+                    return true;
+                } catch (HdKeyNode.KeyGenerationException | WalletManager.WalletManagerException ex) {
+                    return false;
+                }
+            }
+
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return isKeyNode(network, content);
+            }
+        },
+        SEND_PUB_SPEND_PRIV {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                try {
+                    HdKeyNode hdKey = HdKeyNode.parse(content, handlerActivity.getNetwork());
+                    if (hdKey.isPrivateHdKeyNode()) {
+                        //its an xPriv, we want to cold-spend from it
+                        return COLD_SPENDING.handle(handlerActivity, content);
+                    } else {
+                        //its xPub, we want to send to it
+                        return SEND_TO.handle(handlerActivity, content);
+                    }
+                } catch (HdKeyNode.KeyGenerationException ex) {
+                    return false;
+                }
+            }
+
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return isKeyNode(network, content);
+            }
+        },
+        SEND_TO {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                try {
+                    HdKeyNode hdKey = HdKeyNode.parse(content, handlerActivity.getNetwork());
+                    Intent intent = SendMainActivity.getIntent(handlerActivity, MbwManager.getInstance(handlerActivity).getSelectedAccount().getId(), hdKey);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
+                    handlerActivity.startActivity(intent);
+                    handlerActivity.finishOk();
+                    return true;
+                } catch (HdKeyNode.KeyGenerationException ex) {
+                    return false;
+                }
+            }
+
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return isKeyNode(network, content);
+            }
+        };
+
+        private static boolean isKeyNode(NetworkParameters network, String content) {
             try {
-               handlerActivity.getWalletManager().createSingleAddressAccount(key.get(), AesKeyCipher.defaultKeyCipher());
-            } catch (KeyCipher.InvalidKeyCipher | WalletManager.WalletManagerException e) {
-               throw new RuntimeException(e);
-            }
-            handlerActivity.finishOk();
-            return true;
-         }
-
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return isPrivKey(network, content);
-         }
-      },
-
-      COLD_SPENDING {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            Optional<InMemoryPrivateKey> key = getPrivateKey(handlerActivity.getNetwork(), content);
-            if (!key.isPresent()) return false;
-            UUID account = null;
-            try {
-               account = MbwManager.getInstance(handlerActivity).createOnTheFlyAccount(key.get());
-            } catch (WalletManager.WalletManagerException e) {
-               throw new RuntimeException(e);
-            }
-            //we dont know yet where at what to send
-            BitcoinUri uri = new BitcoinUri(null,null,null);
-            SendInitializationActivity.callMe(handlerActivity, account,uri, true);
-            handlerActivity.finishOk();
-            return true;
-         }
-
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return isPrivKey(network, content);
-         }
-      },
-
-      RETURN {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            Optional<InMemoryPrivateKey> key = getPrivateKey(handlerActivity.getNetwork(), content);
-            if (!key.isPresent()) return false;
-            handlerActivity.finishOk(key.get());
-            return true;
-         }
-
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return isPrivKey(network, content);
-         }
-      },
-
-      VERIFY {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            Optional<InMemoryPrivateKey> key = getPrivateKey(handlerActivity.getNetwork(), content);
-            if (!key.isPresent()) return false;
-
-            MbwManager mbwManager = MbwManager.getInstance(handlerActivity);
-            // Calculate the account ID that this key would have
-            UUID account = SingleAddressAccount.calculateId(key.get().getPublicKey().toAddress(mbwManager.getNetwork()));
-            // Check whether regular wallet contains the account
-            boolean success = mbwManager.getWalletManager(false).hasAccount(account)
-                    || mbwManager.getColuManager().hasAccount(account);
-            for (ColuAccount.ColuAsset coluAsset : ColuAccount.ColuAsset.getAssetMap().values()) {
-               UUID coluUUID = ColuAccount.getGuidForAsset(coluAsset, key.get().getPublicKey().toAddress(mbwManager.getNetwork()).getAllAddressBytes());
-               success |= mbwManager.getColuManager().hasAccount(coluUUID);
-            }
-
-            if (success) {
-               // Mark key as verified
-               mbwManager.getMetadataStorage().setOtherAccountBackupState(account, MetadataStorage.BackupState.VERIFIED);
-               for (ColuAccount.ColuAsset coluAsset : ColuAccount.ColuAsset.getAssetMap().values()) {
-                  UUID coluUUID = ColuAccount.getGuidForAsset(coluAsset, key.get().getPublicKey().toAddress(mbwManager.getNetwork()).getAllAddressBytes());
-                  mbwManager.getMetadataStorage().setOtherAccountBackupState(coluUUID, MetadataStorage.BackupState.VERIFIED);
-               }
-               handlerActivity.finishOk();
-            } else {
-               handlerActivity.finishError(R.string.verify_backup_no_such_record, "");
-            }
-            return true;
-         }
-
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return isPrivKey(network, content);
-         }
-      };
-
-      static private Optional<InMemoryPrivateKey> getPrivateKey(NetworkParameters network, String content) {
-         Optional<InMemoryPrivateKey> key = InMemoryPrivateKey.fromBase58String(content, network);
-         if (key.isPresent()) return key;
-         key = InMemoryPrivateKey.fromBase58MiniFormat(content, network);
-         if (key.isPresent()) return key;
-
-         //no match
-         return Optional.absent();
-      }
-
-      static private boolean isPrivKey(NetworkParameters network, String content) {
-         return getPrivateKey(network, content).isPresent();
-      }
-   }
-
-   public enum HdNodeAction implements Action {
-      RETURN {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            try {
-               HdKeyNode hdKey = HdKeyNode.parse(content, handlerActivity.getNetwork());
-               handlerActivity.finishOk(hdKey);
-               return true;
-            } catch (HdKeyNode.KeyGenerationException ex){
-               return false;
-            }
-         }
-
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return isKeyNode(network, content);
-         }
-      },
-      COLD_SPENDING {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            try {
-               HdKeyNode hdKey = HdKeyNode.parse(content, handlerActivity.getNetwork());
-               final WalletManager tempWalletManager = MbwManager.getInstance(handlerActivity).getWalletManager(true);
-               UUID acc = tempWalletManager.createUnrelatedBip44Account(hdKey);
-               tempWalletManager.setActiveAccount(acc);
-               BitcoinUri uri = new BitcoinUri(null,null,null);
-               SendInitializationActivity.callMe(handlerActivity, acc, uri, true);
-               handlerActivity.finishOk();
-               return true;
-            } catch (HdKeyNode.KeyGenerationException | WalletManager.WalletManagerException ex){
-               return false;
-            }
-         }
-
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return isKeyNode(network, content);
-         }
-      },
-      SEND_PUB_SPEND_PRIV {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            try {
-               HdKeyNode hdKey = HdKeyNode.parse(content, handlerActivity.getNetwork());
-               if (hdKey.isPrivateHdKeyNode()) {
-                  //its an xPriv, we want to cold-spend from it
-                  return COLD_SPENDING.handle(handlerActivity, content);
-               } else {
-                  //its xPub, we want to send to it
-                  return SEND_TO.handle(handlerActivity, content);
-               }
+                HdKeyNode.parse(content, network);
+                return true;
             } catch (HdKeyNode.KeyGenerationException ex) {
-               return false;
+                return false;
             }
-         }
+        }
+    }
 
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return isKeyNode(network, content);
-         }
-      },
-      SEND_TO {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            try {
-               HdKeyNode hdKey = HdKeyNode.parse(content, handlerActivity.getNetwork());
-               Intent intent = SendMainActivity.getIntent(handlerActivity, MbwManager.getInstance(handlerActivity).getSelectedAccount().getId(), hdKey);
-               intent.addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
-               handlerActivity.startActivity(intent);
-               handlerActivity.finishOk();
-               return true;
-            } catch (HdKeyNode.KeyGenerationException ex){
-               return false;
+    public enum AddressAction implements Action {
+        SEND {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                Optional<Address> address = getAddress(handlerActivity.getNetwork(), content);
+                if (!address.isPresent()) {
+                    return false;
+                }
+                Intent intent = SendMainActivity.getIntent(handlerActivity, MbwManager.getInstance(handlerActivity).getSelectedAccount().getId(), null, address.get(), false);
+                intent.addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
+                handlerActivity.startActivity(intent);
+                handlerActivity.finishOk();
+                return true;
             }
-         }
 
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return isKeyNode(network, content);
-         }
-      };
-
-      private static boolean isKeyNode(NetworkParameters network, String content) {
-         try {
-            HdKeyNode.parse(content, network);
-            return true;
-         } catch (HdKeyNode.KeyGenerationException ex){
-            return false;
-         }
-      }
-   }
-
-   public enum AddressAction implements Action {
-      SEND {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            Optional<Address> address = getAddress(handlerActivity.getNetwork(), content);
-            if (!address.isPresent()) {
-               return false;
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return isAddress(network, content);
             }
-            Intent intent = SendMainActivity.getIntent(handlerActivity, MbwManager.getInstance(handlerActivity).getSelectedAccount().getId(), null, address.get(), false);
-            intent.addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
-            handlerActivity.startActivity(intent);
-            handlerActivity.finishOk();
-            return true;
-         }
+        },
 
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return isAddress(network, content);
-         }
-      },
-
-      CHECK_BALANCE {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            Optional<Address> address = getAddress(handlerActivity.getNetwork(), content);
-            if (!address.isPresent()) {
-               return false;
+        CHECK_BALANCE {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                Optional<Address> address = getAddress(handlerActivity.getNetwork(), content);
+                if (!address.isPresent()) {
+                    return false;
+                }
+                UUID account = null;
+                try {
+                    account = MbwManager.getInstance(handlerActivity).createOnTheFlyAccount(address.get());
+                } catch (WalletManager.WalletManagerException e) {
+                    throw new RuntimeException(e);
+                }
+                //we dont know yet where at what to send
+                BitcoinUri uri = new BitcoinUri(null,null,null);
+                SendInitializationActivity.callMe(handlerActivity, account, uri, true);
+                handlerActivity.finishOk();
+                return true;
             }
-            UUID account = null;
-            try {
-               account = MbwManager.getInstance(handlerActivity).createOnTheFlyAccount(address.get());
-            } catch (WalletManager.WalletManagerException e) {
-               throw new RuntimeException(e);
+
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return isAddress(network, content);
             }
-            //we dont know yet where at what to send
-            BitcoinUri uri = new BitcoinUri(null,null,null);
-            SendInitializationActivity.callMe(handlerActivity, account, uri, true);
-            handlerActivity.finishOk();
-            return true;
-         }
+        },
 
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return isAddress(network, content);
-         }
-      },
-
-      RETURN {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            Optional<Address> address = getAddress(handlerActivity.getNetwork(), content);
-            if (!address.isPresent()) {
-               return false;
+        RETURN {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                Optional<Address> address = getAddress(handlerActivity.getNetwork(), content);
+                if (!address.isPresent()) {
+                    return false;
+                }
+                handlerActivity.finishOk(address.get());
+                return true;
             }
-            handlerActivity.finishOk(address.get());
-            return true;
-         }
 
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return isAddress(network, content);
-         }
-      };
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return isAddress(network, content);
+            }
+        };
 
-      private static Optional<Address> getAddress(NetworkParameters network, String content) {
-         //we really just want to know whether its a raw address, URIs are treated separately
-         if (content.startsWith("bitcoin:")) return Optional.absent();
-         return Utils.addressFromString(content, network);
-      }
+        private static Optional<Address> getAddress(NetworkParameters network, String content) {
+            //we really just want to know whether its a raw address, URIs are treated separately
+            if (content.startsWith("bitcoin:")) return Optional.absent();
+            return Utils.addressFromString(content, network);
+        }
 
-      private static boolean isAddress(NetworkParameters network, String content) {
-         return getAddress(network, content).isPresent();
-      }
-   }
+        private static boolean isAddress(NetworkParameters network, String content) {
+            return getAddress(network, content).isPresent();
+        }
+    }
 
-   public enum BitcoinUriAction implements Action {
-      SEND_COLU_ASSET {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
+    public enum BitcoinUriAction implements Action {
+        SEND_COLU_ASSET {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                MbwManager manager = MbwManager.getInstance(handlerActivity);
+                ColuAccount coluAccount = (ColuAccount)manager.getSelectedAccount();
+                if (coluAccount == null) {
+                    return false;
+                }
+
+                if (!content.toLowerCase(Locale.US).startsWith(coluAccount.getColuAsset().name.toLowerCase()))
+                    return false;
+
+                Optional<? extends ColuAssetUri> uri = getColuAssetUri(handlerActivity, content);
+                if (!uri.isPresent()) {
+                    handlerActivity.finishError(R.string.unrecognized_format);
+                    //started with rmc: but could not be parsed, was handled
+                } else {
+                    Intent intent = SendMainActivity.getIntent(handlerActivity, manager.getSelectedAccount().getId(), uri.get(), false);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
+                    handlerActivity.startActivity(intent);
+                    handlerActivity.finishOk();
+                }
+                return true;
+            }
+
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return isColuAssetUri(network, content);
+            }
+        },
+        SEND {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                if (!content.toLowerCase(Locale.US).startsWith("bitcoin")) return false;
+                MbwManager manager = MbwManager.getInstance(handlerActivity);
+                Optional<? extends BitcoinUri> uri = getUri(manager.getNetwork(), content);
+                if (!uri.isPresent()) {
+                    handlerActivity.finishError(R.string.unrecognized_format);
+                    //started with bitcoin: but could not be parsed, was handled
+                } else {
+                    Intent intent = SendMainActivity.getIntent(handlerActivity, MbwManager.getInstance(handlerActivity).getSelectedAccount().getId(), uri.get(), false);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
+                    handlerActivity.startActivity(intent);
+                    handlerActivity.finishOk();
+                }
+                return true;
+            }
+
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return isUri(network, content);
+            }
+        },
+        RETURN {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                if (!content.toLowerCase(Locale.US).startsWith("bitcoin")) return false;
+                MbwManager manager = MbwManager.getInstance(handlerActivity);
+                Optional<? extends BitcoinUri> uri = getUri(manager.getNetwork(), content);
+                if (!uri.isPresent()) {
+                    handlerActivity.finishError(R.string.unrecognized_format);
+                    //started with bitcoin: but could not be parsed, was handled
+                } else {
+                    handlerActivity.finishOk(uri.get());
+                }
+                return true;
+            }
+
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return isUri(network, content);
+            }
+        };
+
+        private static Optional<? extends BitcoinUri> getUri(NetworkParameters networkParameters, String content) {
+            return BitcoinUri.parse(content, networkParameters);
+        }
+
+        private static boolean isUri(NetworkParameters network, String content) {
+            return content.toLowerCase().startsWith("bitcoin") && getUri(network, content).isPresent();
+        }
+    }
+
+    public enum BitcoinUriWithAddressAction implements Action {
+        SEND_COLU_ASSET {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                MbwManager manager = MbwManager.getInstance(handlerActivity);
+                ColuAccount coluAccount = (ColuAccount)manager.getSelectedAccount();
+                if (coluAccount == null)
+                    return false;
+
+                if (!content.toLowerCase(Locale.US).startsWith(coluAccount.getColuAsset().name.toLowerCase()))
+                    return false;
+
+                Optional<ColuAssetUriWithAddress> uri = getColuAssetUri(handlerActivity, content);
+                if (!uri.isPresent()) {
+                    handlerActivity.finishError(R.string.unrecognized_format);
+                    //started with rmc: but could not be parsed, was handled
+                    return false;
+                } else {
+                    Intent intent = SendMainActivity.getIntent(handlerActivity, MbwManager.getInstance(handlerActivity).getSelectedAccount().getId(), uri.get(), false);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
+                    handlerActivity.startActivity(intent);
+                    handlerActivity.finishOk();
+                    return true;
+                }
+            }
+
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return isColuAssetUri(network, content);
+            }
+        },
+        SEND {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                if (!content.toLowerCase(Locale.US).startsWith("bitcoin")) return false;
+                Optional<BitcoinUriWithAddress> uri = getUri(handlerActivity, content);
+                if (!uri.isPresent()) {
+                    handlerActivity.finishError(R.string.unrecognized_format);
+                    //started with bitcoin: but could not be parsed, was handled
+                    return false;
+                } else {
+                    Intent intent = SendMainActivity.getIntent(handlerActivity, MbwManager.getInstance(handlerActivity).getSelectedAccount().getId(), uri.get(), false);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
+                    handlerActivity.startActivity(intent);
+                    handlerActivity.finishOk();
+                    return true;
+                }
+            }
+
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return isUri(network, content);
+            }
+        },
+
+        RETURN {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                if (!content.toLowerCase(Locale.US).startsWith("bitcoin")) return false;
+                Optional<BitcoinUriWithAddress> uri = getUri(handlerActivity, content);
+                if (!uri.isPresent()) {
+                    handlerActivity.finishError(R.string.unrecognized_format);
+                    //started with bitcoin: but could not be parsed, was handled
+                } else {
+                    handlerActivity.finishOk(uri.get());
+                }
+                return true;
+            }
+
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return isUri(network, content);
+            }
+        },
+        CHECK_BALANCE {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                if (!content.toLowerCase(Locale.US).startsWith("bitcoin")) return false;
+                Optional<BitcoinUriWithAddress> uri = getUri(handlerActivity, content);
+                if (!uri.isPresent()) {
+                    handlerActivity.finishError(R.string.unrecognized_format);
+                    //started with bitcoin: but could not be parsed, was handled
+                } else {
+                    UUID account = null;
+                    try {
+                        account = MbwManager.getInstance(handlerActivity).createOnTheFlyAccount(uri.get().address);
+                    } catch (WalletManager.WalletManagerException e) {
+                        throw new RuntimeException(e);
+                    }
+                    //we dont know yet where at what to send
+                    BitcoinUri targeturi = new BitcoinUri(null,null,null);
+                    SendInitializationActivity.callMe(handlerActivity, account, targeturi, true);
+                    handlerActivity.finishOk();
+                }
+                return true;
+            }
+
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                if (!content.toLowerCase(Locale.US).startsWith("bitcoin")) return false;
+                return isUri(network, content);
+            }
+        },
+        RETURN_ADDRESS {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                if (!content.toLowerCase(Locale.US).startsWith("bitcoin")) return false;
+                Optional<BitcoinUriWithAddress> uri = getUri(handlerActivity, content);
+                if (!uri.isPresent()) {
+                    handlerActivity.finishError(R.string.unrecognized_format);
+                    //started with bitcoin: but could not be parsed, was handled
+                } else {
+                    handlerActivity.finishOk(uri.get().address);
+                }
+                return true;
+            }
+
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return isUri(network, content);
+            }
+        };
+
+        private static Optional<BitcoinUriWithAddress> getUri(StringHandlerActivity handlerActivity, String content) {
             MbwManager manager = MbwManager.getInstance(handlerActivity);
-            ColuAccount coluAccount = (ColuAccount)manager.getSelectedAccount();
-            if (coluAccount == null) {
-               return false;
+            return BitcoinUriWithAddress.parseWithAddress(content, manager.getNetwork());
+        }
+
+        private static boolean isUri(NetworkParameters network, String content) {
+            return BitcoinUriWithAddress.parseWithAddress(content, network).isPresent();
+        }
+    }
+
+    private static Optional<ColuAssetUriWithAddress> getColuAssetUri(StringHandlerActivity handlerActivity, String content) {
+        MbwManager manager = MbwManager.getInstance(handlerActivity);
+        return ColuAssetUriWithAddress.parseWithAddress(content, manager.getNetwork());
+    }
+
+    private static boolean isColuAssetUri(NetworkParameters network, String content) {
+        return ColuAssetUriWithAddress.parseWithAddress(content, network).isPresent();
+    }
+
+    public enum BitIdAction implements Action {
+        LOGIN {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                if (!content.toLowerCase(Locale.US).startsWith("bitid:")) {
+                    return false;
+                }
+                Optional<BitIDSignRequest> request = BitIDSignRequest.parse(Uri.parse(content));
+                if (!request.isPresent()) {
+                    handlerActivity.finishError(R.string.unrecognized_format);
+                    //started with bitid, but unable to parse, so we handled it.
+                } else {
+                    BitIDAuthenticationActivity.callMe(handlerActivity, request.get());
+                    handlerActivity.finishOk();
+                }
+                return true;
             }
 
-            if (!content.toLowerCase(Locale.US).startsWith(coluAccount.getColuAsset().name.toLowerCase()))
-               return false;
-
-            Optional<? extends ColuAssetUri> uri = getColuAssetUri(handlerActivity, content);
-            if (!uri.isPresent()) {
-               handlerActivity.finishError(R.string.unrecognized_format, content);
-               //started with rmc: but could not be parsed, was handled
-            } else {
-               Intent intent = SendMainActivity.getIntent(handlerActivity, manager.getSelectedAccount().getId(), uri.get(), false);
-               intent.addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
-               handlerActivity.startActivity(intent);
-               handlerActivity.finishOk();
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return content.toLowerCase().startsWith("bitid:");
             }
-            return true;
-         }
+        }
+    }
 
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return isColuAssetUri(network, content);
-         }
-      },
-      SEND {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            if (!content.toLowerCase(Locale.US).startsWith("bitcoin")) return false;
-            MbwManager manager = MbwManager.getInstance(handlerActivity);
-            Optional<? extends BitcoinUri> uri = getUri(manager.getNetwork(), content);
-            if (!uri.isPresent()) {
-               handlerActivity.finishError(R.string.unrecognized_format, content);
-               //started with bitcoin: but could not be parsed, was handled
-            } else {
-               Intent intent = SendMainActivity.getIntent(handlerActivity, MbwManager.getInstance(handlerActivity).getSelectedAccount().getId(), uri.get(), false);
-               intent.addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
-               handlerActivity.startActivity(intent);
-               handlerActivity.finishOk();
-            }
-            return true;
-         }
-
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return isUri(network, content);
-         }
-      },
-      RETURN {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            if (!content.toLowerCase(Locale.US).startsWith("bitcoin")) return false;
-            MbwManager manager = MbwManager.getInstance(handlerActivity);
-            Optional<? extends BitcoinUri> uri = getUri(manager.getNetwork(), content);
-            if (!uri.isPresent()) {
-               handlerActivity.finishError(R.string.unrecognized_format, content);
-               //started with bitcoin: but could not be parsed, was handled
-            } else {
-               handlerActivity.finishOk(uri.get());
-            }
-            return true;
-         }
-
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return isUri(network, content);
-         }
-      };
-
-      private static Optional<? extends BitcoinUri> getUri(NetworkParameters networkParameters, String content) {
-         return BitcoinUri.parse(content, networkParameters);
-      }
-
-      private static boolean isUri(NetworkParameters network, String content) {
-         return content.toLowerCase().startsWith("bitcoin") && getUri(network, content).isPresent();
-      }
-   }
-
-   public enum BitcoinUriWithAddressAction implements Action {
-      SEND_COLU_ASSET {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            MbwManager manager = MbwManager.getInstance(handlerActivity);
-            ColuAccount coluAccount = (ColuAccount)manager.getSelectedAccount();
-            if (coluAccount == null)
-               return false;
-
-            if (!content.toLowerCase(Locale.US).startsWith(coluAccount.getColuAsset().name.toLowerCase()))
-               return false;
-
-            Optional<ColuAssetUriWithAddress> uri = getColuAssetUri(handlerActivity, content);
-            if (!uri.isPresent()) {
-               handlerActivity.finishError(R.string.unrecognized_format, content);
-               //started with rmc: but could not be parsed, was handled
-               return false;
-            } else {
-               Intent intent = SendMainActivity.getIntent(handlerActivity, MbwManager.getInstance(handlerActivity).getSelectedAccount().getId(), uri.get(), false);
-               intent.addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
-               handlerActivity.startActivity(intent);
-               handlerActivity.finishOk();
-               return true;
-            }
-         }
-
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return isColuAssetUri(network, content);
-         }
-      },
-      SEND {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            if (!content.toLowerCase(Locale.US).startsWith("bitcoin")) return false;
-            Optional<BitcoinUriWithAddress> uri = getUri(handlerActivity, content);
-            if (!uri.isPresent()) {
-               handlerActivity.finishError(R.string.unrecognized_format, content);
-               //started with bitcoin: but could not be parsed, was handled
-               return false;
-            } else {
-               Intent intent = SendMainActivity.getIntent(handlerActivity, MbwManager.getInstance(handlerActivity).getSelectedAccount().getId(), uri.get(), false);
-               intent.addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
-               handlerActivity.startActivity(intent);
-               handlerActivity.finishOk();
-               return true;
-            }
-         }
-
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return isUri(network, content);
-         }
-      },
-
-      RETURN {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            if (!content.toLowerCase(Locale.US).startsWith("bitcoin")) return false;
-            Optional<BitcoinUriWithAddress> uri = getUri(handlerActivity, content);
-            if (!uri.isPresent()) {
-               handlerActivity.finishError(R.string.unrecognized_format, content);
-               //started with bitcoin: but could not be parsed, was handled
-            } else {
-               handlerActivity.finishOk(uri.get());
-            }
-            return true;
-         }
-
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return isUri(network, content);
-         }
-      },
-      CHECK_BALANCE {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            if (!content.toLowerCase(Locale.US).startsWith("bitcoin")) return false;
-            Optional<BitcoinUriWithAddress> uri = getUri(handlerActivity, content);
-            if (!uri.isPresent()) {
-               handlerActivity.finishError(R.string.unrecognized_format, content);
-               //started with bitcoin: but could not be parsed, was handled
-            } else {
-               UUID account = null;
-               try {
-                  account = MbwManager.getInstance(handlerActivity).createOnTheFlyAccount(uri.get().address);
-               } catch (WalletManager.WalletManagerException e) {
-                  throw new RuntimeException(e);
-               }
-               //we dont know yet where at what to send
-               BitcoinUri targeturi = new BitcoinUri(null,null,null);
-               SendInitializationActivity.callMe(handlerActivity, account, targeturi, true);
-               handlerActivity.finishOk();
-            }
-            return true;
-         }
-
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            if (!content.toLowerCase(Locale.US).startsWith("bitcoin")) return false;
-            return isUri(network, content);
-         }
-      },
-      RETURN_ADDRESS {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            if (!content.toLowerCase(Locale.US).startsWith("bitcoin")) return false;
-            Optional<BitcoinUriWithAddress> uri = getUri(handlerActivity, content);
-            if (!uri.isPresent()) {
-               handlerActivity.finishError(R.string.unrecognized_format, content);
-               //started with bitcoin: but could not be parsed, was handled
-            } else {
-               handlerActivity.finishOk(uri.get().address);
-            }
-            return true;
-         }
-
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return isUri(network, content);
-         }
-      };
-
-      private static Optional<BitcoinUriWithAddress> getUri(StringHandlerActivity handlerActivity, String content) {
-         MbwManager manager = MbwManager.getInstance(handlerActivity);
-         return BitcoinUriWithAddress.parseWithAddress(content, manager.getNetwork());
-      }
-
-      private static boolean isUri(NetworkParameters network, String content) {
-         return BitcoinUriWithAddress.parseWithAddress(content, network).isPresent();
-      }
-   }
-
-   private static Optional<ColuAssetUriWithAddress> getColuAssetUri(StringHandlerActivity handlerActivity, String content) {
-      MbwManager manager = MbwManager.getInstance(handlerActivity);
-      return ColuAssetUriWithAddress.parseWithAddress(content, manager.getNetwork());
-   }
-
-   private static boolean isColuAssetUri(NetworkParameters network, String content) {
-      return ColuAssetUriWithAddress.parseWithAddress(content, network).isPresent();
-   }
-
-   public enum BitIdAction implements Action {
-      LOGIN {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            if (!content.toLowerCase(Locale.US).startsWith("bitid:")) {
-               return false;
-            }
-            Optional<BitIDSignRequest> request = BitIDSignRequest.parse(Uri.parse(content));
-            if (!request.isPresent()) {
-               handlerActivity.finishError(R.string.unrecognized_format, content);
-               //started with bitid, but unable to parse, so we handled it.
-            } else {
-               BitIDAuthenticationActivity.callMe(handlerActivity, request.get());
-               handlerActivity.finishOk();
-            }
-            return true;
-         }
-
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return content.toLowerCase().startsWith("bitid:");
-         }
-      }
-   }
-
-   public enum WebsiteAction implements Action {
-      OPEN_BROWSER {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            if (!content.toLowerCase(Locale.US).startsWith("http")) {
-               return false;
-            }
-            Uri uri = Uri.parse(content);
-            if (null == uri) {
-               handlerActivity.finishError(R.string.unrecognized_format, content);
-               //started with http/https, but unable to parse, so we handled it.
-            } else {
-               Intent browserIntent = new Intent(Intent.ACTION_VIEW, uri);
-               if (browserIntent.resolveActivity(handlerActivity.getPackageManager()) != null) {
-                  handlerActivity.startActivity(browserIntent);
-                  handlerActivity.finishOk();
-               } else {
-                  handlerActivity.finishError(R.string.error_no_browser, content);
-               }
-            }
-            return true;
-         }
-
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return content.toLowerCase().startsWith("http");
-         }
-      },
-
-      HANDLE_URL {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            if (!content.toLowerCase(Locale.US).startsWith("http")) {
-               return false;
+    public enum WebsiteAction implements Action {
+        OPEN_BROWSER {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                if (!content.toLowerCase(Locale.US).startsWith("http")) {
+                    return false;
+                }
+                Uri uri = Uri.parse(content);
+                if (null == uri) {
+                    handlerActivity.finishError(R.string.unrecognized_format);
+                    //started with http/https, but unable to parse, so we handled it.
+                } else {
+                    Intent browserIntent = new Intent(Intent.ACTION_VIEW, uri);
+                    if (browserIntent.resolveActivity(handlerActivity.getPackageManager()) != null) {
+                        handlerActivity.startActivity(browserIntent);
+                        handlerActivity.finishOk();
+                    } else {
+                        handlerActivity.finishError(R.string.error_no_browser);
+                    }
+                }
+                return true;
             }
 
-            final Uri uri = Uri.parse(content);
-            if (null == uri) {
-               //started with http/https, but unable to parse, so we handled it.
-               handlerActivity.finishError(R.string.unrecognized_format, content);
-            } else {
-               // open HandleUrlActivity and let it decide what to do with this URL (check if its a payment request)
-               Intent intent = HandleUrlActivity.getIntent(handlerActivity, uri);
-               handlerActivity.startActivity(intent);
-               handlerActivity.finishOk();
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return content.toLowerCase().startsWith("http");
             }
-            return true;
-         }
+        },
 
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return WebsiteAction.OPEN_BROWSER.canHandle(network, content);
-         }
-      },
-   }
+        HANDLE_URL {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                if (!content.toLowerCase(Locale.US).startsWith("http")) {
+                    return false;
+                }
 
-
-
-   public enum SssShareAction implements Action {
-      START_COMBINING {
-         @Override
-      public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            if (!content.startsWith(BipSss.Share.SSS_PREFIX)) {
-               return false;
+                final Uri uri = Uri.parse(content);
+                if (null == uri) {
+                    //started with http/https, but unable to parse, so we handled it.
+                    handlerActivity.finishError(R.string.unrecognized_format);
+                } else {
+                    // open HandleUrlActivity and let it decide what to do with this URL (check if its a payment request)
+                    Intent intent = HandleUrlActivity.getIntent(handlerActivity, uri);
+                    handlerActivity.startActivity(intent);
+                    handlerActivity.finishOk();
+                }
+                return true;
             }
-            BipSss.Share share = BipSss.Share.fromString(content);
-            if (null == share) {
-               handlerActivity.finishError(R.string.error_invalid_sss_share, content);
-            } else {
-               BipSsImportActivity.callMe(handlerActivity, share, StringHandlerActivity.IMPORT_SSS_CONTENT_CODE);
-               //dont finish, we wait for result
-            }
-            return true;
-         }
 
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return isShare(network, content);
-         }
-      },
-      RETURN_SHARE {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            if (!content.startsWith(BipSss.Share.SSS_PREFIX)) {
-               return false;
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return WebsiteAction.OPEN_BROWSER.canHandle(network, content);
             }
-            BipSss.Share share = BipSss.Share.fromString(content);
-            if (null == share) {
-               handlerActivity.finishError(R.string.error_invalid_sss_share, content);
-            } else {
-               handlerActivity.finishOk(share);
-            }
-            return true;
-         }
+        }
+    }
 
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return isShare(network, content);
-         }
-      };
 
-      private static boolean isShare(NetworkParameters network, String content) {
-         return content.startsWith(BipSss.Share.SSS_PREFIX);
-      }
-   }
 
-   public enum MasterSeedAction implements Action {
-      VERIFY {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            WalletManager walletManager = MbwManager.getInstance(handlerActivity).getWalletManager(false);
-            if (!walletManager.hasBip32MasterSeed()) {
-               return false;
+    public enum SssShareAction implements Action {
+        START_COMBINING {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                if (!content.startsWith(BipSss.Share.SSS_PREFIX)) {
+                    return false;
+                }
+                BipSss.Share share = BipSss.Share.fromString(content);
+                if (null == share) {
+                    handlerActivity.finishError(R.string.error_invalid_sss_share);
+                } else {
+                    BipSsImportActivity.callMe(handlerActivity, share, StringHandlerActivity.IMPORT_SSS_CONTENT_CODE);
+                    //dont finish, we wait for result
+                }
+                return true;
             }
-            if (content.length() % 2 != 0) {
-               return false;
+
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return isShare(content);
             }
-            byte[] bytes;
+        },
+        RETURN_SHARE {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                if (!content.startsWith(BipSss.Share.SSS_PREFIX)) {
+                    return false;
+                }
+                BipSss.Share share = BipSss.Share.fromString(content);
+                if (null == share) {
+                    handlerActivity.finishError(R.string.error_invalid_sss_share);
+                } else {
+                    handlerActivity.finishOk(share);
+                }
+                return true;
+            }
+
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return isShare(content);
+            }
+        };
+
+        private static boolean isShare(String content) {
+            return content.startsWith(BipSss.Share.SSS_PREFIX);
+        }
+    }
+
+    public enum MasterSeedAction implements Action {
+        VERIFY {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                WalletManager walletManager = MbwManager.getInstance(handlerActivity).getWalletManager(false);
+                if (!walletManager.hasBip32MasterSeed()) {
+                    return false;
+                }
+                if (content.length() % 2 != 0) {
+                    return false;
+                }
+                byte[] bytes;
+                try {
+                    bytes = HexUtils.toBytes(content);
+                } catch (RuntimeException ex) {
+                    return false;
+                }
+                Optional<Bip39.MasterSeed> masterSeed = Bip39.MasterSeed.fromBytes(bytes, false);
+                if (masterSeed.isPresent()) {
+                    try {
+                        Bip39.MasterSeed ourSeed = walletManager.getMasterSeed(AesKeyCipher.defaultKeyCipher());
+                        if (masterSeed.get().equals(ourSeed)) {
+                            MbwManager.getInstance(handlerActivity).getMetadataStorage().setMasterSeedBackupState(MetadataStorage.BackupState.VERIFIED);
+                            handlerActivity.finishOk();
+                        } else {
+                            handlerActivity.finishError(R.string.wrong_seed);
+                        }
+                        return true;
+                    } catch (KeyCipher.InvalidKeyCipher invalidKeyCipher) {
+                        throw new RuntimeException(invalidKeyCipher);
+                    }
+                }
+                return false;
+            }
+
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return isMasterSeed(content);
+            }
+        },
+        IMPORT {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                if (content.length() % 2 != 0) {
+                    return false;
+                }
+                Optional<Bip39.MasterSeed> masterSeed = Bip39.MasterSeed.fromBytes(HexUtils.toBytes(content), false);
+                if (masterSeed.isPresent()) {
+                    UUID acc;
+                    try {
+                        WalletManager walletManager = MbwManager.getInstance(handlerActivity).getWalletManager(false);
+                        if (walletManager.hasBip32MasterSeed()) {
+                            handlerActivity.finishError(R.string.seed_already_configured);
+                            return true;
+                        }
+                        walletManager.configureBip32MasterSeed(masterSeed.get(), AesKeyCipher.defaultKeyCipher());
+                        acc = walletManager.createAdditionalBip44Account(AesKeyCipher.defaultKeyCipher());
+                        MbwManager.getInstance(handlerActivity).getMetadataStorage().setMasterSeedBackupState(MetadataStorage.BackupState.VERIFIED);
+                    } catch (KeyCipher.InvalidKeyCipher invalidKeyCipher) {
+                        throw new RuntimeException(invalidKeyCipher);
+                    }
+                    handlerActivity.finishOk(acc);
+                    return true;
+                }
+                return false;
+            }
+
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return isMasterSeed(content);
+            }
+        };
+
+        private static boolean isMasterSeed(String content) {
             try {
-               bytes = HexUtils.toBytes(content);
-            }catch (RuntimeException ex){
-               return false;
+                byte[] bytes = HexUtils.toBytes(content);
+                return Bip39.MasterSeed.fromBytes(bytes, false).isPresent();
+            } catch (RuntimeException ex) {
+                // HexUtils.toBytes will throw a RuntimeException if the string contains invalid characters
+                return false;
             }
-            Optional<Bip39.MasterSeed> masterSeed = Bip39.MasterSeed.fromBytes(bytes, false);
-            if (masterSeed.isPresent()) {
-               try {
-                  Bip39.MasterSeed ourSeed = walletManager.getMasterSeed(AesKeyCipher.defaultKeyCipher());
-                  if (masterSeed.get().equals(ourSeed)) {
-                     MbwManager.getInstance(handlerActivity).getMetadataStorage().setMasterSeedBackupState(MetadataStorage.BackupState.VERIFIED);
-                     handlerActivity.finishOk();
-                  } else {
-                     handlerActivity.finishError(R.string.wrong_seed, "");
-                  }
-                  return true;
-               } catch (KeyCipher.InvalidKeyCipher invalidKeyCipher) {
-                  throw new RuntimeException(invalidKeyCipher);
-               }
-            }
-            return false;
-         }
+        }
+    }
 
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return isMasterSeed(network, content);
-         }
-      },
-      IMPORT {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            if (content.length() % 2 != 0) {
-               return false;
-            }
-            Optional<Bip39.MasterSeed> masterSeed = Bip39.MasterSeed.fromBytes(HexUtils.toBytes(content), false);
-            if (masterSeed.isPresent()) {
-               UUID acc;
-               try {
-                  WalletManager walletManager = MbwManager.getInstance(handlerActivity).getWalletManager(false);
-                  if (walletManager.hasBip32MasterSeed()) {
-                     handlerActivity.finishError(R.string.seed_already_configured, "");
-                     return true;
-                  }
-                  walletManager.configureBip32MasterSeed(masterSeed.get(), AesKeyCipher.defaultKeyCipher());
-                  acc = walletManager.createAdditionalBip44Account(AesKeyCipher.defaultKeyCipher());
-                  MbwManager.getInstance(handlerActivity).getMetadataStorage().setMasterSeedBackupState(MetadataStorage.BackupState.VERIFIED);
-               } catch (KeyCipher.InvalidKeyCipher invalidKeyCipher) {
-                  throw new RuntimeException(invalidKeyCipher);
-               }
-               handlerActivity.finishOk(acc);
-               return true;
-            }
-            return false;
-         }
-
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return isMasterSeed(network, content);
-
-         }
-      };
-
-      private static boolean isMasterSeed(NetworkParameters network, String content) {
-         try {
-            byte[] bytes = HexUtils.toBytes(content);
-            return Bip39.MasterSeed.fromBytes(bytes, false).isPresent();
-         } catch (RuntimeException ex){
-            // HexUtils.toBytes will throw a RuntimeException if the string contains invalid characters
-            return false;
-         }
-      }
-   }
-
-   public enum WordListAction implements Action {
-      COLD_SPENDING {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            String[] words = content.split(" ");
-            if (!Bip39.isValidWordList(words)) {
-               return false;
-            }
-            InstantMasterseedActivity.callMe(handlerActivity, words, null);
-            handlerActivity.finishOk();
-            return true;
-         }
-
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            String[] words = content.split(" ");
-            return Bip39.isValidWordList(words);
-         }
-      }
-   }
-
-   public enum PopAction implements Action {
-
-      SEND {
-         @Override
-         public boolean handle(StringHandlerActivity handlerActivity, String content) {
-            if (!isBtcpopURI(content)) {
-               return false;
-            }
-            PopRequest popRequest;
-            try {
-               popRequest = new PopRequest(content);
-            } catch (IllegalArgumentException e) {
-               handlerActivity.finishError(R.string.pop_invalid_pop_uri, content);
-               return false;
+    public enum WordListAction implements Action {
+        COLD_SPENDING {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                String[] words = content.split(" ");
+                if (!Bip39.isValidWordList(words)) {
+                    return false;
+                }
+                InstantMasterseedActivity.callMe(handlerActivity, words, null);
+                handlerActivity.finishOk();
+                return true;
             }
 
-            Intent intent = new Intent(handlerActivity, PopActivity.class);
-            intent.putExtra("popRequest", popRequest);
-            intent.addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
-            handlerActivity.startActivity(intent);
-            handlerActivity.finishOk();
-            return true;
-         }
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                String[] words = content.split(" ");
+                return Bip39.isValidWordList(words);
+            }
+        }
+    }
 
-         @Override
-         public boolean canHandle(NetworkParameters network, String content) {
-            return isBtcpopURI(content);
-         }
+    public enum PopAction implements Action {
+        SEND {
+            @Override
+            public boolean handle(StringHandlerActivity handlerActivity, String content) {
+                if (!isBtcpopURI(content)) {
+                    return false;
+                }
+                PopRequest popRequest;
+                try {
+                    popRequest = new PopRequest(content);
+                } catch (IllegalArgumentException e) {
+                    handlerActivity.finishError(R.string.pop_invalid_pop_uri);
+                    return false;
+                }
 
-         private boolean isBtcpopURI(String content) {
-            return content.startsWith("btcpop:");
-         }
-      }
-   }
+                Intent intent = new Intent(handlerActivity, PopActivity.class);
+                intent.putExtra("popRequest", popRequest);
+                intent.addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
+                handlerActivity.startActivity(intent);
+                handlerActivity.finishOk();
+                return true;
+            }
+
+            @Override
+            public boolean canHandle(NetworkParameters network, String content) {
+                return isBtcpopURI(content);
+            }
+
+            private boolean isBtcpopURI(String content) {
+                return content.startsWith("btcpop:");
+            }
+        }
+    }
 
     public enum SpvModuleAction implements Action {
         QR_SEND {
@@ -966,7 +964,7 @@ public class StringHandleConfig implements Serializable {
                 MbwManager manager = MbwManager.getInstance(handlerActivity);
                 Optional<? extends BitcoinUri> uri = getUri(manager.getNetwork(), content);
                 if (!uri.isPresent()) {
-                    handlerActivity.finishError(R.string.unrecognized_format, content);
+                    handlerActivity.finishError(R.string.unrecognized_format);
                     //started with bitcoin: but could not be parsed, was handled
                 } else {
                     Intent intent = SendMainActivity.getIntent(handlerActivity, MbwManager.getInstance(handlerActivity).getSelectedAccount().getId(), uri.get(), false);
@@ -1004,7 +1002,6 @@ public class StringHandleConfig implements Serializable {
 
     public List<Action> getAllActions() {
         return ImmutableList.of(popAction, privateKeyAction, bitcoinUriWithAddressAction, bitcoinUriAction,
-                addressAction, bitIdAction, websiteAction, masterSeedAction, sssShareAction, hdNodeAction, wordListAction, spvModuleAction);
+                                addressAction, bitIdAction, websiteAction, masterSeedAction, sssShareAction, hdNodeAction, wordListAction, spvModuleAction);
     }
-
 }
