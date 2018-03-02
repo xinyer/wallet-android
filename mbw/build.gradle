@@ -2,6 +2,7 @@ apply plugin: 'com.android.application'
 
 repositories {
     mavenCentral()
+    google()
 }
 
 buildscript {
@@ -67,7 +68,7 @@ dependencies {
     compile 'com.android.support:multidex:1.0.1'
     compile 'commons-codec:commons-codec:1.5'
     compile 'com.google.protobuf:protobuf-java:3.1.0'
-    compile 'com.android.support.constraint:constraint-layout:1.0.0-alpha7'
+    compile 'com.android.support.constraint:constraint-layout:1.1.0-beta5'
     annotationProcessor 'com.jakewharton:butterknife-compiler:8.1.0'
 }
 
@@ -104,9 +105,9 @@ android {
         versionName '2.9.11.6'
         multiDexEnabled true
 
-        minSdkVersion 14
-        targetSdkVersion 19
-        compileSdkVersion 25
+        minSdkVersion 21
+        targetSdkVersion 21
+        compileSdkVersion 27
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
@@ -128,6 +129,7 @@ android {
 
     buildTypes {
         release {
+            debuggable true
             minifyEnabled false
             applicationVariants.all { variant ->
                 variant.outputs.each { output ->
