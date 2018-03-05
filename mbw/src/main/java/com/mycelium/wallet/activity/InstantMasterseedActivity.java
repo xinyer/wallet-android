@@ -85,7 +85,7 @@ public class InstantMasterseedActivity extends HdAccountSelectorActivity {
    @Override
    public void finish() {
       super.finish();
-      masterseedScanManager.stopBackgroundAccountScan();
+      masterSeedScanManager.stopBackgroundAccountScan();
    }
 
 

@@ -1,37 +1,3 @@
-/*
- * Copyright 2013, 2014 Megion Research and Development GmbH
- *
- * Licensed under the Microsoft Reference Source License (MS-RSL)
- *
- * This license governs use of the accompanying software. If you use the software, you accept this license.
- * If you do not accept the license, do not use the software.
- *
- * 1. Definitions
- * The terms "reproduce," "reproduction," and "distribution" have the same meaning here as under U.S. copyright law.
- * "You" means the licensee of the software.
- * "Your company" means the company you worked for when you downloaded the software.
- * "Reference use" means use of the software within your company as a reference, in read only form, for the sole purposes
- * of debugging your products, maintaining your products, or enhancing the interoperability of your products with the
- * software, and specifically excludes the right to distribute the software outside of your company.
- * "Licensed patents" means any Licensor patent claims which read directly on the software as distributed by the Licensor
- * under this license.
- *
- * 2. Grant of Rights
- * (A) Copyright Grant- Subject to the terms of this license, the Licensor grants you a non-transferable, non-exclusive,
- * worldwide, royalty-free copyright license to reproduce the software for reference use.
- * (B) Patent Grant- Subject to the terms of this license, the Licensor grants you a non-transferable, non-exclusive,
- * worldwide, royalty-free patent license under licensed patents for reference use.
- *
- * 3. Limitations
- * (A) No Trademark License- This license does not grant you any rights to use the Licensor’s name, logo, or trademarks.
- * (B) If you begin patent litigation against the Licensor over patents that you think may apply to the software
- * (including a cross-claim or counterclaim in a lawsuit), your license to the software ends automatically.
- * (C) The software is licensed "as-is." You bear the risk of using it. The Licensor gives no express warranties,
- * guarantees or conditions. You may have additional consumer rights under your local laws which this license cannot
- * change. To the extent permitted under your local laws, the Licensor excludes the implied warranties of merchantability,
- * fitness for a particular purpose and non-infringement.
- */
-
 package com.mycelium.wallet.extsig.common.activity;
 
 import android.annotation.SuppressLint;
@@ -63,14 +29,14 @@ public abstract class ExtSigAccountSelectorActivity extends HdAccountSelectorAct
    @Override
    public void finish() {
       super.finish();
-      masterseedScanManager.stopBackgroundAccountScan();
+      masterSeedScanManager.stopBackgroundAccountScan();
    }
 
    @SuppressLint("DefaultLocale") // It's only for display.
    @Override
    protected void updateUi() {
 
-      if (masterseedScanManager.currentState == ExternalSignatureDeviceManager.Status.readyToScan) {
+      if (masterSeedScanManager.currentState == ExternalSignatureDeviceManager.Status.readyToScan) {
          findViewById(R.id.tvWaitForExtSig).setVisibility(View.GONE);
          findViewById(R.id.ivConnectExtSig).setVisibility(View.GONE);
          txtStatus.setText(getString(R.string.ext_sig_scanning_status));
@@ -78,7 +44,7 @@ public abstract class ExtSigAccountSelectorActivity extends HdAccountSelectorAct
          super.updateUi();
       }
 
-      if (masterseedScanManager.currentAccountState == ExternalSignatureDeviceManager.AccountStatus.scanning) {
+      if (masterSeedScanManager.currentAccountState == ExternalSignatureDeviceManager.AccountStatus.scanning) {
          findViewById(R.id.llStatus).setVisibility(View.VISIBLE);
          if (accounts.size()>0) {
             super.updateUi();
@@ -86,7 +52,7 @@ public abstract class ExtSigAccountSelectorActivity extends HdAccountSelectorAct
             txtStatus.setText(getString(R.string.ext_sig_scanning_status));
          }
 
-      }else if (masterseedScanManager.currentAccountState == AccountScanManager.AccountStatus.done) {
+      }else if (masterSeedScanManager.currentAccountState == AccountScanManager.AccountStatus.done) {
          // DONE
          findViewById(R.id.llStatus).setVisibility(View.GONE);
          findViewById(R.id.llSelectAccount).setVisibility(View.VISIBLE);
@@ -101,7 +67,7 @@ public abstract class ExtSigAccountSelectorActivity extends HdAccountSelectorAct
 
          // Show the label and version of the connected Trezor
          findViewById(R.id.llExtSigInfo).setVisibility(View.VISIBLE);
-         final ExternalSignatureDeviceManager extSigDevice = (ExternalSignatureDeviceManager) masterseedScanManager;
+         final ExternalSignatureDeviceManager extSigDevice = (ExternalSignatureDeviceManager) masterSeedScanManager;
 
          if (extSigDevice.getFeatures() != null && !Strings.isNullOrEmpty(extSigDevice.getFeatures().getLabel())) {
             ((TextView) findViewById(R.id.tvExtSigName)).setText(extSigDevice.getFeatures().getLabel());
@@ -110,7 +76,7 @@ public abstract class ExtSigAccountSelectorActivity extends HdAccountSelectorAct
          }
 
          String version;
-         TextView tvTrezorSerial = (TextView) findViewById(R.id.tvExtSigSerial);
+         TextView tvTrezorSerial = findViewById(R.id.tvExtSigSerial);
          if (extSigDevice.isMostRecentVersion()) {
             if (extSigDevice.getFeatures() != null) {
                version = String.format("%s, V%d.%d.%d",
@@ -144,12 +110,9 @@ public abstract class ExtSigAccountSelectorActivity extends HdAccountSelectorAct
    @NonNull
    abstract protected String getFirmwareUpdateDescription();
 
-
-
    @Override
    public void setPassphrase(String passphrase){
-      masterseedScanManager.setPassphrase(passphrase);
-
+      masterSeedScanManager.setPassphrase(passphrase);
       if (passphrase == null){
          // user choose cancel -> leave this activity
          finish();
@@ -169,7 +132,7 @@ public abstract class ExtSigAccountSelectorActivity extends HdAccountSelectorAct
       pin.setOnPinValid(new PinDialog.OnPinEntered() {
          @Override
          public void pinEntered(PinDialog dialog, Pin pin) {
-            ((ExternalSignatureDeviceManager) masterseedScanManager).enterPin(pin.getPin());
+            ((ExternalSignatureDeviceManager) masterSeedScanManager).enterPin(pin.getPin());
             dialog.dismiss();
          }
       });
@@ -182,7 +145,7 @@ public abstract class ExtSigAccountSelectorActivity extends HdAccountSelectorAct
 
    @Subscribe
    public void onScanError(final AccountScanManager.OnScanError event){
-      ExternalSignatureDeviceManager extSigDevice = (ExternalSignatureDeviceManager) masterseedScanManager;
+      ExternalSignatureDeviceManager extSigDevice = (ExternalSignatureDeviceManager) masterSeedScanManager;
       // see if we know how to init that device
       if (event.errorType == AccountScanManager.OnScanError.ErrorType.NOT_INITIALIZED &&
               extSigDevice.hasExternalConfigurationTool()){
