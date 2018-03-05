@@ -87,8 +87,6 @@ public class AddAccountActivity extends Activity {
       } else {
          findViewById(R.id.tvInfoBackup).setVisibility(View.GONE);
       }
-      final View coluCreate = findViewById(R.id.btColuCreate);
-      coluCreate.setOnClickListener(createColuAccount);
       _progress = new ProgressDialog(this);
    }
 
@@ -114,16 +112,6 @@ public class AddAccountActivity extends Activity {
                createNewHdAccount();
             }
          });
-      }
-   };
-
-   View.OnClickListener createColuAccount = new View.OnClickListener() {
-      @Override
-      public void onClick(View view) {
-	     Intent intent = AddColuAccountActivity.getIntent(AddAccountActivity.this);
-	     intent.addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
-         AddAccountActivity.this.startActivity(intent);
-	     AddAccountActivity.this.finish();
       }
    };
 

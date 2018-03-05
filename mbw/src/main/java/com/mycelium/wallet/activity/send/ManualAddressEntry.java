@@ -44,12 +44,10 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
 import android.widget.EditText;
-import android.widget.TextView;
 
 import com.mrd.bitlib.model.Address;
 import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.R;
-import com.mycelium.wallet.colu.ColuAccount;
 
 public class ManualAddressEntry extends Activity {
 
@@ -69,12 +67,6 @@ public class ManualAddressEntry extends Activity {
       findViewById(R.id.btOk).setOnClickListener(okClickListener);
       ((EditText) findViewById(R.id.etAddress)).setInputType(InputType.TYPE_TEXT_FLAG_AUTO_COMPLETE);
 
-      if(_mbwManager.getSelectedAccount() instanceof ColuAccount) {
-         ColuAccount coluAccount = (ColuAccount) _mbwManager.getSelectedAccount();
-         ((TextView) findViewById(R.id.title)).setText(getString(R.string.enter_address, coluAccount.getColuAsset().name));
-         ((TextView) findViewById(R.id.tvBitcoinAddressValid)).setText(getString(R.string.address_valid, coluAccount.getColuAsset().name));
-         ((TextView) findViewById(R.id.tvBitcoinAddressInvalid)).setText(getString(R.string.address_invalid, coluAccount.getColuAsset().name));
-      }
       // Load saved state
       if (savedInstanceState != null) {
          _entered = savedInstanceState.getString("entered");

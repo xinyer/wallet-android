@@ -43,52 +43,44 @@ import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.Utils;
 
 public class AddressLabel extends GenericBlockExplorerLabel {
-   private Address address;
-   private boolean coluMode;
+    private Address address;
 
-   public AddressLabel(Context context) {
-      super(context);
-   }
+    public AddressLabel(Context context) {
+        super(context);
+    }
 
-   public AddressLabel(Context context, AttributeSet attrs) {
-      super(context, attrs);
-   }
+    public AddressLabel(Context context, AttributeSet attrs) {
+        super(context, attrs);
+    }
 
-   public AddressLabel(Context context, AttributeSet attrs, int defStyleAttr) {
-      super(context, attrs, defStyleAttr);
-   }
+    public AddressLabel(Context context, AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+    }
 
-   @Override
-   protected String getLinkText() {
-      return address.toString();
-   }
+    @Override
+    protected String getLinkText() {
+        return address.toString();
+    }
 
-   @Override
-   protected String getFormattedLinkText() {
-      return Utils.stringChopper(address.toString(), 12, "\n");
-   }
+    @Override
+    protected String getFormattedLinkText() {
+        return Utils.stringChopper(address.toString(), 12, "\n");
+    }
 
-   @Override
-   protected String getLinkURL(BlockExplorer blockExplorer){
-      return blockExplorer.getUrl(address,MbwManager.getInstance(getContext()).getTorMode() == ServerEndpointType.Types.ONLY_TOR);
-   }
+    @Override
+    protected String getLinkURL(BlockExplorer blockExplorer) {
+        return blockExplorer.getUrl(address, MbwManager.getInstance(getContext()).getTorMode() == ServerEndpointType.Types.ONLY_TOR);
+    }
 
-   public void setColuMode(boolean coluMode) {
-      this.coluMode = coluMode;
-   }
+    public void setAddress(final Address address) {
+        this.address = address;
+        update_ui();
+        setHandler(MbwManager.getInstance(getContext())._blockExplorerManager.getBlockExplorer());
+    }
 
-   public void setAddress(final Address address){
-      this.address = address;
-      update_ui();
-      if(coluMode) {
-         setHandler(MbwManager.getInstance(getContext()).getColuManager().getBlockExplorer());
-      } else {
-         setHandler(MbwManager.getInstance(getContext())._blockExplorerManager.getBlockExplorer());
-      }
-   }
-   public Address getAddress() {
-      return address;
-   }
+    public Address getAddress() {
+        return address;
+    }
 
 }
 

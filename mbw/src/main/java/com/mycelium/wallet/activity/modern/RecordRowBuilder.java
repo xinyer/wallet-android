@@ -50,15 +50,12 @@ import com.mrd.bitlib.model.Address;
 import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.R;
 import com.mycelium.wallet.Utils;
-import com.mycelium.wallet.activity.util.ToggleableCurrencyButton;
-import com.mycelium.wallet.colu.ColuAccount;
 import com.mycelium.wallet.persistence.MetadataStorage;
 import com.mycelium.wapi.model.Balance;
 import com.mycelium.wapi.wallet.WalletAccount;
 import com.mycelium.wapi.wallet.bip44.Bip44Account;
 import com.mycelium.wapi.wallet.bip44.Bip44PubOnlyAccount;
 import com.mycelium.wapi.wallet.currency.CurrencyBasedBalance;
-import com.mycelium.wapi.wallet.currency.CurrencySum;
 import com.mycelium.wapi.wallet.single.SingleAddressAccount;
 
 public class RecordRowBuilder {
@@ -108,29 +105,11 @@ public class RecordRowBuilder {
         TextView tvLabel = ((TextView) rowView.findViewById(R.id.tvLabel));
         TextView tvWhatIsIt = ((TextView) rowView.findViewById(R.id.tvWhatIsIt));
         String name = mbwManager.getMetadataStorage().getLabelByAccount(walletAccount.getId());
-        WalletAccount linked = Utils.getLinkedAccount(walletAccount, mbwManager.getColuManager().getAccounts().values());
-        if (linked != null
-                && linked instanceof ColuAccount
-                && ((ColuAccount) linked).getColuAsset().assetType == ColuAccount.ColuAssetType.RMC) {
-            tvWhatIsIt.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    new AlertDialog.Builder(view.getContext())
-                            .setMessage(resources.getString(R.string.rmc_bitcoin_acc_what_is_it))
-                            .setPositiveButton(R.string.button_ok, null)
-                            .create()
-                            .show();
-                }
-            });
-            tvWhatIsIt.setVisibility(View.VISIBLE);
-        } else {
-            tvWhatIsIt.setVisibility(View.GONE);
-        }
+        tvWhatIsIt.setVisibility(View.GONE);
         if (name.length() == 0) {
             rowView.findViewById(R.id.tvLabel).setVisibility(View.GONE);
         } else {
             // Display name
-
             tvLabel.setVisibility(View.VISIBLE);
             tvLabel.setText(Html.fromHtml(name));
             tvLabel.setTextColor(textColor);
@@ -182,9 +161,6 @@ public class RecordRowBuilder {
             CurrencyBasedBalance balance = walletAccount.getCurrencyBasedBalance();
             rowView.findViewById(R.id.tvBalance).setVisibility(View.VISIBLE);
             String balanceString = Utils.getFormattedValueWithUnit(balance.confirmed, mbwManager.getBitcoinDenomination());
-            if (walletAccount instanceof ColuAccount) {
-                balanceString = Utils.getColuFormattedValueWithUnit(walletAccount.getCurrencyBasedBalance().confirmed);
-            }
             TextView tvBalance = ((TextView) rowView.findViewById(R.id.tvBalance));
             tvBalance.setText(balanceString);
             tvBalance.setTextColor(textColor);

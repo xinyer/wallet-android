@@ -6,7 +6,6 @@ import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.MinerFee;
 import com.mycelium.wallet.activity.send.adapter.FeeViewAdapter;
 import com.mycelium.wallet.activity.send.model.FeeItem;
-import com.mycelium.wallet.colu.ColuAccount;
 import com.mycelium.wapi.api.lib.FeeEstimation;
 import com.mycelium.wapi.wallet.currency.CurrencyValue;
 import com.mycelium.wapi.wallet.currency.ExactBitcoinValue;
@@ -83,13 +82,7 @@ public class FeeItemsBuilder {
 
     @NonNull
     private FeeItem createFeeItem(int txSize, long feePerKb) {
-        ExactBitcoinValue bitcoinValue;
-        if (_mbwManager.getSelectedAccount() instanceof ColuAccount) {
-            long fundingAmountToSend = _mbwManager.getColuManager().getColuTransactionFee(feePerKb);
-            bitcoinValue = ExactBitcoinValue.from(fundingAmountToSend);
-        } else {
-            bitcoinValue = ExactBitcoinValue.from(txSize * feePerKb / 1000);
-        }
+        ExactBitcoinValue bitcoinValue = ExactBitcoinValue.from(txSize * feePerKb / 1000);
         CurrencyValue fiatFee = CurrencyValue.fromValue(bitcoinValue,
                 _mbwManager.getFiatCurrency(), _mbwManager.getExchangeRateManager());
         return new FeeItem(feePerKb, bitcoinValue.getAsBitcoin(), fiatFee, FeeViewAdapter.VIEW_TYPE_ITEM);

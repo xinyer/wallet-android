@@ -70,7 +70,6 @@ import com.mycelium.wallet.activity.modern.Toaster;
 import com.mycelium.wallet.activity.send.BroadcastTransactionActivity;
 import com.mycelium.wallet.activity.send.SignTransactionActivity;
 import com.mycelium.wallet.activity.util.EnterAddressLabelUtil;
-import com.mycelium.wallet.colu.ColuAccount;
 import com.mycelium.wallet.event.AddressBookChanged;
 import com.mycelium.wallet.event.ExchangeRatesRefreshed;
 import com.mycelium.wallet.event.SelectedCurrencyChanged;
@@ -303,9 +302,6 @@ public class TransactionHistoryFragment extends Fragment {
                            break;
                         case R.id.miAddToAddressBook:
                            String defaultName = "";
-                           if (_mbwManager.getSelectedAccount() instanceof ColuAccount) {
-                              defaultName = ((ColuAccount) _mbwManager.getSelectedAccount()).getColuAsset().name;
-                           }
                            EnterAddressLabelUtil.enterAddressLabel(getActivity(), _mbwManager.getMetadataStorage(), record.destinationAddress.get(), defaultName, addressLabelChanged);
                            break;
                         case R.id.miCancelTransaction:

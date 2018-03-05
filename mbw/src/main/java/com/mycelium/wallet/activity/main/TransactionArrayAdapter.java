@@ -96,11 +96,7 @@ public class TransactionArrayAdapter extends ArrayAdapter<TransactionSummary> {
 
       // Set value
       TextView tvAmount = (TextView) rowView.findViewById(R.id.tvAmount);
-      if(_mbwManager.getColuManager().isColuAsset(record.value.getCurrency())) {
-         tvAmount.setText(Utils.getColuFormattedValueWithUnit(record.value));
-      }else {
-         tvAmount.setText(Utils.getFormattedValueWithUnit(record.value, _mbwManager.getBitcoinDenomination()));
-      }
+      tvAmount.setText(Utils.getFormattedValueWithUnit(record.value, _mbwManager.getBitcoinDenomination()));
       tvAmount.setTextColor(color);
 
       // Set alternative value

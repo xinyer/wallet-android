@@ -14,7 +14,6 @@ import com.mycelium.wallet.activity.modern.RecordRowBuilder;
 import com.mycelium.wallet.activity.modern.adapter.holder.AccountViewHolder;
 import com.mycelium.wallet.activity.modern.adapter.holder.GroupTitleViewHolder;
 import com.mycelium.wallet.activity.modern.adapter.holder.TotalViewHolder;
-import com.mycelium.wallet.colu.ColuAccount;
 import com.mycelium.wallet.persistence.MetadataStorage;
 import com.mycelium.wapi.wallet.WalletAccount;
 import com.mycelium.wapi.wallet.WalletManager;
@@ -117,9 +116,6 @@ public class AccountListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                 if (!Utils.checkIsLinked(account, accounts)) {
                     saAccounts.add(account);
                 }
-            } else if (account instanceof ColuAccount) {
-                coluAccounts.add(account);
-                coluAccounts.add(((ColuAccount) account).getLinkedAccount());
             } else {
                 other.add(account);
             }

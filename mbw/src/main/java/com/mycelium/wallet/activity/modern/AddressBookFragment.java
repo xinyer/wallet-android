@@ -74,7 +74,6 @@ import com.mycelium.wallet.activity.modern.adapter.AddressBookAdapter;
 import com.mycelium.wallet.activity.receive.ReceiveCoinsActivity;
 import com.mycelium.wallet.activity.util.EnterAddressLabelUtil;
 import com.mycelium.wallet.activity.util.EnterAddressLabelUtil.AddressLabelChangedHandler;
-import com.mycelium.wallet.colu.ColuAccount;
 import com.mycelium.wallet.event.AddressBookChanged;
 import com.mycelium.wapi.wallet.WalletAccount;
 import com.squareup.otto.Subscribe;
@@ -175,12 +174,7 @@ public class AddressBookFragment extends Fragment {
                     && (!excudeSelected || !account.getReceivingAddress().equals(_mbwManager.getSelectedAccount().getReceivingAddress()))
                     && !account.getCurrencyBasedBalance().confirmed.isZero()
                     && account.getCurrencyBasedBalance().confirmed.isBtc()) || !spendableOnly) {
-               if (selectedAccount instanceof ColuAccount && account instanceof ColuAccount
-                       && ((ColuAccount) account).getColuAsset().assetType == ((ColuAccount) selectedAccount).getColuAsset().assetType) {
                   entries.add(new AddressBookManager.IconEntry(receivingAddress.get(), name, drawableForAccount, account.getId()));
-               } else if (!(_mbwManager.getSelectedAccount() instanceof ColuAccount)) {
-                  entries.add(new AddressBookManager.IconEntry(receivingAddress.get(), name, drawableForAccount, account.getId()));
-               }
             }
          }
       }

@@ -54,7 +54,6 @@ import com.mycelium.wallet.R;
 import com.mycelium.wallet.Utils;
 import com.mycelium.wallet.activity.export.VerifyBackupActivity;
 import com.mycelium.wallet.activity.modern.RecordRowBuilder;
-import com.mycelium.wallet.colu.ColuAccount;
 import com.mycelium.wallet.event.AccountChanged;
 import com.mycelium.wallet.event.BalanceChanged;
 import com.mycelium.wallet.event.SelectedAccountChanged;
@@ -189,7 +188,7 @@ public class NoticeFragment extends Fragment {
       }
 
       // Then check if there are some SingleAddressAccounts with funds on it
-      if ((account instanceof ColuAccount || account instanceof SingleAddressAccount) && account.canSpend()) {
+      if (account instanceof SingleAddressAccount && account.canSpend()) {
          if (meta.getOtherAccountBackupState(account.getId()) != MetadataStorage.BackupState.VERIFIED) {
             return Notice.SINGLEKEY_BACKUP_MISSING;
          }

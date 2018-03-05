@@ -428,7 +428,6 @@ public class ModernMain extends ActionBarActivity {
                syncMode = SyncMode.NORMAL_ALL_ACCOUNTS_FORCED;
             }
             _mbwManager.getWalletManager(false).startSynchronization(syncMode);
-            _mbwManager.getColuManager().startSynchronization();
             // also fetch a new exchange rate, if necessary
             _mbwManager.getExchangeRateManager().requestOptionalRefresh();
             return true;
@@ -443,7 +442,6 @@ public class ModernMain extends ActionBarActivity {
          case R.id.miRescanTransactions:
             _mbwManager.getSelectedAccount().dropCachedData();
             _mbwManager.getWalletManager(false).startSynchronization(SyncMode.FULL_SYNC_CURRENT_ACCOUNT_FORCED);
-            _mbwManager.getColuManager().startSynchronization();
             break;
          case R.id.miExportHistory:
             shareTransactionHistory();
@@ -517,8 +515,7 @@ public class ModernMain extends ActionBarActivity {
    private WalletManager.State commonSyncState;
    public void setRefreshAnimation() {
       if (refreshItem != null) {
-         if (_mbwManager.getWalletManager(false).getState() == WalletManager.State.SYNCHRONIZING
-                 || _mbwManager.getColuManager().getState() == WalletManager.State.SYNCHRONIZING) {
+         if (_mbwManager.getWalletManager(false).getState() == WalletManager.State.SYNCHRONIZING) {
             if(commonSyncState != WalletManager.State.SYNCHRONIZING) {
                commonSyncState = WalletManager.State.SYNCHRONIZING;
                MenuItem menuItem = MenuItemCompat.setActionView(refreshItem, R.layout.actionbar_indeterminate_progress);

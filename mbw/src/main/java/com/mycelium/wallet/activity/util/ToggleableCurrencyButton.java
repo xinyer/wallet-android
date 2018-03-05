@@ -40,13 +40,9 @@ import android.view.View;
 
 import com.google.common.base.Preconditions;
 import com.mycelium.wallet.R;
-import com.mycelium.wallet.colu.ColuAccount;
 import com.mycelium.wallet.event.ExchangeRatesRefreshed;
 import com.mycelium.wallet.event.SelectedCurrencyChanged;
-import com.mycelium.wapi.wallet.currency.CurrencyValue;
 import com.squareup.otto.Subscribe;
-
-import java.math.BigDecimal;
 
 
 public class ToggleableCurrencyButton extends ToggleableCurrencyDisplay {

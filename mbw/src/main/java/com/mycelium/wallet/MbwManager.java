@@ -42,7 +42,6 @@ import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Vibrator;
@@ -83,8 +82,6 @@ import com.mycelium.wallet.activity.util.BlockExplorerManager;
 import com.mycelium.wallet.activity.util.Pin;
 import com.mycelium.wallet.api.AndroidAsyncApi;
 import com.mycelium.wallet.bitid.ExternalService;
-import com.mycelium.wallet.colu.ColuManager;
-import com.mycelium.wallet.colu.SqliteColuManagerBacking;
 import com.mycelium.wallet.event.EventTranslator;
 import com.mycelium.wallet.event.ExtraAccountsChanged;
 import com.mycelium.wallet.event.ReceivingAddressChanged;
@@ -132,8 +129,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
-import static android.os.Build.VERSION.SDK_INT;
-import static android.os.Build.VERSION_CODES.GINGERBREAD;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class MbwManager {
@@ -149,7 +144,6 @@ public class MbwManager {
      * 0x424944 = "BID"
      */
     private static final int BIP32_ROOT_AUTHENTICATION_INDEX = 0x80424944;
-    private volatile Optional<ColuManager> _coluManager;
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
@@ -283,7 +277,6 @@ public class MbwManager {
 
         _walletManager.addObserver(_eventTranslator);
 
-        new InitColuManagerTask().execute();
         // set the currency-list after we added all extra accounts, they may provide
         // additional needed fiat currencies
         setCurrencyList(fiatCurrencies);
@@ -298,19 +291,6 @@ public class MbwManager {
                         _environment.getBlockExplorerList().get(0).getIdentifier()));
     }
 
-    private class InitColuManagerTask extends AsyncTask<Void, Void, Optional<ColuManager>> {
-        protected Optional<ColuManager> doInBackground(Void... params) {
-            return Optional.of(getColuManager());
-        }
-
-        protected void onPostExecute(Optional<ColuManager> coluMgr) {
-            _coluManager = coluMgr;
-            if (_coluManager.isPresent()) {
-                addExtraAccounts(_coluManager.get());
-            }
-        }
-    }
-
     public void addExtraAccounts(AccountProvider accounts) {
         _walletManager.addExtraAccounts(accounts);
         _hasCoinapultAccounts = null;  // invalidate cache
@@ -320,28 +300,6 @@ public class MbwManager {
     public void onExtraAccountsChanged(ExtraAccountsChanged event) {
         _walletManager.refreshExtraAccounts();
         _hasCoinapultAccounts = null;  // invalidate cache
-    }
-
-    private Optional<ColuManager> createColuManager(final Context context, MbwEnvironment environment) {
-
-        // Create persisted account backing
-        // we never talk directly to this class. Instead, we use SecureKeyValueStore API
-        SqliteColuManagerBacking coluBacking = new SqliteColuManagerBacking(context);
-
-        // Create persisted secure storage instance
-        SecureKeyValueStore coluSecureKeyValueStore = new SecureKeyValueStore(coluBacking,
-                new AndroidRandomSource());
-
-        return Optional.of(new ColuManager(
-                coluSecureKeyValueStore,
-                coluBacking,
-                this,
-                _environment,
-                _eventBus,
-                new Handler(_applicationContext.getMainLooper()),
-                _storage,
-                _exchangeRateManager, // not sure we need this one for colu
-                retainingWapiLogger));
     }
 
     private void createTempWalletManager() {
@@ -1199,21 +1157,6 @@ public class MbwManager {
         editor.commit();
 
         this._pinRequiredOnStartup = _pinRequiredOnStartup;
-    }
-
-    public ColuManager getColuManager() {
-        if (_coluManager != null && _coluManager.isPresent()) {
-            return _coluManager.get();
-        } else {
-            synchronized (this) {
-                _coluManager = createColuManager(_applicationContext, _environment);
-                if (_coluManager.isPresent()) {
-                    return _coluManager.get();
-                } else {
-                    throw new IllegalStateException("Tried to obtain colu manager without having created one.");
-                }
-            }
-        }
     }
 
     public Cache<String, Object> getBackgroundObjectsCache() {

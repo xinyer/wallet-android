@@ -50,6 +50,7 @@ import android.widget.LinearLayout.LayoutParams;
 import android.widget.TextView;
 
 import android.widget.Toast;
+
 import com.mrd.bitlib.util.CoinUtil;
 import com.mrd.bitlib.util.Sha256Hash;
 import com.mycelium.wallet.MbwManager;
@@ -58,210 +59,195 @@ import com.mycelium.wallet.Utils;
 import com.mycelium.wallet.activity.util.AddressLabel;
 import com.mycelium.wallet.activity.util.TransactionConfirmationsDisplay;
 import com.mycelium.wallet.activity.util.TransactionDetailsLabel;
-import com.mycelium.wallet.colu.ColuAccount;
-import com.mycelium.wallet.colu.json.ColuTxDetailsItem;
 import com.mycelium.wapi.model.TransactionDetails;
 import com.mycelium.wapi.model.TransactionSummary;
 
 public class TransactionDetailsActivity extends Activity {
 
-   @SuppressWarnings("deprecation")
-   private static final LayoutParams FPWC = new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT, 1);
-   private static final LayoutParams WCWC = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, 1);
-   private TransactionDetails _tx;
-   private TransactionSummary _txs;
-   private int _white_color;
-   private MbwManager _mbwManager;
-   private boolean coluMode = false;
+    @SuppressWarnings("deprecation")
+    private static final LayoutParams FPWC = new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT, 1);
+    private static final LayoutParams WCWC = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, 1);
+    private TransactionDetails _tx;
+    private TransactionSummary _txs;
+    private int _white_color;
+    private MbwManager _mbwManager;
 
-   /**
-    * Called when the activity is first created.
-    */
-   @SuppressLint("ShowToast")
-   @Override
-   public void onCreate(Bundle savedInstanceState) {
-      this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-      super.onCreate(savedInstanceState);
+    /**
+     * Called when the activity is first created.
+     */
+    @SuppressLint("ShowToast")
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        super.onCreate(savedInstanceState);
 
-      _white_color = getResources().getColor(R.color.white);
-      setContentView(R.layout.transaction_details_activity);
-      _mbwManager = MbwManager.getInstance(this.getApplication());
+        _white_color = getResources().getColor(R.color.white);
+        setContentView(R.layout.transaction_details_activity);
+        _mbwManager = MbwManager.getInstance(this.getApplication());
 
-      Sha256Hash txid = (Sha256Hash) getIntent().getSerializableExtra("transaction");
-      _tx = _mbwManager.getSelectedAccount().getTransactionDetails(txid);
-      _txs = _mbwManager.getSelectedAccount().getTransactionSummary(txid);
+        Sha256Hash txid = (Sha256Hash) getIntent().getSerializableExtra("transaction");
+        _tx = _mbwManager.getSelectedAccount().getTransactionDetails(txid);
+        _txs = _mbwManager.getSelectedAccount().getTransactionSummary(txid);
 
-      if(_mbwManager.getSelectedAccount() instanceof ColuAccount) {
-         coluMode = true;
-      } else {
-         coluMode = false;
-      }
-      updateUi();
-   }
+        updateUi();
+    }
 
-   private void updateUi() {
-      // Set Hash
-      TransactionDetailsLabel tvHash = ((TransactionDetailsLabel) findViewById(R.id.tvHash));
-      tvHash.setColuMode(coluMode);
-      tvHash.setTransaction(_tx);
+    private void updateUi() {
+        // Set Hash
+        TransactionDetailsLabel tvHash = ((TransactionDetailsLabel) findViewById(R.id.tvHash));
+        tvHash.setTransaction(_tx);
 
+        // Set Confirmed
+        int confirmations = _tx.calculateConfirmations(_mbwManager.getSelectedAccount().getBlockChainHeight());
+        String confirmed;
+        if (_tx.height > 0) {
+            confirmed = getResources().getString(R.string.confirmed_in_block, _tx.height);
+        } else {
+            confirmed = getResources().getString(R.string.no);
+        }
 
-      // Set Confirmed
-      int confirmations = _tx.calculateConfirmations(_mbwManager.getSelectedAccount().getBlockChainHeight());
-      String confirmed;
-      if (_tx.height > 0) {
-         confirmed = getResources().getString(R.string.confirmed_in_block, _tx.height);
-      } else {
-         confirmed = getResources().getString(R.string.no);
-      }
+        // check if tx is in outgoing queue
+        TransactionConfirmationsDisplay confirmationsDisplay = (TransactionConfirmationsDisplay) findViewById(R.id.tcdConfirmations);
+        TextView confirmationsCount = (TextView) findViewById(R.id.tvConfirmations);
 
-      // check if tx is in outgoing queue
-      TransactionConfirmationsDisplay confirmationsDisplay = (TransactionConfirmationsDisplay) findViewById(R.id.tcdConfirmations);
-      TextView confirmationsCount = (TextView) findViewById(R.id.tvConfirmations);
+        if (_txs != null && _txs.isQueuedOutgoing) {
+            confirmationsDisplay.setNeedsBroadcast();
+            confirmationsCount.setText("");
+            confirmed = getResources().getString(R.string.transaction_not_broadcasted_info);
+        } else {
+            confirmationsDisplay.setConfirmations(confirmations);
+            confirmationsCount.setText(String.valueOf(confirmations));
 
-      if (_txs!=null && _txs.isQueuedOutgoing){
-         confirmationsDisplay.setNeedsBroadcast();
-         confirmationsCount.setText("");
-         confirmed = getResources().getString(R.string.transaction_not_broadcasted_info);
-      }else {
-         confirmationsDisplay.setConfirmations(confirmations);
-         confirmationsCount.setText(String.valueOf(confirmations));
+        }
 
-      }
+        ((TextView) findViewById(R.id.tvConfirmed)).setText(confirmed);
 
-      ((TextView) findViewById(R.id.tvConfirmed)).setText(confirmed);
+        // Set Date & Time
+        Date date = new Date(_tx.time * 1000L);
+        Locale locale = getResources().getConfiguration().locale;
+        DateFormat dayFormat = DateFormat.getDateInstance(DateFormat.LONG, locale);
+        String dateString = dayFormat.format(date);
+        ((TextView) findViewById(R.id.tvDate)).setText(dateString);
+        DateFormat hourFormat = DateFormat.getTimeInstance(DateFormat.LONG, locale);
+        String timeString = hourFormat.format(date);
+        ((TextView) findViewById(R.id.tvTime)).setText(timeString);
 
-      // Set Date & Time
-      Date date = new Date(_tx.time * 1000L);
-      Locale locale = getResources().getConfiguration().locale;
-      DateFormat dayFormat = DateFormat.getDateInstance(DateFormat.LONG, locale);
-      String dateString = dayFormat.format(date);
-      ((TextView) findViewById(R.id.tvDate)).setText(dateString);
-      DateFormat hourFormat = DateFormat.getTimeInstance(DateFormat.LONG, locale);
-      String timeString = hourFormat.format(date);
-      ((TextView) findViewById(R.id.tvTime)).setText(timeString);
+        // Set Inputs
+        LinearLayout inputs = (LinearLayout) findViewById(R.id.llInputs);
+        if (_tx.inputs != null) {
+            for (TransactionDetails.Item item : _tx.inputs) {
+                inputs.addView(getItemView(item));
+            }
+        }
 
-      // Set Inputs
-      LinearLayout inputs = (LinearLayout) findViewById(R.id.llInputs);
-      if(_tx.inputs != null) {
-         for (TransactionDetails.Item item : _tx.inputs) {
-            inputs.addView(getItemView(item));
-         }
-      }
+        // Set Outputs
+        LinearLayout outputs = (LinearLayout) findViewById(R.id.llOutputs);
+        if (_tx.outputs != null) {
+            for (TransactionDetails.Item item : _tx.outputs) {
+                outputs.addView(getItemView(item));
+            }
+        }
 
-      // Set Outputs
-      LinearLayout outputs = (LinearLayout) findViewById(R.id.llOutputs);
-      if(_tx.outputs != null) {
-         for (TransactionDetails.Item item : _tx.outputs) {
-            outputs.addView(getItemView(item));
-         }
-      }
+        // Set Fee
+        final long txFeeTotal = getFee(_tx);
+        String fee = _mbwManager.getBtcValueString(txFeeTotal);
 
-      // Set Fee
-      final long txFeeTotal = getFee(_tx);
-      String fee = _mbwManager.getBtcValueString(txFeeTotal);
+        if (_tx.rawSize > 0) {
+            final long txFeePerSat = txFeeTotal / _tx.rawSize;
+            fee += String.format("\n%d sat/byte", txFeePerSat);
+        }
+        ((TextView) findViewById(R.id.tvFee)).setText(fee);
 
-      if (_tx.rawSize > 0) {
-         final long txFeePerSat = txFeeTotal / _tx.rawSize;
-         fee += String.format("\n%d sat/byte", txFeePerSat);
-      }
-      ((TextView) findViewById(R.id.tvFee)).setText(fee);
+    }
 
-   }
+    private long getFee(TransactionDetails tx) {
+        long inputs = sum(tx.inputs);
+        long outputs = sum(tx.outputs);
+        return inputs - outputs;
+    }
 
-   private long getFee(TransactionDetails tx) {
-      long inputs = sum(tx.inputs);
-      long outputs = sum(tx.outputs);
-      return inputs - outputs;
-   }
+    private long sum(TransactionDetails.Item[] items) {
+        long sum = 0;
+        if (items != null) {
+            for (TransactionDetails.Item item : items) {
+                sum += item.value;
+            }
+        }
+        return sum;
+    }
 
-   private long sum(TransactionDetails.Item[] items) {
-      long sum = 0;
-      if(items != null) {
-         for (TransactionDetails.Item item : items) {
-            sum += item.value;
-         }
-      }
-      return sum;
-   }
+    private View getItemView(TransactionDetails.Item item) {
+        // Create vertical linear layout
+        LinearLayout ll = new LinearLayout(this);
+        ll.setOrientation(LinearLayout.VERTICAL);
+        ll.setLayoutParams(WCWC);
+        if (item.isCoinbase) {
+            // Coinbase input
+            ll.addView(getValue(item.value, null));
+            ll.addView(getCoinbaseText());
+        } else {
+            String address = item.address.toString();
 
-   private View getItemView(TransactionDetails.Item item) {
-      // Create vertical linear layout
-      LinearLayout ll = new LinearLayout(this);
-      ll.setOrientation(LinearLayout.VERTICAL);
-      ll.setLayoutParams(WCWC);
-      if(item instanceof ColuTxDetailsItem) {
-         ll.addView(getColuValue(((ColuTxDetailsItem) item).getAmount(),
-                 ((ColuAccount)_mbwManager.getSelectedAccount()).getColuAsset().name));
-      }
-      if (item.isCoinbase) {
-         // Coinbase input
-         ll.addView(getValue(item.value, null));
-         ll.addView(getCoinbaseText());
-      } else {
-         String address = item.address.toString();
+            // Add BTC value
+            ll.addView(getValue(item.value, address));
 
-         // Add BTC value
-         ll.addView(getValue(item.value, address));
-
-         AddressLabel adrLabel = new AddressLabel(this);
-         adrLabel.setColuMode(coluMode);
-         adrLabel.setAddress(item.address);
-         ll.addView(adrLabel);
-      }
-      ll.setPadding(10, 10, 10, 10);
-      return ll;
-   }
+            AddressLabel adrLabel = new AddressLabel(this);
+            adrLabel.setAddress(item.address);
+            ll.addView(adrLabel);
+        }
+        ll.setPadding(10, 10, 10, 10);
+        return ll;
+    }
 
 
-   private View getCoinbaseText() {
-      TextView tv = new TextView(this);
-      tv.setLayoutParams(FPWC);
-      tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
-      tv.setText(R.string.newly_generated_coins_from_coinbase);
-      tv.setTextColor(_white_color);
-      return tv;
-   }
+    private View getCoinbaseText() {
+        TextView tv = new TextView(this);
+        tv.setLayoutParams(FPWC);
+        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
+        tv.setText(R.string.newly_generated_coins_from_coinbase);
+        tv.setTextColor(_white_color);
+        return tv;
+    }
 
-   private View getValue(final long value, Object tag) {
-      TextView tv = new TextView(this);
-      tv.setLayoutParams(FPWC);
-      tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
-      tv.setText(_mbwManager.getBtcValueString(value));
-      tv.setTextColor(_white_color);
-      tv.setTag(tag);
+    private View getValue(final long value, Object tag) {
+        TextView tv = new TextView(this);
+        tv.setLayoutParams(FPWC);
+        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
+        tv.setText(_mbwManager.getBtcValueString(value));
+        tv.setTextColor(_white_color);
+        tv.setTag(tag);
 
-      tv.setOnLongClickListener(new View.OnLongClickListener() {
-         @Override
-         public boolean onLongClick(View v) {
-            Utils.setClipboardString(CoinUtil.valueString(value, _mbwManager.getCurrencySwitcher().getBitcoinDenomination(), false), getApplicationContext());
-            Toast.makeText(getApplicationContext(), R.string.copied_to_clipboard, Toast.LENGTH_SHORT).show();
-            return true;
-         }
-      });
-
-
-      return tv;
-   }
-
-   private View getColuValue(final BigDecimal value, String currency) {
-      TextView tv = new TextView(this);
-      tv.setLayoutParams(FPWC);
-      tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
-      tv.setText(value.stripTrailingZeros().toPlainString() + " " + currency);
-      tv.setTextColor(_white_color);
-
-      tv.setOnLongClickListener(new View.OnLongClickListener() {
-         @Override
-         public boolean onLongClick(View v) {
-            Utils.setClipboardString(CoinUtil.valueString(value, _mbwManager.getCurrencySwitcher().getBitcoinDenomination(), false), getApplicationContext());
-            Toast.makeText(getApplicationContext(), R.string.copied_to_clipboard, Toast.LENGTH_SHORT).show();
-            return true;
-         }
-      });
+        tv.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                Utils.setClipboardString(CoinUtil.valueString(value, _mbwManager.getCurrencySwitcher().getBitcoinDenomination(), false), getApplicationContext());
+                Toast.makeText(getApplicationContext(), R.string.copied_to_clipboard, Toast.LENGTH_SHORT).show();
+                return true;
+            }
+        });
 
 
-      return tv;
-   }
+        return tv;
+    }
+
+    private View getColuValue(final BigDecimal value, String currency) {
+        TextView tv = new TextView(this);
+        tv.setLayoutParams(FPWC);
+        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
+        tv.setText(value.stripTrailingZeros().toPlainString() + " " + currency);
+        tv.setTextColor(_white_color);
+
+        tv.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                Utils.setClipboardString(CoinUtil.valueString(value, _mbwManager.getCurrencySwitcher().getBitcoinDenomination(), false), getApplicationContext());
+                Toast.makeText(getApplicationContext(), R.string.copied_to_clipboard, Toast.LENGTH_SHORT).show();
+                return true;
+            }
+        });
+
+
+        return tv;
+    }
 
 }

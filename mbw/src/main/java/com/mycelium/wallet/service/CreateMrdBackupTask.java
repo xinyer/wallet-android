@@ -46,7 +46,6 @@ import com.mrd.bitlib.model.NetworkParameters;
 import com.mycelium.wallet.R;
 import com.mycelium.wallet.UserFacingException;
 import com.mycelium.wallet.Utils;
-import com.mycelium.wallet.colu.ColuAccount;
 import com.mycelium.wallet.pdf.ExportDistiller;
 import com.mycelium.wallet.pdf.ExportDistiller.ExportEntry;
 import com.mycelium.wallet.pdf.ExportDistiller.ExportProgressTracker;
@@ -121,21 +120,6 @@ public class CreateMrdBackupTask extends ServiceTask<Boolean> {
                } catch (KeyCipher.InvalidKeyCipher e) {
                   throw new RuntimeException(e);
                }
-            }
-            entry = new EntryToExport(address.toString(), base58EncodedPrivateKey, label);
-            if (a.isActive()) {
-               _active.add(entry);
-            } else {
-               _archived.add(entry);
-            }
-         } else if (account instanceof ColuAccount) {
-            EntryToExport entry;
-            ColuAccount a = (ColuAccount) account;
-            String label = storage.getLabelByAccount(a.getId());
-            String base58EncodedPrivateKey = null;
-            Address address = a.getReceivingAddress().get();
-            if (a.canSpend()) {
-               base58EncodedPrivateKey = a.getPrivateKey().getBase58EncodedPrivateKey(network);
             }
             entry = new EntryToExport(address.toString(), base58EncodedPrivateKey, label);
             if (a.isActive()) {
