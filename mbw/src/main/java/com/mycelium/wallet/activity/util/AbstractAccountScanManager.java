@@ -38,6 +38,8 @@ import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
+
 import com.google.common.base.Optional;
 import com.mrd.bitlib.crypto.HdKeyNode;
 import com.mrd.bitlib.model.NetworkParameters;
@@ -130,8 +132,9 @@ public abstract class AbstractAccountScanManager implements AccountScanManager {
                      break;
                   }
 
-                  Optional<HdKeyNode> accountPubKeyNode =
-                        AbstractAccountScanManager.this.getAccountPubKeyNode(accountPathToScan.get());
+                  Log.d("wangxin", "[1] HdKeyPath:" + accountPathToScan.get().toString());
+
+                  Optional<HdKeyNode> accountPubKeyNode = AbstractAccountScanManager.this.getAccountPubKeyNode(accountPathToScan.get());
                   lastAccountPubKeyNode = accountPubKeyNode;
 
 
@@ -141,11 +144,12 @@ public abstract class AbstractAccountScanManager implements AccountScanManager {
                      publishProgress(new ScanStatus(AccountScanManager.Status.initializing, AccountStatus.unknown));
                      break;
                   }
-
+                  Log.d("wangxin", "[2] get publick key finish:" + accountPubKeyNode.get());
                   rootNode = accountPubKeyNode.get();
 
                   // leave accountID empty for now - set it later if it is a already used account
                   HdKeyNodeWrapper acc = new HdKeyNodeWrapper(accountPathToScan.get(), rootNode, null);
+                  Log.d("wangxin", "[3] change to HDKeyNodeWrapper:" + acc);
                   UUID newAccount = scanningCallback.checkForTransactions(acc);
                   lastScannedPath = Optional.of(accountPathToScan.get());
 
@@ -154,6 +158,7 @@ public abstract class AbstractAccountScanManager implements AccountScanManager {
                            new HdKeyNodeWrapper(accountPathToScan.get(), rootNode, newAccount);
 
                      publishProgress(new FoundAccountStatus(foundAccount));
+                     Log.d("wangxin", "account finish & event post");
                      wasUsed = true;
                   } else {
                      wasUsed = false;
