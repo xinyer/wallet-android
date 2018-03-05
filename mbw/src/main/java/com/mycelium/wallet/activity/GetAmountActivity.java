@@ -158,7 +158,7 @@ public class GetAmountActivity extends Activity implements NumberEntryListener {
         //we need to have an account, fee, etc to be able to calculate sending related stuff
         boolean isColdStorage = getIntent().getBooleanExtra(IS_COLD_STORAGE, false);
         UUID accountId = Preconditions.checkNotNull((UUID) getIntent().getSerializableExtra(ACCOUNT));
-        _account = _mbwManager.getWalletManager(isColdStorage).getAccount(accountId);
+        _account = _mbwManager.getWalletManager().getAccount(accountId);
 
         // Calculate the maximum amount that can be spent where we send everything we got to another address
         _kbMinerFee = Preconditions.checkNotNull((Long) getIntent().getSerializableExtra(KB_MINER_FEE));

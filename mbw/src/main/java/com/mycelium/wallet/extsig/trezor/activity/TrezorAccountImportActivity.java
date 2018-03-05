@@ -42,6 +42,7 @@ import android.widget.TextView;
 import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.R;
 import com.mycelium.wallet.activity.util.AbstractAccountScanManager;
+import com.mycelium.wallet.extsig.common.ExternalSignatureDeviceManager;
 import com.mycelium.wallet.extsig.common.activity.ExtSigAccountImportActivity;
 import com.mycelium.wapi.wallet.AccountScanManager;
 import com.squareup.otto.Subscribe;
@@ -73,10 +74,10 @@ public class TrezorAccountImportActivity extends ExtSigAccountImportActivity {
 
 
    // Otto.EventBus does not traverse class hierarchy to find subscribers
-//   @Subscribe
-//   public void onPinMatrixRequest(KeepKeyManager.OnPinMatrixRequest event) {
-//      super.onPinMatrixRequest(event);
-//   }
+   @Subscribe
+   public void onPinMatrixRequest(ExternalSignatureDeviceManager.OnPinMatrixRequest event) {
+      super.onPinMatrixRequest(event);
+   }
 
    @Subscribe
    public void onScanError(AccountScanManager.OnScanError event) {

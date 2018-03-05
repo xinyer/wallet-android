@@ -90,7 +90,7 @@ public class BalanceFragment extends Fragment {
         balanceArea.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                _mbwManager.getWalletManager(false).startSynchronization();
+                _mbwManager.getWalletManager().startSynchronization();
             }
         });
         ButterKnife.bind(this, _root);

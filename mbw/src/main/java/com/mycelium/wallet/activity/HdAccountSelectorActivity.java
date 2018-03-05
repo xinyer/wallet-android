@@ -105,7 +105,7 @@ public abstract class HdAccountSelectorActivity extends Activity implements Mast
          @Override
          public UUID checkForTransactions(AbstractAccountScanManager.HdKeyNodeWrapper account) {
             MbwManager mbwManager = MbwManager.getInstance(getApplicationContext());
-            WalletManager walletManager = mbwManager.getWalletManager(true);
+            WalletManager walletManager = mbwManager.getWalletManager();
 
             UUID id = masterseedScanManager.createOnTheFlyAccount(
                   account.accountRoot,
@@ -244,7 +244,7 @@ public abstract class HdAccountSelectorActivity extends Activity implements Mast
 
          HdAccountWrapper account = getItem(position);
          ((TextView)row.findViewById(R.id.tvLabel)).setText(account.name);
-         WalletAccount walletAccount = MbwManager.getInstance(getContext()).getWalletManager(true).getAccount(account.id);
+         WalletAccount walletAccount = MbwManager.getInstance(getContext()).getWalletManager().getAccount(account.id);
          Balance balance = walletAccount.getBalance();
          String balanceString = MbwManager.getInstance(getContext()).getBtcValueString(balance.confirmed + balance.pendingChange);
 

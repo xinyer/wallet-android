@@ -376,6 +376,6 @@ public class StringHandlerActivity extends Activity {
    }
 
    public WalletManager getWalletManager() {
-      return _mbwManager.getWalletManager(false);
+      return _mbwManager.getWalletManager();
    }
 }

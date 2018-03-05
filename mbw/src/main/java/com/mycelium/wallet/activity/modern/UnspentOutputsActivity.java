@@ -72,7 +72,7 @@ public class UnspentOutputsActivity extends Activity {
    private void updateUi() {
 
       LinearLayout outputView = (LinearLayout) findViewById(R.id.listUnspentOutputs);
-      WalletAccount account = _mbwManager.getWalletManager(false).getAccount(_accountid);
+      WalletAccount account = _mbwManager.getWalletManager().getAccount(_accountid);
       List<TransactionOutputSummary> outputs = account.getUnspentTransactionOutputSummary();
 
       if (outputs.isEmpty()) {

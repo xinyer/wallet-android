@@ -100,7 +100,7 @@ public class AccountListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
     public void updateData() {
         itemList.clear();
-        WalletManager walletManager = mbwManager.getWalletManager(false);
+        WalletManager walletManager = mbwManager.getWalletManager();
         MetadataStorage storage = mbwManager.getMetadataStorage();
 
         List<WalletAccount> activeHdRecords = walletManager.getActiveMasterseedAccounts();

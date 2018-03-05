@@ -564,9 +564,9 @@ public class WalletManager {
    }
 
    private void loadAccounts() {
-      if (hasBip32MasterSeed()) {
-         loadBip44Accounts();
-      }
+      loadBip44Accounts();
+//      if (hasBip32MasterSeed()) {
+//      }
       // Load all single address accounts
       loadSingleAddressAccounts();
    }

@@ -307,7 +307,7 @@ public class BackupToPdfActivity extends Activity implements TaskExecutionServic
       KdfParameters kdfParameters = KdfParameters.createNewFromPassphrase(_password, new AndroidRandomSource(),
             _mbwManager.getDeviceScryptParameters());
       CreateMrdBackupTask task = new CreateMrdBackupTask(kdfParameters, this.getApplicationContext(),
-            _mbwManager.getWalletManager(false), AesKeyCipher.defaultKeyCipher(), _mbwManager.getMetadataStorage(),
+            _mbwManager.getWalletManager(), AesKeyCipher.defaultKeyCipher(), _mbwManager.getMetadataStorage(),
             _mbwManager.getNetwork(), getFullExportFilePath());
       _taskExecutionServiceController.bind(this, this);
       _taskExecutionServiceController.start(task);

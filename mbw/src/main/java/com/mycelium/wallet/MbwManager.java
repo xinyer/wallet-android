@@ -184,7 +184,7 @@ public class MbwManager {
     private final VersionManager _versionManager;
     private final ExchangeRateManager _exchangeRateManager;
     private final WalletManager _walletManager;
-    private WalletManager _tempWalletManager;
+//    private WalletManager _tempWalletManager;
     private final RandomSource _randomSource;
     private final EventTranslator _eventTranslator;
     private ServerEndpointType.Types _torMode;
@@ -282,7 +282,7 @@ public class MbwManager {
         setCurrencyList(fiatCurrencies);
 
         migrateOldKeys();
-        createTempWalletManager();
+//        createTempWalletManager();
 
         _versionManager.initBackgroundVersionChecker();
         _blockExplorerManager = new BlockExplorerManager(this,
@@ -302,11 +302,11 @@ public class MbwManager {
         _hasCoinapultAccounts = null;  // invalidate cache
     }
 
-    private void createTempWalletManager() {
-        //for managing temp accounts created through scanning
-        _tempWalletManager = createTempWalletManager(_environment);
-        _tempWalletManager.addObserver(_eventTranslator);
-    }
+//    private void createTempWalletManager() {
+//        //for managing temp accounts created through scanning
+//        _tempWalletManager = createTempWalletManager(_environment);
+//        _tempWalletManager.addObserver(_eventTranslator);
+//    }
 
     private LtApiClient initLt() {
         return new LtApiClient(_environment.getLtEndpoints(), new LtApiClient.Logger() {
@@ -496,20 +496,20 @@ public class MbwManager {
      * @param environment the Mycelium environment
      * @return a new in memory backed wallet manager instance
      */
-    private WalletManager createTempWalletManager(MbwEnvironment environment) {
-        // Create in-memory account backing
-        WalletManagerBacking backing = new InMemoryWalletManagerBacking();
-
-        // Create secure storage instance
-        SecureKeyValueStore secureKeyValueStore = new SecureKeyValueStore(backing, new AndroidRandomSource());
-
-        // Create and return wallet manager
-        WalletManager walletManager = new WalletManager(secureKeyValueStore,
-                backing, environment.getNetwork(), _wapi, null);
-
-        walletManager.disableTransactionHistorySynchronization();
-        return walletManager;
-    }
+//    private WalletManager createTempWalletManager(MbwEnvironment environment) {
+//        // Create in-memory account backing
+//        WalletManagerBacking backing = new InMemoryWalletManagerBacking();
+//
+//        // Create secure storage instance
+//        SecureKeyValueStore secureKeyValueStore = new SecureKeyValueStore(backing, new AndroidRandomSource());
+//
+//        // Create and return wallet manager
+//        WalletManager walletManager = new WalletManager(secureKeyValueStore,
+//                backing, environment.getNetwork(), _wapi, null);
+//
+//        walletManager.disableTransactionHistorySynchronization();
+//        return walletManager;
+//    }
 
 
     public String getFiatCurrency() {
@@ -955,35 +955,33 @@ public class MbwManager {
         return _deviceScryptParameters;
     }
 
-    public WalletManager getWalletManager(boolean isColdStorage) {
-        if (isColdStorage) {
-            return _tempWalletManager;
-        }
+    public WalletManager getWalletManager() {
         return _walletManager;
     }
 
     public UUID createOnTheFlyAccount(Address address) {
-        UUID accountId = _tempWalletManager.createSingleAddressAccount(address);
-        _tempWalletManager.getAccount(accountId).setAllowZeroConfSpending(true);
-        _tempWalletManager.setActiveAccount(accountId);  // this also starts a sync
+        UUID accountId = _walletManager.createSingleAddressAccount(address);
+        _walletManager.getAccount(accountId).setAllowZeroConfSpending(true);
+        _walletManager.setActiveAccount(accountId);  // this also starts a sync
         return accountId;
     }
 
     public UUID createOnTheFlyAccount(InMemoryPrivateKey privateKey) {
         UUID accountId;
         try {
-            accountId = _tempWalletManager.createSingleAddressAccount(privateKey, AesKeyCipher.defaultKeyCipher());
+            accountId = _walletManager.createSingleAddressAccount(privateKey, AesKeyCipher.defaultKeyCipher());
         } catch (KeyCipher.InvalidKeyCipher invalidKeyCipher) {
             throw new RuntimeException(invalidKeyCipher);
         }
-        _tempWalletManager.getAccount(accountId).setAllowZeroConfSpending(true);
-        _tempWalletManager.setActiveAccount(accountId); // this also starts a sync
+        _walletManager.getAccount(accountId).setAllowZeroConfSpending(true);
+        _walletManager.setActiveAccount(accountId); // this also starts a sync
         return accountId;
     }
 
 
     public void forgetColdStorageWalletManager() {
-        createTempWalletManager();
+        createWalletManager(_applicationContext, _environment);
+
     }
 
     public int getBitcoinBlockheight() {
@@ -1000,6 +998,7 @@ public class MbwManager {
                 // accounts.
                 // We had a bug that allowed it, and the app will crash always after restart.
                 _walletManager.activateFirstAccount();
+                return null;
             }
             uuid = _walletManager.getActiveAccounts().get(0).getId();
             setSelectedAccount(uuid);
@@ -1179,7 +1178,7 @@ public class MbwManager {
         _addressWatchTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                getWalletManager(false).startSynchronization(new SyncMode(address));
+                getWalletManager().startSynchronization(new SyncMode(address));
             }
         }, 1000, 5 * 1000);
     }
@@ -1214,7 +1213,7 @@ public class MbwManager {
         if (new Random().nextInt(3) == 0) {
             switchServer();
         }
-        getWalletManager(false).startSynchronization(syncMode);
+        getWalletManager().startSynchronization(syncMode);
         // also fetch a new exchange rate, if necessary
         getExchangeRateManager().requestOptionalRefresh();
     }

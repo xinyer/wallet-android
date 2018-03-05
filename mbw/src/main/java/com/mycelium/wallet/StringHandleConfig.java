@@ -245,7 +245,7 @@ public class StringHandleConfig implements Serializable {
                 // Calculate the account ID that this key would have
                 UUID account = SingleAddressAccount.calculateId(key.get().getPublicKey().toAddress(mbwManager.getNetwork()));
                 // Check whether regular wallet contains the account
-                boolean success = mbwManager.getWalletManager(false).hasAccount(account);
+                boolean success = mbwManager.getWalletManager().hasAccount(account);
                 if (success) {
                     // Mark key as verified
                     mbwManager.getMetadataStorage().setOtherAccountBackupState(account, MetadataStorage.BackupState.VERIFIED);
@@ -300,7 +300,7 @@ public class StringHandleConfig implements Serializable {
             public boolean handle(StringHandlerActivity handlerActivity, String content) {
                 try {
                     HdKeyNode hdKey = HdKeyNode.parse(content, handlerActivity.getNetwork());
-                    final WalletManager tempWalletManager = MbwManager.getInstance(handlerActivity).getWalletManager(true);
+                    final WalletManager tempWalletManager = MbwManager.getInstance(handlerActivity).getWalletManager();
                     UUID acc = tempWalletManager.createUnrelatedBip44Account(hdKey);
                     tempWalletManager.setActiveAccount(acc);
                     BitcoinUri uri = new BitcoinUri(null, null, null);
@@ -735,7 +735,7 @@ public class StringHandleConfig implements Serializable {
         VERIFY {
             @Override
             public boolean handle(StringHandlerActivity handlerActivity, String content) {
-                WalletManager walletManager = MbwManager.getInstance(handlerActivity).getWalletManager(false);
+                WalletManager walletManager = MbwManager.getInstance(handlerActivity).getWalletManager();
                 if (!walletManager.hasBip32MasterSeed()) {
                     return false;
                 }
@@ -781,7 +781,7 @@ public class StringHandleConfig implements Serializable {
                 if (masterSeed.isPresent()) {
                     UUID acc;
                     try {
-                        WalletManager walletManager = MbwManager.getInstance(handlerActivity).getWalletManager(false);
+                        WalletManager walletManager = MbwManager.getInstance(handlerActivity).getWalletManager();
                         if (walletManager.hasBip32MasterSeed()) {
                             handlerActivity.finishError(R.string.seed_already_configured);
                             return true;

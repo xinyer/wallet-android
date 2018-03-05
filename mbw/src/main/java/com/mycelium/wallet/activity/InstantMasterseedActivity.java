@@ -97,7 +97,7 @@ public class InstantMasterseedActivity extends HdAccountSelectorActivity {
    @Override
    protected AbstractAccountScanManager initMasterseedManager() {
       MbwManager mbwManager = MbwManager.getInstance(this);
-      WalletManager walletManager = mbwManager.getWalletManager(true);
+      WalletManager walletManager = mbwManager.getWalletManager();
       if (walletManager.accountScanManager == null) {
          if (masterSeed != null) {
             walletManager.accountScanManager = new MasterseedScanManager(

@@ -111,7 +111,7 @@ public class TransactionHistoryFragment extends Fragment {
          @Override
          public void onClick(View view) {
             _mbwManager.getSelectedAccount().dropCachedData();
-            _mbwManager.getWalletManager(false).startSynchronization();
+            _mbwManager.getWalletManager().startSynchronization();
          }
       });
       return _root;
@@ -136,7 +136,7 @@ public class TransactionHistoryFragment extends Fragment {
    @Override
    public void onResume() {
       _mbwManager.getEventBus().register(this);
-      if (_mbwManager.getWalletManager(false).getState() == WalletManager.State.READY) {
+      if (_mbwManager.getWalletManager().getState() == WalletManager.State.READY) {
          updateTransactionHistory();
       }
       super.onResume();
@@ -372,7 +372,7 @@ public class TransactionHistoryFragment extends Fragment {
                                    .create().show();
                            break;
                         case R.id.miBumpFee:
-                           long fee = MinerFee.PRIORITY.getFeePerKb(_mbwManager.getWalletManager(false).getLastFeeEstimations()).getLongValue();
+                           long fee = MinerFee.PRIORITY.getFeePerKb(_mbwManager.getWalletManager().getLastFeeEstimations()).getLongValue();
                            final UnsignedTransaction unsigned = tryCreateBumpTransaction(record.txid, fee);
                            if(unsigned != null) {
                               long txFee = unsigned.calculateFee();

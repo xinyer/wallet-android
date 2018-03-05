@@ -121,7 +121,7 @@ public class SendInitializationActivity extends Activity {
       _uri = (BitcoinUri) getIntent().getSerializableExtra("uri");
       _rawPr =  getIntent().getByteArrayExtra("rawPr");
       _isColdStorage = getIntent().getBooleanExtra("isColdStorage", false);
-      _account = _mbwManager.getWalletManager(_isColdStorage).getAccount(accountId);
+      _account = _mbwManager.getWalletManager().getAccount(accountId);
    }
 
    @Override
@@ -141,7 +141,7 @@ public class SendInitializationActivity extends Activity {
 
       // If we are in cold storage spending mode we wish to synchronize the wallet
       if (_isColdStorage) {
-         _mbwManager.getWalletManager(true).startSynchronization();
+         _mbwManager.getWalletManager().startSynchronization();
       } else {
          continueIfReady();
       }

@@ -38,7 +38,7 @@ public class FeeItemsBuilder {
 
     public FeeItemsBuilder(MbwManager _mbwManager) {
         this._mbwManager = _mbwManager;
-        this.feeEstimation = _mbwManager.getWalletManager(false).getLastFeeEstimations();
+        this.feeEstimation = _mbwManager.getWalletManager().getLastFeeEstimations();
     }
 
     public List<FeeItem> getFeeItemList(MinerFee feeLvl, int txSize) {

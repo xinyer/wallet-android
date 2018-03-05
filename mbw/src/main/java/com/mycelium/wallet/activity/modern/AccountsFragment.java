@@ -143,7 +143,7 @@ public class AccountsFragment extends Fragment {
     @Override
     public void onAttach(Activity activity) {
         _mbwManager = MbwManager.getInstance(activity);
-        walletManager = _mbwManager.getWalletManager(false);
+        walletManager = _mbwManager.getWalletManager();
         _storage = _mbwManager.getMetadataStorage();
         _toaster = new Toaster(this);
         super.onAttach(activity);
@@ -199,7 +199,7 @@ public class AccountsFragment extends Fragment {
         if (requestCode == ADD_RECORD_RESULT_CODE && resultCode == Activity.RESULT_OK) {
             UUID accountid = (UUID) intent.getSerializableExtra(AddAccountActivity.RESULT_KEY);
             //check whether the account is active - we might have scanned the priv key for an archived watchonly
-            WalletAccount account = _mbwManager.getWalletManager(false).getAccount(accountid);
+            WalletAccount account = _mbwManager.getWalletManager().getAccount(accountid);
             if (account.isActive()) {
                 _mbwManager.setSelectedAccount(accountid);
             }
@@ -314,7 +314,7 @@ public class AccountsFragment extends Fragment {
                                 } catch (KeyCipher.InvalidKeyCipher e) {
                                     throw new RuntimeException(e);
                                 }
-                                _mbwManager.setSelectedAccount(_mbwManager.getWalletManager(false).getActiveAccounts().get(0).getId());
+                                _mbwManager.setSelectedAccount(_mbwManager.getWalletManager().getActiveAccounts().get(0).getId());
                                 _toaster.toast(R.string.account_deleted, false);
                                 _mbwManager.getEventBus().post(new ExtraAccountsChanged());
                             }
@@ -511,7 +511,7 @@ public class AccountsFragment extends Fragment {
             @Override
             public boolean onActionItemClicked(ActionMode actionMode, MenuItem menuItem) {
                 // If we are synchronizing, show "Synchronizing, please wait..." to avoid blocking behavior
-                if (_mbwManager.getWalletManager(false).getState() == WalletManager.State.SYNCHRONIZING) {
+                if (_mbwManager.getWalletManager().getState() == WalletManager.State.SYNCHRONIZING) {
                     _toaster.toast(R.string.synchronizing_please_wait, false);
                     return true;
                 }
@@ -648,7 +648,7 @@ public class AccountsFragment extends Fragment {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // If we are synchronizing, show "Synchronizing, please wait..." to avoid blocking behavior
-        if (_mbwManager.getWalletManager(false).getState() == WalletManager.State.SYNCHRONIZING) {
+        if (_mbwManager.getWalletManager().getState() == WalletManager.State.SYNCHRONIZING) {
             _toaster.toast(R.string.synchronizing_please_wait, false);
             return true;
         }
@@ -693,7 +693,7 @@ public class AccountsFragment extends Fragment {
             return;
         }
         final WalletAccount _focusedAccount = accountListAdapter.getFocusedAccount();
-        if (_focusedAccount.isActive() && _mbwManager.getWalletManager(false).getActiveAccounts().size() < 2) {
+        if (_focusedAccount.isActive() && _mbwManager.getWalletManager().getActiveAccounts().size() < 2) {
             _toaster.toast(R.string.keep_one_active, false);
             return;
         }
@@ -715,7 +715,7 @@ public class AccountsFragment extends Fragment {
             return;
         }
         accountListAdapter.getFocusedAccount().dropCachedData();
-        _mbwManager.getWalletManager(false).startSynchronization(SyncMode.FULL_SYNC_CURRENT_ACCOUNT_FORCED);
+        _mbwManager.getWalletManager().startSynchronization(SyncMode.FULL_SYNC_CURRENT_ACCOUNT_FORCED);
     }
 
     private void ignoreSelectedPrivateKey() {
@@ -792,14 +792,14 @@ public class AccountsFragment extends Fragment {
         _mbwManager.setSelectedAccount(account.getId());
         updateIncludingMenus();
         _toaster.toast(R.string.activated, false);
-        _mbwManager.getWalletManager(false).startSynchronization();
+        _mbwManager.getWalletManager().startSynchronization();
     }
 
     private void archiveSelected() {
         if (!isAdded()) {
             return;
         }
-        if (_mbwManager.getWalletManager(false).getActiveAccounts().size() < 2) {
+        if (_mbwManager.getWalletManager().getActiveAccounts().size() < 2) {
             //this is the last active account, we dont allow archiving it
             _toaster.toast(R.string.keep_one_active, false);
             return;
@@ -831,7 +831,7 @@ public class AccountsFragment extends Fragment {
         if (!isAdded()) {
             return;
         }
-        if (_mbwManager.getWalletManager(false).getActiveAccounts().size() < 2) {
+        if (_mbwManager.getWalletManager().getActiveAccounts().size() < 2) {
             //this is the last active account, we dont allow hiding it
             _toaster.toast(R.string.keep_one_active, false);
             return;
@@ -848,11 +848,11 @@ public class AccountsFragment extends Fragment {
             _mbwManager.runPinProtectedFunction(this.getActivity(), new Runnable() {
                 @Override
                 public void run() {
-                    _mbwManager.getWalletManager(false).removeUnusedBip44Account();
+                    _mbwManager.getWalletManager().removeUnusedBip44Account();
                     //in case user had labeled the account, delete the stored name
                     _storage.deleteAccountMetadata(account.getId());
                     //setselected also broadcasts AccountChanged event, which will cause an ui update
-                    _mbwManager.setSelectedAccount(_mbwManager.getWalletManager(false).getActiveAccounts().get(0).getId());
+                    _mbwManager.setSelectedAccount(_mbwManager.getWalletManager().getActiveAccounts().get(0).getId());
                     //we dont want to show the context menu for the automatically selected account
                     accountListAdapter.setFocusedAccount(null);
                     finishCurrentActionMode();
@@ -870,7 +870,7 @@ public class AccountsFragment extends Fragment {
 
                     public void onClick(DialogInterface arg0, int arg1) {
                         account.archiveAccount();
-                        _mbwManager.setSelectedAccount(_mbwManager.getWalletManager(false).getActiveAccounts().get(0).getId());
+                        _mbwManager.setSelectedAccount(_mbwManager.getWalletManager().getActiveAccounts().get(0).getId());
                         _mbwManager.getEventBus().post(new AccountChanged(account.getId()));
                         updateIncludingMenus();
                         _toaster.toast(R.string.archived, false);

@@ -67,7 +67,7 @@ public class SignTransactionActivity extends Activity {
    }
 
    public static Intent getIntent(Activity currentActivity, UUID account, boolean isColdStorage, UnsignedTransaction unsigned) {
-      WalletAccount walletAccount = MbwManager.getInstance(currentActivity).getWalletManager(isColdStorage).getAccount(account);
+      WalletAccount walletAccount = MbwManager.getInstance(currentActivity).getWalletManager().getAccount(account);
 
       Class targetClass;
       if (walletAccount instanceof Bip44AccountExternalSignature) {
@@ -105,7 +105,7 @@ public class SignTransactionActivity extends Activity {
       // Get intent parameters
       UUID accountId = Preconditions.checkNotNull((UUID) getIntent().getSerializableExtra("account"));
       _isColdStorage = getIntent().getBooleanExtra("isColdStorage", false);
-      _account = Preconditions.checkNotNull(_mbwManager.getWalletManager(_isColdStorage).getAccount(accountId));
+      _account = Preconditions.checkNotNull(_mbwManager.getWalletManager().getAccount(accountId));
       _unsigned = Preconditions.checkNotNull((UnsignedTransaction) getIntent().getSerializableExtra("unsigned"));
 
       // Load state

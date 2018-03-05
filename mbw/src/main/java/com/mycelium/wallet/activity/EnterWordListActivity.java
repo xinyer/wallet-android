@@ -276,9 +276,9 @@ public class EnterWordListActivity extends ActionBarActivity implements WordAuto
       protected UUID doInBackground(Void... params) {
          try {
             Bip39.MasterSeed masterSeed = Bip39.generateSeedFromWordList(wordList, password);
-            _mbwManager.getWalletManager(false).configureBip32MasterSeed(masterSeed, AesKeyCipher.defaultKeyCipher());
+            _mbwManager.getWalletManager().configureBip32MasterSeed(masterSeed, AesKeyCipher.defaultKeyCipher());
             _mbwManager.getMetadataStorage().setMasterSeedBackupState(MetadataStorage.BackupState.VERIFIED);
-            return _mbwManager.getWalletManager(false).createAdditionalBip44Account(AesKeyCipher.defaultKeyCipher());
+            return _mbwManager.getWalletManager().createAdditionalBip44Account(AesKeyCipher.defaultKeyCipher());
          } catch (KeyCipher.InvalidKeyCipher invalidKeyCipher) {
             throw new RuntimeException(invalidKeyCipher);
          }

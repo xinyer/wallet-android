@@ -296,9 +296,9 @@ public class SendMainActivity extends Activity {
         byte[] _rawPr = getIntent().getByteArrayExtra(RAW_PAYMENT_REQUEST);
 
         _isColdStorage = getIntent().getBooleanExtra(IS_COLD_STORAGE, false);
-        _account = _mbwManager.getWalletManager(_isColdStorage).getAccount(accountId);
+        _account = _mbwManager.getWalletManager().getAccount(accountId);
         feeLvl = _mbwManager.getMinerFee();
-        feeEstimation = _mbwManager.getWalletManager(false).getLastFeeEstimations();
+        feeEstimation = _mbwManager.getWalletManager().getLastFeeEstimations();
         feePerKbValue = _mbwManager.getMinerFee().getFeePerKb(feeEstimation).getLongValue();
 
         // Load saved state, overwriting amount and address
@@ -715,7 +715,7 @@ public class SendMainActivity extends Activity {
         }
 
         //Check the wallet manager to see whether its our own address, and whether we can spend from it
-        WalletManager walletManager = _mbwManager.getWalletManager(false);
+        WalletManager walletManager = _mbwManager.getWalletManager();
         if (_receivingAddress != null && walletManager.isMyAddress(_receivingAddress)) {
             if (walletManager.hasPrivateKeyForAddress(_receivingAddress)) {
                 // Show a warning as we are sending to one of our own addresses
@@ -1087,9 +1087,9 @@ public class SendMainActivity extends Activity {
 
     private void setReceivingAddressFromKeynode(HdKeyNode hdKeyNode) {
         _progress = ProgressDialog.show(this, "", getString(R.string.retrieving_pubkey_address), true);
-        _receivingAcc = _mbwManager.getWalletManager(true).createUnrelatedBip44Account(hdKeyNode);
+        _receivingAcc = _mbwManager.getWalletManager().createUnrelatedBip44Account(hdKeyNode);
         _xpubSyncing = true;
-        _mbwManager.getWalletManager(true).startSynchronization(_receivingAcc);
+        _mbwManager.getWalletManager().startSynchronization(_receivingAcc);
     }
 
     private BitcoinUriWithAddress getUriFromClipboard() {
@@ -1145,7 +1145,7 @@ public class SendMainActivity extends Activity {
     public void syncFinished(SyncStopped event) {
         if (_xpubSyncing) {
             _xpubSyncing = false;
-            _receivingAddress = _mbwManager.getWalletManager(true).getAccount(_receivingAcc).getReceivingAddress().get();
+            _receivingAddress = _mbwManager.getWalletManager().getAccount(_receivingAcc).getReceivingAddress().get();
             if (_progress != null) {
                 _progress.dismiss();
             }

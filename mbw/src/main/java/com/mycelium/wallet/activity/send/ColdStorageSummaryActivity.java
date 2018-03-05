@@ -79,8 +79,8 @@ public class ColdStorageSummaryActivity extends Activity {
 
       // Get intent parameters
       UUID accountId = Preconditions.checkNotNull((UUID) getIntent().getSerializableExtra("account"));
-      if (_mbwManager.getWalletManager(true).getAccountIds().contains(accountId)) {
-         _account = _mbwManager.getWalletManager(true).getAccount(accountId);
+      if (_mbwManager.getWalletManager().getAccountIds().contains(accountId)) {
+         _account = _mbwManager.getWalletManager().getAccount(accountId);
       } else {
          //this can happen if we were in background for long time and then came back
          //just go back and have the user scan again is probably okay as a workaround

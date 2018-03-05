@@ -416,7 +416,7 @@ public class SettingsActivity extends PreferenceActivity {
 
    @SuppressWarnings("deprecation")
    private void showOrHideLegacyBackup() {
-      List<WalletAccount> accounts = _mbwManager.getWalletManager(false).getSpendingAccounts();
+      List<WalletAccount> accounts = _mbwManager.getWalletManager().getSpendingAccounts();
       Preference legacyPref = findPreference("legacyBackup");
       if (legacyPref == null) {
          return; // it was already removed, don't remove it again.

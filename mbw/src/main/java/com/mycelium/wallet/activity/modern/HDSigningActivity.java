@@ -78,7 +78,7 @@ public class HDSigningActivity extends Activity {
    private void updateUi() {
 
       LinearLayout addressView = (LinearLayout) findViewById(R.id.listPrivateKeyAddresses);
-      Bip44Account account = (Bip44Account) _mbwManager.getWalletManager(false).getAccount(_accountid);
+      Bip44Account account = (Bip44Account) _mbwManager.getWalletManager().getAccount(_accountid);
 
       //sort addresses by alphabet for easier selection
       List<Address> addresses = Utils.sortAddresses(account.getAllAddresses());
@@ -113,7 +113,7 @@ public class HDSigningActivity extends Activity {
          if (addressLabel.getAddress() == null) {
             return;
          }
-         Bip44Account account = (Bip44Account) _mbwManager.getWalletManager(false).getAccount(_accountid);
+         Bip44Account account = (Bip44Account) _mbwManager.getWalletManager().getAccount(_accountid);
          InMemoryPrivateKey key;
          try {
             key = account.getPrivateKeyForAddress(addressLabel.getAddress(), AesKeyCipher.defaultKeyCipher());

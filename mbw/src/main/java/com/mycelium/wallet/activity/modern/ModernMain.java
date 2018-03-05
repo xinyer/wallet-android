@@ -182,7 +182,7 @@ public class ModernMain extends ActionBarActivity {
    }
 
    private void checkGapBug() {
-      final WalletManager walletManager = _mbwManager.getWalletManager(false);
+      final WalletManager walletManager = _mbwManager.getWalletManager();
       final List<Integer> gaps = walletManager.getGapsBug();
       if (!gaps.isEmpty()){
          try {
@@ -224,7 +224,7 @@ public class ModernMain extends ActionBarActivity {
    }
 
    private void createPlaceHolderAccounts(List<Integer> gapIndex){
-      final WalletManager walletManager = _mbwManager.getWalletManager(false);
+      final WalletManager walletManager = _mbwManager.getWalletManager();
       for (Integer index: gapIndex) {
          try {
             final UUID newAccount = walletManager.createArchivedGapFiller(AesKeyCipher.defaultKeyCipher(), index);
@@ -287,9 +287,9 @@ public class ModernMain extends ActionBarActivity {
             final Optional<Long> lastFullSync = _mbwManager.getMetadataStorage().getLastFullSync();
             if (lastFullSync.isPresent()
                     && (new Date().getTime() - lastFullSync.get()< MIN_FULLSYNC_INTERVAL) ) {
-               _mbwManager.getWalletManager(false).startSynchronization();
+               _mbwManager.getWalletManager().startSynchronization();
             } else {
-               _mbwManager.getWalletManager(false).startSynchronization(SyncMode.FULL_SYNC_ALL_ACCOUNTS);
+               _mbwManager.getWalletManager().startSynchronization(SyncMode.FULL_SYNC_ALL_ACCOUNTS);
                _mbwManager.getMetadataStorage().setLastFullSync(new Date().getTime());
             }
 
@@ -336,7 +336,6 @@ public class ModernMain extends ActionBarActivity {
       inflater.inflate(R.menu.refresh, menu);
       inflater.inflate(R.menu.export_history, menu);
       inflater.inflate(R.menu.record_options_menu_global, menu);
-      inflater.inflate(R.menu.addressbook_options_global, menu);
       inflater.inflate(R.menu.verify_message, menu);
       return true;
    }
@@ -427,7 +426,7 @@ public class ModernMain extends ActionBarActivity {
                // if we are in the accounts tab, sync all accounts if the users forces a sync
                syncMode = SyncMode.NORMAL_ALL_ACCOUNTS_FORCED;
             }
-            _mbwManager.getWalletManager(false).startSynchronization(syncMode);
+            _mbwManager.getWalletManager().startSynchronization(syncMode);
             // also fetch a new exchange rate, if necessary
             _mbwManager.getExchangeRateManager().requestOptionalRefresh();
             return true;
@@ -441,7 +440,7 @@ public class ModernMain extends ActionBarActivity {
          }
          case R.id.miRescanTransactions:
             _mbwManager.getSelectedAccount().dropCachedData();
-            _mbwManager.getWalletManager(false).startSynchronization(SyncMode.FULL_SYNC_CURRENT_ACCOUNT_FORCED);
+            _mbwManager.getWalletManager().startSynchronization(SyncMode.FULL_SYNC_CURRENT_ACCOUNT_FORCED);
             break;
          case R.id.miExportHistory:
             shareTransactionHistory();
@@ -515,7 +514,7 @@ public class ModernMain extends ActionBarActivity {
    private WalletManager.State commonSyncState;
    public void setRefreshAnimation() {
       if (refreshItem != null) {
-         if (_mbwManager.getWalletManager(false).getState() == WalletManager.State.SYNCHRONIZING) {
+         if (_mbwManager.getWalletManager().getState() == WalletManager.State.SYNCHRONIZING) {
             if(commonSyncState != WalletManager.State.SYNCHRONIZING) {
                commonSyncState = WalletManager.State.SYNCHRONIZING;
                MenuItem menuItem = MenuItemCompat.setActionView(refreshItem, R.layout.actionbar_indeterminate_progress);

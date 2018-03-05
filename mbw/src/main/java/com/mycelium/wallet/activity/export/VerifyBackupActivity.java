@@ -114,7 +114,7 @@ public class VerifyBackupActivity extends Activity {
    private void updateUi() {
       TextView tvNumKeys = (TextView) findViewById(R.id.tvNumKeys);
       String infotext = "";
-      if (_mbwManager.getWalletManager(false).hasBip32MasterSeed()
+      if (_mbwManager.getWalletManager().hasBip32MasterSeed()
             && _mbwManager.getMetadataStorage().getMasterSeedBackupState().equals(MetadataStorage.BackupState.UNKNOWN)) {
          infotext = getString(R.string.verify_backup_master_seed) + "\n";
       }
@@ -136,8 +136,8 @@ public class VerifyBackupActivity extends Activity {
 
    private int countKeysToVerify() {
       int num = 0;
-      for (UUID accountid : _mbwManager.getWalletManager(false).getAccountIds()) {
-         WalletAccount account = _mbwManager.getWalletManager(false).getAccount(accountid);
+      for (UUID accountid : _mbwManager.getWalletManager().getAccountIds()) {
+         WalletAccount account = _mbwManager.getWalletManager().getAccount(accountid);
          MetadataStorage.BackupState backupState = _mbwManager.getMetadataStorage().getOtherAccountBackupState(accountid);
 
          if (backupState!= MetadataStorage.BackupState.IGNORED) {
@@ -169,7 +169,7 @@ public class VerifyBackupActivity extends Activity {
       UUID account = SingleAddressAccount.calculateId(address);
 
       // Check whether regular wallet contains that account
-      boolean success = _mbwManager.getWalletManager(false).hasAccount(account);
+      boolean success = _mbwManager.getWalletManager().hasAccount(account);
       if (success) {
          _mbwManager.getMetadataStorage().setOtherAccountBackupState(account, MetadataStorage.BackupState.VERIFIED);
          updateUi();

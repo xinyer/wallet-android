@@ -96,7 +96,7 @@ public class BroadcastTransactionActivity extends Activity {
       // Get intent parameters
       UUID accountId = Preconditions.checkNotNull((UUID) getIntent().getSerializableExtra("account"));
       _isColdStorage = getIntent().getBooleanExtra("isColdStorage", false);
-      _account = Preconditions.checkNotNull(_mbwManager.getWalletManager(_isColdStorage).getAccount(accountId));
+      _account = Preconditions.checkNotNull(_mbwManager.getWalletManager().getAccount(accountId));
       _transaction = (Transaction) Preconditions.checkNotNull(getIntent().getSerializableExtra("signed"));
 
       //May be null

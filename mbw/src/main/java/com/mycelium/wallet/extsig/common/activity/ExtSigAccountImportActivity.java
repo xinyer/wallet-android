@@ -62,7 +62,7 @@ public abstract class ExtSigAccountImportActivity extends ExtSigAccountSelectorA
             // create the new account and get the uuid of it
             MbwManager mbwManager = MbwManager.getInstance(ExtSigAccountImportActivity.this);
 
-            UUID acc = mbwManager.getWalletManager(false)
+            UUID acc = mbwManager.getWalletManager()
                   .createExternalSignatureAccount(
                         item.xPub,
                         (ExternalSignatureDeviceManager) masterseedScanManager,
@@ -109,7 +109,7 @@ public abstract class ExtSigAccountImportActivity extends ExtSigAccountSelectorA
                   MbwManager mbwManager = MbwManager.getInstance(ExtSigAccountImportActivity.this);
 
                   if (nextAccount.isPresent()) {
-                     UUID acc = mbwManager.getWalletManager(false)
+                     UUID acc = mbwManager.getWalletManager()
                            .createExternalSignatureAccount(
                                  nextAccount.get(),
                                  (ExternalSignatureDeviceManager) masterseedScanManager,

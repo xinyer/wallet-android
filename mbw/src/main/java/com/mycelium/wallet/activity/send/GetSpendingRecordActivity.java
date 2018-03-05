@@ -150,10 +150,10 @@ public class GetSpendingRecordActivity extends Activity {
       ListView listView = (ListView) findViewById(R.id.lvRecords);
       MetadataStorage storage = _mbwManager.getMetadataStorage();
       //get accounts with key and positive balance
-      List<WalletAccount> spendingAccounts = _mbwManager.getWalletManager(false).getSpendingAccountsWithBalance();
+      List<WalletAccount> spendingAccounts = _mbwManager.getWalletManager().getSpendingAccountsWithBalance();
       if (spendingAccounts.isEmpty()) {
          //if we dont have any account with a balance, just show all accounts with priv key
-         spendingAccounts = _mbwManager.getWalletManager(false).getSpendingAccounts();
+         spendingAccounts = _mbwManager.getWalletManager().getSpendingAccounts();
       }
       ArrayList<WalletAccount> result = new ArrayList<>();
       for (WalletAccount spendingAccount : spendingAccounts) {
