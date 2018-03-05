@@ -39,6 +39,7 @@ import android.app.Fragment;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -111,9 +112,11 @@ public abstract class HdAccountSelectorActivity extends Activity implements Mast
                   walletManager,
                   account.keyPath.getLastIndex());
 
-            Bip44Account tempAccount = (Bip44Account) walletManager.getAccount(id);
-            tempAccount.doSynchronization(SyncMode.NORMAL_WITHOUT_TX_LOOKUP);
+            Log.d("wangxin", "[5] checkForTransactions: id:" + id.toString());
 
+            Bip44Account tempAccount = (Bip44Account) walletManager.getAccount(id);
+            boolean sync = tempAccount.doSynchronization(SyncMode.NORMAL_WITHOUT_TX_LOOKUP);
+            Log.d("wangxin", "[6] do synchronization: " + sync + " hasHadActivity:" + tempAccount.hasHadActivity());
             if (tempAccount.hasHadActivity()) {
                return id;
             } else {
@@ -283,6 +286,7 @@ public abstract class HdAccountSelectorActivity extends Activity implements Mast
          acc.name = String.format(getString(R.string.account_number), event.account.keyPath.getLastIndex() + 1);
       }
       acc.xPub = event.account.accountRoot;
+      Log.d("wangxin", "[5] account passed to UI.");
       if (!accounts.contains(acc)) {
          accountsAdapter.add(acc);
          updateUi();

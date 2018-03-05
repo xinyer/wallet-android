@@ -206,6 +206,7 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
    }
 
    private List<Address> getAddressesToSync(SyncMode mode){
+      System.out.println("wangxin [x] Bip44Account getAddressesToSync: " + mode.toString());
       List<Address> ret;
       int currentInternalAddressId = _context.getLastInternalIndexWithActivity() + 1;
       int currentExternalAddressId = _context.getLastExternalIndexWithActivity() + 1;
@@ -271,7 +272,6 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
                return false;
             }
          }
-
          // Update unspent outputs
          return updateUnspentOutputs(mode);
       } finally {
@@ -348,6 +348,9 @@ public class Bip44Account extends AbstractAccount implements ExportableAccount {
 
    private boolean updateUnspentOutputs(SyncMode mode) {
       List<Address> checkAddresses = getAddressesToSync(mode);
+      for (Address address:checkAddresses) {
+         System.out.println("wangxin [x] Bip44Account|updateUnspentOutputs:" + address);
+      }
 
       final int newUtxos = synchronizeUnspentOutputs(checkAddresses);
 
