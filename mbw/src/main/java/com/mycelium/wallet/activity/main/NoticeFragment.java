@@ -164,16 +164,16 @@ public class NoticeFragment extends Fragment {
       WalletAccount account = _mbwManager.getSelectedAccount();
       MetadataStorage meta = _mbwManager.getMetadataStorage();
 
-      Optional<Integer> resetPinRemainingBlocksCount = _mbwManager.getResetPinRemainingBlocksCount();
+//      Optional<Integer> resetPinRemainingBlocksCount = _mbwManager.getResetPinRemainingBlocksCount();
       // Check first if a Pin-Reset is now possible
-      if (resetPinRemainingBlocksCount.isPresent() && resetPinRemainingBlocksCount.get() == 0) {
-         return Notice.RESET_PIN_AVAILABLE;
-      }
+//      if (resetPinRemainingBlocksCount.isPresent() && resetPinRemainingBlocksCount.get() == 0) {
+//         return Notice.RESET_PIN_AVAILABLE;
+//      }
 
       // Then check if a Pin-Reset is in process
-      if (resetPinRemainingBlocksCount.isPresent()) {
-         return Notice.RESET_PIN_IN_PROGRESS;
-      }
+//      if (resetPinRemainingBlocksCount.isPresent()) {
+//         return Notice.RESET_PIN_IN_PROGRESS;
+//      }
 
       // First check if we have HD accounts with funds, but have no master seed backup
       if (meta.getMasterSeedBackupState() != MetadataStorage.BackupState.VERIFIED) {
@@ -228,44 +228,33 @@ public class NoticeFragment extends Fragment {
    };
 
    private void showPinResetWarning() {
-      Optional<Integer> resetPinRemainingBlocksCount = _mbwManager.getResetPinRemainingBlocksCount();
-
-      if (!resetPinRemainingBlocksCount.isPresent()){
-         recheckNotice();
-         return;
-      }
-
-      if (resetPinRemainingBlocksCount.get()==0){
-         // delay is done
-         _mbwManager.showClearPinDialog(this.getActivity(), Optional.<Runnable>of(new Runnable() {
-            @Override
-            public void run() {
-               recheckNotice();
-            }
-         }));
-         return;
-      }
+//      Optional<Integer> resetPinRemainingBlocksCount = _mbwManager.getResetPinRemainingBlocksCount();
+//
+//      if (!resetPinRemainingBlocksCount.isPresent()){
+//         recheckNotice();
+//         return;
+//      }
 
       // delay is still remaining, provide option to abort
-      String remaining = Utils.formatBlockcountAsApproxDuration(this.getActivity(), resetPinRemainingBlocksCount.or(1));
-      new AlertDialog.Builder(this.getActivity())
-            .setMessage(String.format(this.getActivity().getString(R.string.pin_forgotten_abort_pin_reset), remaining))
-            .setTitle(this.getActivity().getString(R.string.pin_forgotten_reset_pin_dialog_title))
-            .setPositiveButton(this.getActivity().getString(R.string.yes), new DialogInterface.OnClickListener() {
-               @Override
-               public void onClick(DialogInterface dialog, int which) {
-                  _mbwManager.getMetadataStorage().clearResetPinStartBlockheight();
-                  recheckNotice();
+//      String remaining = Utils.formatBlockcountAsApproxDuration(this.getActivity(), resetPinRemainingBlocksCount.or(1));
+//      new AlertDialog.Builder(this.getActivity())
+//            .setMessage(String.format(this.getActivity().getString(R.string.pin_forgotten_abort_pin_reset), remaining))
+//            .setTitle(this.getActivity().getString(R.string.pin_forgotten_reset_pin_dialog_title))
+//            .setPositiveButton(this.getActivity().getString(R.string.yes), new DialogInterface.OnClickListener() {
+//               @Override
+//               public void onClick(DialogInterface dialog, int which) {
+//                  _mbwManager.getMetadataStorage().clearResetPinStartBlockheight();
+//                  recheckNotice();
                }
-            })
-            .setNegativeButton(this.getActivity().getString(R.string.no), new DialogInterface.OnClickListener() {
-               @Override
-               public void onClick(DialogInterface dialog, int which) {
-                  // nothing to do here
-               }
-            })
-            .show();
-   }
+//            })
+//            .setNegativeButton(this.getActivity().getString(R.string.no), new DialogInterface.OnClickListener() {
+//               @Override
+//               public void onClick(DialogInterface dialog, int which) {
+//                   nothing to do here
+//               }
+//            })
+//            .show();
+//   }
 
    private OnClickListener warningClickListener = new OnClickListener() {
 
@@ -289,7 +278,7 @@ public class NoticeFragment extends Fragment {
       if (!isAdded()) {
          return;
       }
-      Utils.pinProtectedBackup(getActivity());
+//      Utils.pinProtectedBackup(getActivity());
    }
 
    private void showMoveLegacyFundsWarning() {
@@ -318,7 +307,7 @@ public class NoticeFragment extends Fragment {
             @Override
             public void onClick(View v) {
                VerifyBackupDialog.this.dismiss();
-               Utils.pinProtectedBackup(activity);
+//               Utils.pinProtectedBackup(activity);
             }
 
          });

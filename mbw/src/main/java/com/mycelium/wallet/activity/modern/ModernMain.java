@@ -320,7 +320,7 @@ public class ModernMain extends ActionBarActivity {
 //         }
          // this is not finishing on Android 6 LG G4, so the pin on startup is not requested.
          // commented out code above doesn't do the trick, neither.
-         _mbwManager.setStartUpPinUnlocked(false);
+//         _mbwManager.setStartUpPinUnlocked(false);
          super.onBackPressed();
       } else {
          bar.selectTab(mBalanceTab);

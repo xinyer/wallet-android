@@ -373,7 +373,7 @@ public class AccountsFragment extends Fragment {
                 }
                 int id = menuItem.getItemId();
                 if (id == R.id.miSetLabel) {
-                    setLabelOnAccount(accountListAdapter.getFocusedAccount(), "", true);
+                    setLabelOnAccount(accountListAdapter.getFocusedAccount(), "");
                     return true;
                 } else if (id == R.id.miDeleteRecord) {
                     deleteSelected();
@@ -429,25 +429,11 @@ public class AccountsFragment extends Fragment {
         return super.onOptionsItemSelected(item);
     }
 
-    private void setLabelOnAccount(final WalletAccount account, final String defaultName, boolean askForPin) {
+    private void setLabelOnAccount(final WalletAccount account, final String defaultName) {
         if (!AccountsFragment.this.isAdded()) {
             return;
         }
-        if (askForPin) {
-            _mbwManager.runPinProtectedFunction(AccountsFragment.this.getActivity(), new Runnable() {
-
-                @Override
-                public void run() {
-                    if (!AccountsFragment.this.isAdded()) {
-                        return;
-                    }
-                    EnterAddressLabelUtil.enterAccountLabel(getActivity(), account.getId(), defaultName, _storage);
-                }
-
-            });
-        } else {
-            EnterAddressLabelUtil.enterAccountLabel(getActivity(), account.getId(), defaultName, _storage);
-        }
+        EnterAddressLabelUtil.enterAccountLabel(getActivity(), account.getId(), defaultName, _storage);
     }
 
     private void deleteSelected() {
@@ -459,17 +445,10 @@ public class AccountsFragment extends Fragment {
             _toaster.toast(R.string.keep_one_active, false);
             return;
         }
-        _mbwManager.runPinProtectedFunction(AccountsFragment.this.getActivity(), new Runnable() {
-
-            @Override
-            public void run() {
-                if (!AccountsFragment.this.isAdded()) {
-                    return;
-                }
-                deleteAccount(_focusedAccount);
-            }
-
-        });
+        if (!AccountsFragment.this.isAdded()) {
+            return;
+        }
+        deleteAccount(_focusedAccount);
     }
 
     private void rescan() {

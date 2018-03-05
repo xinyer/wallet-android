@@ -30,7 +30,7 @@ dependencies {
     compile project(includePrefix + ':coinapult')
     compile project(includePrefix + ':wapi')
     compile project(includePrefix + ':trezor')
-    compile project(includePrefix + ':lt-api')
+//    compile project(includePrefix + ':lt-api')
     compile(project(includePrefix + ':mbwlib')) {
         exclude module: 'jcip-annotations'
     }

@@ -235,15 +235,15 @@ public class PopActivity extends Activity {
 
          final UnsignedTransaction unsignedPop = account.createUnsignedPop(txidToProve, popRequest.getN());
 
-         _mbwManager.runPinProtectedFunction(PopActivity.this, new Runnable() {
-
-            @Override
-            public void run() {
-               disableButtons();
+//         _mbwManager.runPinProtectedFunction(PopActivity.this, new Runnable() {
+//
+//            @Override
+//            public void run() {
+//               disableButtons();
                SignTransactionActivity.callMe(PopActivity.this, _mbwManager.getSelectedAccount().getId(),
                      false, unsignedPop, SIGN_TRANSACTION_REQUEST_CODE);
-            }
-         });
+//            }
+//         });
       } catch (Exception e) {
          Toast.makeText(this, "An internal error occurred:" + e.getMessage(), Toast.LENGTH_LONG).show();
       }

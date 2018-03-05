@@ -30,27 +30,6 @@
             android:key="block_explorer"
             android:layout="@layout/preference_layout"/>
 
-    <!-- PIN Settings -->
-
-    <PreferenceCategory android:title="@string/pref_category_pin">
-        <Preference
-                android:key="clearPin"
-                android:layout="@layout/preference_layout"
-                android:summary="@string/pref_clear_pin_summary"
-                android:title="@string/pref_clear_pin"/>
-        <Preference
-                android:key="setPin"
-                android:layout="@layout/preference_layout"
-                android:summary="@string/pref_set_pin_summary"
-                android:title="@string/pref_set_pin"/>
-        <CheckBoxPreference
-                android:key="requirePinOnStartup"
-                android:layout="@layout/preference_layout"
-                android:summary="@string/pref_pin_require_on_startup_summary"
-                android:title="@string/pref_pin_require_on_startup"/>
-    </PreferenceCategory>
-
-
     <!-- Advanced Settings -->
 
     <PreferenceCategory

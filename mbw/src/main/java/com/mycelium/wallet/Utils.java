@@ -79,7 +79,6 @@ import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 import com.mrd.bitlib.model.Address;
 import com.mrd.bitlib.model.NetworkParameters;
 import com.mrd.bitlib.util.CoinUtil;
-import com.mycelium.wallet.activity.AdditionalBackupWarningActivity;
 import com.mycelium.wallet.activity.BackupWordListActivity;
 import com.mycelium.wallet.activity.export.BackupToPdfActivity;
 import com.mycelium.wallet.activity.export.ExportAsQrCodeActivity;
@@ -657,89 +656,38 @@ public class Utils {
     }
 
     public static void pinProtectedWordlistBackup(final Activity activity) {
-        MbwManager manager = MbwManager.getInstance(activity);
-        manager.runPinProtectedFunction(activity, new Runnable() {
-
-            @Override
-            public void run() {
-                Utils.wordlistBackup(activity);
-            }
-        });
+//        MbwManager manager = MbwManager.getInstance(activity);
+//        manager.runPinProtectedFunction(activity, new Runnable() {
+//
+//            @Override
+//            public void run() {
+//                Utils.wordlistBackup(activity);
+//            }
+//        });
     }
 
     private static void wordlistBackup(final Activity parent) {
-        MbwManager _mbwManager = MbwManager.getInstance(parent);
-        if (_mbwManager.getMetadataStorage().firstMasterseedBackupFinished()) {
-            // second+ backup
-            AdditionalBackupWarningActivity.callMe(parent);
-        } else {
-            // first backup
-            AlertDialog.Builder builder = new AlertDialog.Builder(parent);
-            builder.setMessage(R.string.backup_all_warning).setCancelable(true)
-                    .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int id) {
-                            dialog.dismiss();
-                            BackupWordListActivity.callMe(parent);
-                        }
-                    }).setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int id) {
-                }
-            });
-            AlertDialog alertDialog = builder.create();
-            alertDialog.show();
-        }
+//        MbwManager _mbwManager = MbwManager.getInstance(parent);
+//        if (_mbwManager.getMetadataStorage().firstMasterseedBackupFinished()) {
+//            // second+ backup
+//            AdditionalBackupWarningActivity.callMe(parent);
+//        } else {
+//            // first backup
+//            AlertDialog.Builder builder = new AlertDialog.Builder(parent);
+//            builder.setMessage(R.string.backup_all_warning).setCancelable(true)
+//                    .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+//                        public void onClick(DialogInterface dialog, int id) {
+//                            dialog.dismiss();
+//                            BackupWordListActivity.callMe(parent);
+//                        }
+//                    }).setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
+//                public void onClick(DialogInterface dialog, int id) {
+//                }
+//            });
+//            AlertDialog alertDialog = builder.create();
+//            alertDialog.show();
+//        }
 
-    }
-
-    public static void pinProtectedBackup(final Activity activity) {
-        MbwManager manager = MbwManager.getInstance(activity);
-        manager.runPinProtectedFunction(activity, new Runnable() {
-
-            @Override
-            public void run() {
-                Utils.backup(activity);
-            }
-        });
-    }
-
-    private static void backup(final Activity parent) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(parent);
-        builder.setMessage(R.string.backup_legacy_warning).setCancelable(true)
-                .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        dialog.dismiss();
-                        BackupToPdfActivity.callMe(parent);
-                    }
-                }).setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int id) {
-            }
-        });
-        AlertDialog alertDialog = builder.create();
-        alertDialog.show();
-    }
-
-    public static void exportSelectedAccount(final Activity parent) {
-        final WalletAccount account = MbwManager.getInstance(parent).getSelectedAccount();
-        if (!(account instanceof ExportableAccount)) {
-            return;
-        }
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(parent);
-        builder.setMessage(R.string.export_account_data_warning).setCancelable(true)
-                .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        dialog.dismiss();
-                        Intent intent = ExportAsQrCodeActivity.getIntent(parent,
-                                ((ExportableAccount) account).getExportData(AesKeyCipher.defaultKeyCipher())
-                        );
-                        parent.startActivity(intent);
-                    }
-                }).setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int id) {
-            }
-        });
-        AlertDialog alertDialog = builder.create();
-        alertDialog.show();
     }
 
     /**

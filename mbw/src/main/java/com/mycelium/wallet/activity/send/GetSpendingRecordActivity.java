@@ -47,6 +47,7 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+
 import com.mycelium.wallet.*;
 import com.mycelium.wallet.activity.modern.RecordRowBuilder;
 import com.mycelium.wallet.persistence.MetadataStorage;
@@ -57,140 +58,137 @@ import java.util.List;
 
 public class GetSpendingRecordActivity extends Activity {
 
-   private BitcoinUri _uri;
-   private MbwManager _mbwManager;
-   private boolean _showAccounts = false;
-   private byte[] _rawPr;
+    private BitcoinUri _uri;
+    private MbwManager _mbwManager;
+    private boolean _showAccounts = false;
+    private byte[] _rawPr;
 
-   public static void callMeWithResult(Activity currentActivity, BitcoinUri uri, int request) {
-      Intent intent = new Intent(currentActivity, GetSpendingRecordActivity.class);
-      intent.putExtra("uri", uri);
-      currentActivity.startActivityForResult(intent, request);
-   }
+    public static void callMeWithResult(Activity currentActivity, BitcoinUri uri, int request) {
+        Intent intent = new Intent(currentActivity, GetSpendingRecordActivity.class);
+        intent.putExtra("uri", uri);
+        currentActivity.startActivityForResult(intent, request);
+    }
 
-   public static void callMeWithResult(Activity currentActivity, byte[] rawPaymentRequest, int request) {
-      Intent intent = new Intent(currentActivity, GetSpendingRecordActivity.class);
-      intent.putExtra("rawPr", rawPaymentRequest);
-      currentActivity.startActivityForResult(intent, request);
-   }
+    public static void callMeWithResult(Activity currentActivity, byte[] rawPaymentRequest, int request) {
+        Intent intent = new Intent(currentActivity, GetSpendingRecordActivity.class);
+        intent.putExtra("rawPr", rawPaymentRequest);
+        currentActivity.startActivityForResult(intent, request);
+    }
 
-   @Override
-   public void onCreate(Bundle savedInstanceState) {
-      this.requestWindowFeature(Window.FEATURE_NO_TITLE);
-      super.onCreate(savedInstanceState);
-      setContentView(R.layout.get_spending_record_activity);
-      ((ListView) findViewById(R.id.lvRecords)).setOnItemClickListener(new RecordClicked());
-      _mbwManager = MbwManager.getInstance(this.getApplication());
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        this.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.get_spending_record_activity);
+        ((ListView) findViewById(R.id.lvRecords)).setOnItemClickListener(new RecordClicked());
+        _mbwManager = MbwManager.getInstance(this.getApplication());
 
-      // Get intent parameters
-      _uri = (BitcoinUri) getIntent().getSerializableExtra("uri");
-      _rawPr = getIntent().getByteArrayExtra("rawPr");
+        // Get intent parameters
+        _uri = (BitcoinUri) getIntent().getSerializableExtra("uri");
+        _rawPr = getIntent().getByteArrayExtra("rawPr");
 
-      if (savedInstanceState != null){
-         _showAccounts = savedInstanceState.getBoolean("showAccounts");
-      }
+        if (savedInstanceState != null) {
+            _showAccounts = savedInstanceState.getBoolean("showAccounts");
+        }
 
-      // if the app is in Locked-Mode, just pass the active account along and finish
-      if (!_showAccounts) {
-         if (_mbwManager.getSelectedAccount().canSpend()) {
-            // if the current locked account canSpend, use this and go directly to sending
-            callSendInitActivity(_mbwManager.getSelectedAccount());
+        // if the app is in Locked-Mode, just pass the active account along and finish
+        if (!_showAccounts) {
+            if (_mbwManager.getSelectedAccount().canSpend()) {
+                // if the current locked account canSpend, use this and go directly to sending
+                callSendInitActivity(_mbwManager.getSelectedAccount());
 
+                GetSpendingRecordActivity.this.finish();
+            } else {
+                // if this is a watch-only account, request the PIN to show the accounts
+
+                _showAccounts = true;
+                update();
+
+            }
+        } else {
+            _showAccounts = true;
+        }
+    }
+
+    private void callSendInitActivity(WalletAccount account) {
+        if (_rawPr != null) {
+            SendInitializationActivity.callMe(GetSpendingRecordActivity.this, account.getId(), _rawPr, false);
+        } else {
+            SendInitializationActivity.callMe(GetSpendingRecordActivity.this, account.getId(), _uri, false);
+        }
+    }
+
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putBoolean("showAccounts", _showAccounts);
+    }
+
+    class RecordClicked implements OnItemClickListener {
+        @Override
+        public void onItemClick(AdapterView<?> list, View v, int position, long id) {
+            if (v.getTag() == null || !(v.getTag() instanceof WalletAccount)) {
+                return;
+            }
+            WalletAccount account = (WalletAccount) v.getTag();
+            callSendInitActivity(account);
             GetSpendingRecordActivity.this.finish();
-         } else {
-            // if this is a watch-only account, request the PIN to show the accounts
-            _mbwManager.runPinProtectedFunction(this, new Runnable() {
-               @Override
-               public void run() {
-                  _showAccounts = true;
-                  update();
-               }
-            });
-         }
-      } else {
-         _showAccounts = true;
-      }
-   }
+        }
+    }
 
-   private void callSendInitActivity(WalletAccount account) {
-      if (_rawPr != null){
-         SendInitializationActivity.callMe(GetSpendingRecordActivity.this, account.getId(), _rawPr, false);
-      } else {
-         SendInitializationActivity.callMe(GetSpendingRecordActivity.this, account.getId(), _uri, false);
-      }
-   }
+    @Override
+    protected void onResume() {
+        update();
+        super.onResume();
+    }
 
+    private void update() {
+        View warningNoSpendingAccounts = findViewById(R.id.tvNoSpendingAccounts);
+        ListView listView = (ListView) findViewById(R.id.lvRecords);
+        MetadataStorage storage = _mbwManager.getMetadataStorage();
+        //get accounts with key and positive balance
+        List<WalletAccount> spendingAccounts = _mbwManager.getWalletManager().getSpendingAccountsWithBalance();
+        if (spendingAccounts.isEmpty()) {
+            //if we dont have any account with a balance, just show all accounts with priv key
+            spendingAccounts = _mbwManager.getWalletManager().getSpendingAccounts();
+        }
+        ArrayList<WalletAccount> result = new ArrayList<>();
+        for (WalletAccount spendingAccount : spendingAccounts) {
+            if (spendingAccount.getCurrencyBasedBalance().confirmed.isBtc()) {
+                result.add(spendingAccount);
+            }
+        }
+        spendingAccounts = result;
 
-   @Override
-   protected void onSaveInstanceState(Bundle outState) {
-      super.onSaveInstanceState(outState);
-      outState.putBoolean("showAccounts", _showAccounts);
-   }
+        //if we have no accounts to show, just display the info text
+        if (!_showAccounts || spendingAccounts.isEmpty()) {
+            listView.setVisibility(View.GONE);
+            warningNoSpendingAccounts.setVisibility(View.VISIBLE);
+        } else {
+            AccountsAdapter accountsAdapter = new AccountsAdapter(this, Utils.sortAccounts(spendingAccounts, storage));
+            listView.setAdapter(accountsAdapter);
+            listView.setVisibility(View.VISIBLE);
+            warningNoSpendingAccounts.setVisibility(View.GONE);
+        }
+    }
 
-   class RecordClicked implements OnItemClickListener {
-      @Override
-      public void onItemClick(AdapterView<?> list, View v, int position, long id) {
-         if (v.getTag() == null || !(v.getTag() instanceof WalletAccount)) {
-            return;
-         }
-         WalletAccount account = (WalletAccount) v.getTag();
-         callSendInitActivity(account);
-         GetSpendingRecordActivity.this.finish();
-      }
-   }
+    class AccountsAdapter extends ArrayAdapter<WalletAccount> {
+        private Context _context;
 
-   @Override
-   protected void onResume() {
-      update();
-      super.onResume();
-   }
+        AccountsAdapter(Context context, List<WalletAccount> accounts) {
+            super(context, R.layout.record_row, accounts);
+            _context = context;
+        }
 
-   private void update() {
-      View warningNoSpendingAccounts = findViewById(R.id.tvNoSpendingAccounts);
-      ListView listView = (ListView) findViewById(R.id.lvRecords);
-      MetadataStorage storage = _mbwManager.getMetadataStorage();
-      //get accounts with key and positive balance
-      List<WalletAccount> spendingAccounts = _mbwManager.getWalletManager().getSpendingAccountsWithBalance();
-      if (spendingAccounts.isEmpty()) {
-         //if we dont have any account with a balance, just show all accounts with priv key
-         spendingAccounts = _mbwManager.getWalletManager().getSpendingAccounts();
-      }
-      ArrayList<WalletAccount> result = new ArrayList<>();
-      for (WalletAccount spendingAccount : spendingAccounts) {
-         if(spendingAccount.getCurrencyBasedBalance().confirmed.isBtc()) {
-            result.add(spendingAccount);
-         }
-      }
-      spendingAccounts = result;
-
-      //if we have no accounts to show, just display the info text
-      if (!_showAccounts || spendingAccounts.isEmpty()) {
-         listView.setVisibility(View.GONE);
-         warningNoSpendingAccounts.setVisibility(View.VISIBLE);
-      } else {
-         AccountsAdapter accountsAdapter = new AccountsAdapter(this, Utils.sortAccounts(spendingAccounts, storage));
-         listView.setAdapter(accountsAdapter);
-         listView.setVisibility(View.VISIBLE);
-         warningNoSpendingAccounts.setVisibility(View.GONE);
-      }
-   }
-
-   class AccountsAdapter extends ArrayAdapter<WalletAccount> {
-      private Context _context;
-
-      AccountsAdapter(Context context, List<WalletAccount> accounts) {
-         super(context, R.layout.record_row, accounts);
-         _context = context;
-      }
-
-      @Override
-      @NonNull
-      public View getView(int position, View convertView, @NonNull ViewGroup parent) {
-         LayoutInflater inflater = (LayoutInflater) _context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-         WalletAccount account = getItem(position);
-         RecordRowBuilder recordRowBuilder = new RecordRowBuilder(_mbwManager, getResources(), inflater);
-         return recordRowBuilder.buildRecordView(parent, account,
-               false, false, convertView);
-      }
-   }
+        @Override
+        @NonNull
+        public View getView(int position, View convertView, @NonNull ViewGroup parent) {
+            LayoutInflater inflater = (LayoutInflater) _context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+            WalletAccount account = getItem(position);
+            RecordRowBuilder recordRowBuilder = new RecordRowBuilder(_mbwManager, getResources(), inflater);
+            return recordRowBuilder.buildRecordView(parent, account,
+                    false, false, convertView);
+        }
+    }
 }

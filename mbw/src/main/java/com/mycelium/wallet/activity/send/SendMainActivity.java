@@ -548,8 +548,6 @@ public class SendMainActivity extends Activity {
         if (_isColdStorage || _account instanceof Bip44AccountExternalSignature) {
             // We do not ask for pin when the key is from cold storage or from a external device (trezor,...)
             signTransaction();
-        } else {
-            _mbwManager.runPinProtectedFunction(this, pinProtectedSignAndSend);
         }
     }
 

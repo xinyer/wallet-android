@@ -91,14 +91,8 @@ public class AddAccountActivity extends Activity {
     View.OnClickListener advancedClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            _mbwManager.runPinProtectedFunction(AddAccountActivity.this, new Runnable() {
-                @Override
-                public void run() {
-                    AddAdvancedAccountActivity.callMe(AddAccountActivity.this, ADD_ADVANCED_CODE);
-                }
-            });
+            AddAdvancedAccountActivity.callMe(AddAccountActivity.this, ADD_ADVANCED_CODE);
         }
-
     };
 
     @Override

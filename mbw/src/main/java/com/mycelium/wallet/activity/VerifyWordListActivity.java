@@ -134,37 +134,37 @@ public class VerifyWordListActivity extends ActionBarActivity implements WordAut
    private void setVerified() {
       _mbwManager.getMetadataStorage().setMasterSeedBackupState(MetadataStorage.BackupState.VERIFIED);
 
-      if (!_mbwManager.isPinProtected()) {
-         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-         builder
-               .setMessage(R.string.verify_wordlist_success)
-               .setCancelable(false)
-               .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-                  public void onClick(DialogInterface dialog, int id) {
-                     VerifyWordListActivity.this.finish();
-                  }
-               })
-               .setNeutralButton(R.string.pref_set_pin, new DialogInterface.OnClickListener() {
-                  public void onClick(DialogInterface dialog, int id) {
-                     _mbwManager.showSetPinDialog(VerifyWordListActivity.this, Optional.<Runnable>of(new Runnable() {
-                        @Override
-                        public void run() {
-                           // close this activity after the PIN code dialog was closed
-                           VerifyWordListActivity.this.finish();
-                        }
-                     }));
-                  }
-               });
-         AlertDialog alertDialog = builder.create();
-         alertDialog.show();
-      }else {
-         Utils.showSimpleMessageDialog(this, R.string.verify_wordlist_success, new Runnable() {
-            @Override
-            public void run() {
-               VerifyWordListActivity.this.finish();
-            }
-         });
-      }
+//      if (!_mbwManager.isPinProtected()) {
+//         AlertDialog.Builder builder = new AlertDialog.Builder(this);
+//         builder
+//               .setMessage(R.string.verify_wordlist_success)
+//               .setCancelable(false)
+//               .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+//                  public void onClick(DialogInterface dialog, int id) {
+//                     VerifyWordListActivity.this.finish();
+//                  }
+//               })
+//               .setNeutralButton(R.string.pref_set_pin, new DialogInterface.OnClickListener() {
+//                  public void onClick(DialogInterface dialog, int id) {
+//                     _mbwManager.showSetPinDialog(VerifyWordListActivity.this, Optional.<Runnable>of(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                           // close this activity after the PIN code dialog was closed
+//                           VerifyWordListActivity.this.finish();
+//                        }
+//                     }));
+//                  }
+//               });
+//         AlertDialog alertDialog = builder.create();
+//         alertDialog.show();
+//      }else {
+//         Utils.showSimpleMessageDialog(this, R.string.verify_wordlist_success, new Runnable() {
+//            @Override
+//            public void run() {
+//               VerifyWordListActivity.this.finish();
+//            }
+//         });
+//      }
    }
 
    @Override
