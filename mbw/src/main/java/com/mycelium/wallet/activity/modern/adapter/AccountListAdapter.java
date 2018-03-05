@@ -22,7 +22,6 @@ public class AccountListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
     private WalletAccount focusedAccount;
 
     private ItemClickListener itemClickListener;
-    private ItemSelectListener itemSelectListener;
 
     private MbwManager mbwManager;
     private RecordRowBuilder builder;
@@ -36,10 +35,6 @@ public class AccountListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
     public void setItemClickListener(ItemClickListener itemClickListener) {
         this.itemClickListener = itemClickListener;
-    }
-
-    public void setItemSelectListener(ItemSelectListener itemSelectListener) {
-        this.itemSelectListener = itemSelectListener;
     }
 
     public WalletAccount getFocusedAccount() {
@@ -85,16 +80,6 @@ public class AccountListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         final WalletAccount account = itemList.get(position);
         AccountViewHolder accountHolder = (AccountViewHolder) holder;
         builder.buildRecordView(null, account, mbwManager.getSelectedAccount() == account, focusedAccount == account, holder.itemView);
-        accountHolder.itemView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                setFocusedAccount(account);
-                if (itemSelectListener != null) {
-                    itemSelectListener.onClick(account);
-                }
-
-            }
-        });
         accountHolder.llAddress.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -118,9 +103,5 @@ public class AccountListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
 
     public interface ItemClickListener {
         void onItemClick(WalletAccount account);
-    }
-
-    public interface ItemSelectListener {
-        void onClick(WalletAccount account);
     }
 }

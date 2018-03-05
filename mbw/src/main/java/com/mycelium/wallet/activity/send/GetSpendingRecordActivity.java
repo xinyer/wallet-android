@@ -91,7 +91,7 @@ public class GetSpendingRecordActivity extends Activity {
       }
 
       // if the app is in Locked-Mode, just pass the active account along and finish
-      if (!_showAccounts && _mbwManager.isKeyManagementLocked()){
+      if (!_showAccounts) {
          if (_mbwManager.getSelectedAccount().canSpend()) {
             // if the current locked account canSpend, use this and go directly to sending
             callSendInitActivity(_mbwManager.getSelectedAccount());

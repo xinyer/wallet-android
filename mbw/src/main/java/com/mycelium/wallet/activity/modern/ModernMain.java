@@ -361,12 +361,11 @@ public class ModernMain extends ActionBarActivity {
 
       // Add Record menu
       final boolean isAccountTab = tabIdx == TAB_ID_ACCOUNTS;
-      final boolean locked = _mbwManager.isKeyManagementLocked();
-      Preconditions.checkNotNull(menu.findItem(R.id.miAddRecord)).setVisible(isAccountTab && !locked);
+      Preconditions.checkNotNull(menu.findItem(R.id.miAddRecord)).setVisible(isAccountTab);
 
       // Lock menu
-      final boolean hasPin = _mbwManager.isPinProtected();
-      Preconditions.checkNotNull(menu.findItem(R.id.miLockKeys)).setVisible(isAccountTab && !locked && hasPin);
+//      final boolean hasPin = _mbwManager.isPinProtected();
+//      Preconditions.checkNotNull(menu.findItem(R.id.miLockKeys)).setVisible(isAccountTab && hasPin);
 
       // Refresh menu
       final boolean isBalanceTab = tabIdx == TAB_ID_BALANCE;

@@ -175,7 +175,7 @@ public class MbwManager {
 
     private MinerFee _minerFee;
     private boolean _enableContinuousFocus;
-    private boolean _keyManagementLocked;
+//    private boolean _keyManagementLocked;
     private MrdExport.V1.EncryptionParameters _cachedEncryptionParameters;
     private final MrdExport.V1.ScryptParameters _deviceScryptParameters;
     private MbwEnvironment _environment;
@@ -231,7 +231,7 @@ public class MbwManager {
 
         _minerFee = MinerFee.fromString(preferences.getString(Constants.MINER_FEE_SETTING, MinerFee.NORMAL.toString()));
         _enableContinuousFocus = preferences.getBoolean(Constants.ENABLE_CONTINUOUS_FOCUS_SETTING, false);
-        _keyManagementLocked = preferences.getBoolean(Constants.KEY_MANAGEMENT_LOCKED_SETTING, false);
+//        _keyManagementLocked = preferences.getBoolean(Constants.KEY_MANAGEMENT_LOCKED_SETTING, false);
 
         // Get the display metrics of this device
         DisplayMetrics dm = new DisplayMetrics();
@@ -815,15 +815,6 @@ public class MbwManager {
 
     public String getBtcValueString(long satoshis) {
         return _currencySwitcher.getBtcValueString(satoshis);
-    }
-
-    public boolean isKeyManagementLocked() {
-        return _keyManagementLocked;
-    }
-
-    public void setKeyManagementLocked(boolean locked) {
-        _keyManagementLocked = locked;
-        getEditor().putBoolean(Constants.KEY_MANAGEMENT_LOCKED_SETTING, _keyManagementLocked).commit();
     }
 
     public boolean getContinuousFocus() {
