@@ -40,13 +40,10 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.Window;
 import com.google.common.base.Preconditions;
-import com.mrd.bitlib.StandardTransactionBuilder;
 import com.mrd.bitlib.StandardTransactionBuilder.UnsignedTransaction;
 import com.mrd.bitlib.model.Transaction;
 import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.R;
-import com.mycelium.wallet.extsig.keepkey.activity.KeepKeySignTransactionActivity;
-import com.mycelium.wallet.extsig.ledger.activity.LedgerSignTransactionActivity;
 import com.mycelium.wallet.extsig.trezor.activity.TrezorSignTransactionActivity;
 import com.mycelium.wapi.wallet.AesKeyCipher;
 import com.mycelium.wapi.wallet.KeyCipher;
@@ -76,12 +73,12 @@ public class SignTransactionActivity extends Activity {
       if (walletAccount instanceof Bip44AccountExternalSignature) {
          final int bip44AccountType = ((Bip44AccountExternalSignature) walletAccount).getBIP44AccountType();
          switch (bip44AccountType) {
-            case (Bip44AccountContext.ACCOUNT_TYPE_UNRELATED_X_PUB_EXTERNAL_SIG_LEDGER):
-               targetClass = LedgerSignTransactionActivity.class;
-               break;
-            case (Bip44AccountContext.ACCOUNT_TYPE_UNRELATED_X_PUB_EXTERNAL_SIG_KEEPKEY):
-               targetClass = KeepKeySignTransactionActivity.class;
-               break;
+//            case (Bip44AccountContext.ACCOUNT_TYPE_UNRELATED_X_PUB_EXTERNAL_SIG_LEDGER):
+//               targetClass = LedgerSignTransactionActivity.class;
+//               break;
+//            case (Bip44AccountContext.ACCOUNT_TYPE_UNRELATED_X_PUB_EXTERNAL_SIG_KEEPKEY):
+//               targetClass = KeepKeySignTransactionActivity.class;
+//               break;
             case (Bip44AccountContext.ACCOUNT_TYPE_UNRELATED_X_PUB_EXTERNAL_SIG_TREZOR):
                targetClass = TrezorSignTransactionActivity.class;
                break;

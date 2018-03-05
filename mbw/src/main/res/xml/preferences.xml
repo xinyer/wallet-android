@@ -119,20 +119,20 @@
 
     <!-- Ledger -->
 
-    <PreferenceCategory
-            android:key="ledger"
-            android:title="@string/pref_ledger_title">
-        <CheckBoxPreference
-                android:key="ledgerDisableTee"
-                android:layout="@layout/preference_layout"
-                android:summary="@string/ledger_disable_tee_preference_summary"
-                android:title="@string/ledger_disable_tee_preference"/>
-        <Preference
-                android:key="ledgerUnpluggedAID"
-                android:layout="@layout/preference_layout"
-                android:summary="@string/ledger_unplugged_aid_preference_summary"
-                android:title="@string/ledger_unplugged_aid_preference"/>
-    </PreferenceCategory>
+    <!--<PreferenceCategory-->
+            <!--android:key="ledger"-->
+            <!--android:title="@string/pref_ledger_title">-->
+        <!--<CheckBoxPreference-->
+                <!--android:key="ledgerDisableTee"-->
+                <!--android:layout="@layout/preference_layout"-->
+                <!--android:summary="@string/ledger_disable_tee_preference_summary"-->
+                <!--android:title="@string/ledger_disable_tee_preference"/>-->
+        <!--<Preference-->
+                <!--android:key="ledgerUnpluggedAID"-->
+                <!--android:layout="@layout/preference_layout"-->
+                <!--android:summary="@string/ledger_unplugged_aid_preference_summary"-->
+                <!--android:title="@string/ledger_unplugged_aid_preference"/>-->
+    <!--</PreferenceCategory>-->
 
     <!-- External services -->
 

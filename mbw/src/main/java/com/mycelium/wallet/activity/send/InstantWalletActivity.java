@@ -41,6 +41,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
 import android.view.WindowManager;
+
 import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.R;
 import com.mycelium.wallet.StringHandleConfig;
@@ -49,127 +50,129 @@ import com.mycelium.wallet.activity.EnterWordListActivity;
 import com.mycelium.wallet.activity.InstantMasterseedActivity;
 import com.mycelium.wallet.activity.ScanActivity;
 import com.mycelium.wallet.activity.StringHandlerActivity;
-import com.mycelium.wallet.extsig.keepkey.activity.InstantKeepKeyActivity;
 import com.mycelium.wallet.extsig.trezor.activity.InstantTrezorActivity;
 
 import java.util.ArrayList;
 
 public class InstantWalletActivity extends Activity {
 
-   public static final int REQUEST_SCAN = 0;
-   private static final int REQUEST_TREZOR = 1;
-   private static final int IMPORT_WORDLIST = 2;
-   private static final int REQUEST_KEEPKEY = 3;
+    //   public static final int REQUEST_SCAN = 0;
+    private static final int REQUEST_TREZOR = 1;
+//   private static final int IMPORT_WORDLIST = 2;
+//   private static final int REQUEST_KEEPKEY = 3;
 
-   public static void callMe(Activity currentActivity) {
-      Intent intent = new Intent(currentActivity, InstantWalletActivity.class);
-      currentActivity.startActivity(intent);
-   }
+    public static void callMe(Activity currentActivity) {
+        Intent intent = new Intent(currentActivity, InstantWalletActivity.class);
+        currentActivity.startActivity(intent);
+    }
 
-   /**
-    * Called when the activity is first created.
-    */
-   @Override
-   public void onCreate(Bundle savedInstanceState) {
-      this.requestWindowFeature(Window.FEATURE_NO_TITLE);
-      this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-      super.onCreate(savedInstanceState);
-      setContentView(R.layout.instant_wallet_activity);
+    /**
+     * Called when the activity is first created.
+     */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        this.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.instant_wallet_activity);
 
 
-      findViewById(R.id.btClipboard).setOnClickListener(new OnClickListener() {
-         @Override
-         public void onClick(View arg0) {
-            handleString(Utils.getClipboardString(InstantWalletActivity.this));
-         }
-      });
+//        findViewById(R.id.btClipboard).setOnClickListener(new OnClickListener() {
+//            @Override
+//            public void onClick(View arg0) {
+//            handleString(Utils.getClipboardString(InstantWalletActivity.this));
+//            }
+//        });
 
-      findViewById(R.id.btMasterseed).setOnClickListener(new OnClickListener() {
+//      findViewById(R.id.btMasterseed).setOnClickListener(new OnClickListener() {
+//
+//         @Override
+//         public void onClick(View arg0) {
+//            EnterWordListActivity.callMe(InstantWalletActivity.this, IMPORT_WORDLIST, true);
+//         }
+//      });
 
-         @Override
-         public void onClick(View arg0) {
-            EnterWordListActivity.callMe(InstantWalletActivity.this, IMPORT_WORDLIST, true);
-         }
-      });
+//      findViewById(R.id.btScan).setOnClickListener(new OnClickListener() {
+//
+//         @Override
+//         public void onClick(View arg0) {
+//            ScanActivity.callMe(InstantWalletActivity.this, REQUEST_SCAN, StringHandleConfig.spendFromColdStorage());
+//         }
+//      });
 
-      findViewById(R.id.btScan).setOnClickListener(new OnClickListener() {
+        findViewById(R.id.btTrezor).setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View arg0) {
+                InstantTrezorActivity.callMe(InstantWalletActivity.this, REQUEST_TREZOR);
+            }
+        });
 
-         @Override
-         public void onClick(View arg0) {
-            ScanActivity.callMe(InstantWalletActivity.this, REQUEST_SCAN, StringHandleConfig.spendFromColdStorage());
-         }
-      });
+//      findViewById(R.id.btKeepKey).setOnClickListener(new OnClickListener() {
+//         @Override
+//         public void onClick(View arg0) {
+//            InstantKeepKeyActivity.callMe(InstantWalletActivity.this, REQUEST_KEEPKEY);
+//         }
+//      });
+    }
 
-      findViewById(R.id.btTrezor).setOnClickListener(new OnClickListener() {
-         @Override
-         public void onClick(View arg0) {
-            InstantTrezorActivity.callMe(InstantWalletActivity.this, REQUEST_TREZOR);
-         }
-      });
+//   private void handleString(String str) {
+//      Intent intent = StringHandlerActivity.getIntent(this,
+//            StringHandleConfig.spendFromColdStorage(),
+//            str);
+//      startActivityForResult(intent, REQUEST_SCAN);
+//   }
 
-      findViewById(R.id.btKeepKey).setOnClickListener(new OnClickListener() {
-         @Override
-         public void onClick(View arg0) {
-            InstantKeepKeyActivity.callMe(InstantWalletActivity.this, REQUEST_KEEPKEY);
-         }
-      });
-   }
+    @Override
+    protected void onResume() {
+        super.onResume();
+//      StringHandlerActivity.ParseAbility canHandle = StringHandlerActivity.canHandle(
+//            StringHandleConfig.spendFromColdStorage(),
+//            Utils.getClipboardString(this),
+//            MbwManager.getInstance(this).getNetwork());
+//
+//      if (canHandle == StringHandlerActivity.ParseAbility.NO) {
+//         findViewById(R.id.btClipboard).setEnabled(false);
+//      } else {
+//         findViewById(R.id.btClipboard).setEnabled(true);
+//      }
+    }
 
-   private void handleString(String str) {
-      Intent intent = StringHandlerActivity.getIntent(this,
-            StringHandleConfig.spendFromColdStorage(),
-            str);
-      startActivityForResult(intent, REQUEST_SCAN);
-   }
+    public void onActivityResult(final int requestCode, final int resultCode, final Intent intent) {
+//      if (requestCode == REQUEST_SCAN) {
+//         if (resultCode != RESULT_OK) {
+//            ScanActivity.toastScanError(resultCode, intent, this);
+//         }
+        // else {
+        // We don't call finish() here, so that this activity stays on the back stack.
+        // So the user can click back and scan the next cold storage.
+        // }
+//      } else
 
-   @Override
-   protected void onResume() {
-      super.onResume();
-      StringHandlerActivity.ParseAbility canHandle = StringHandlerActivity.canHandle(
-            StringHandleConfig.spendFromColdStorage(),
-            Utils.getClipboardString(this),
-            MbwManager.getInstance(this).getNetwork());
+        if (requestCode == REQUEST_TREZOR) {
+            if (resultCode == RESULT_OK) {
+                finish();
+            }
+//      }
+//      else if (requestCode == REQUEST_KEEPKEY) {
+//         if (resultCode == RESULT_OK) {
+//            finish();
+//         }
+//      } else if (requestCode == IMPORT_WORDLIST) {
+//         if (resultCode == RESULT_OK) {
+//            ArrayList<String> wordList = intent.getStringArrayListExtra(EnterWordListActivity.MASTERSEED);
+//            String password = intent.getStringExtra(EnterWordListActivity.PASSWORD);
+//            InstantMasterseedActivity.callMe(this, wordList.toArray(new String[wordList.size()]), password);
+//
+//         }
+        } else {
+            throw new IllegalStateException("unknown return codes after scanning... " + requestCode + " " + resultCode);
+        }
+    }
 
-      if (canHandle == StringHandlerActivity.ParseAbility.NO) {
-         findViewById(R.id.btClipboard).setEnabled(false);
-      } else {
-         findViewById(R.id.btClipboard).setEnabled(true);
-      }
-   }
-
-   public void onActivityResult(final int requestCode, final int resultCode, final Intent intent) {
-      if (requestCode == REQUEST_SCAN) {
-         if (resultCode != RESULT_OK) {
-            ScanActivity.toastScanError(resultCode, intent, this);
-         }
-         // else {
-         // We don't call finish() here, so that this activity stays on the back stack.
-         // So the user can click back and scan the next cold storage.
-         // }
-      } else if (requestCode == REQUEST_TREZOR) {
-         if (resultCode == RESULT_OK) {
-            finish();
-         }
-      } else if (requestCode == REQUEST_KEEPKEY) {
-         if (resultCode == RESULT_OK) {
-            finish();
-         }
-      } else if (requestCode == IMPORT_WORDLIST) {
-         if (resultCode == RESULT_OK) {
-            ArrayList<String> wordList = intent.getStringArrayListExtra(EnterWordListActivity.MASTERSEED);
-            String password = intent.getStringExtra(EnterWordListActivity.PASSWORD);
-            InstantMasterseedActivity.callMe(this, wordList.toArray(new String[wordList.size()]), password);
-
-         }
-      } else {
-         throw new IllegalStateException("unknown return codes after scanning... " + requestCode + " " + resultCode);
-      }
-   }
-
-   @Override
-   public void finish() {
-      // drop and create a new TempWalletManager so that no sensitive data remains in memory
-      MbwManager.getInstance(this).forgetColdStorageWalletManager();
-      super.finish();
-   }
+    @Override
+    public void finish() {
+        // drop and create a new TempWalletManager so that no sensitive data remains in memory
+        MbwManager.getInstance(this).forgetColdStorageWalletManager();
+        super.finish();
+    }
 }

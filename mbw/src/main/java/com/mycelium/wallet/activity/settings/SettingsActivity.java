@@ -192,54 +192,54 @@ public class SettingsActivity extends PreferenceActivity {
       }
    };
 
-   private final OnPreferenceClickListener onClickLedgerNotificationDisableTee = new OnPreferenceClickListener() {
-      public boolean onPreferenceClick(Preference preference) {
-         CheckBoxPreference p = (CheckBoxPreference) preference;
-         _mbwManager.getLedgerManager().setDisableTEE(p.isChecked());
-         return true;
-      }
-   };
+//   private final OnPreferenceClickListener onClickLedgerNotificationDisableTee = new OnPreferenceClickListener() {
+//      public boolean onPreferenceClick(Preference preference) {
+//         CheckBoxPreference p = (CheckBoxPreference) preference;
+//         _mbwManager.getLedgerManager().setDisableTEE(p.isChecked());
+//         return true;
+//      }
+//   };
 
-   private final OnPreferenceClickListener onClickLedgerSetUnpluggedAID = new OnPreferenceClickListener() {
-      private EditText aidEdit;
-
-      public boolean onPreferenceClick(Preference preference) {
-         AlertDialog.Builder b = new AlertDialog.Builder(SettingsActivity.this);
-         b.setTitle(getString(R.string.ledger_set_unplugged_aid_title));
-         b.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-               byte[] aidBinary;
-               String aid = aidEdit.getText().toString();
-               try {
-                  aidBinary = HexUtils.toBytes(aid);
-               } catch (Exception e) {
-                  aidBinary = null;
-               }
-               if (aidBinary == null) {
-                  Utils.showSimpleMessageDialog(SettingsActivity.this, getString(R.string.ledger_check_unplugged_aid));
-               } else {
-                  _mbwManager.getLedgerManager().setUnpluggedAID(aid);
-               }
-            }
-         });
-         b.setNegativeButton(R.string.cancel, null);
-
-         aidEdit = new EditText(SettingsActivity.this);
-         aidEdit.setInputType(InputType.TYPE_CLASS_TEXT);
-         aidEdit.setText(_mbwManager.getLedgerManager().getUnpluggedAID());
-         LinearLayout llDialog = new LinearLayout(SettingsActivity.this);
-         llDialog.setOrientation(LinearLayout.VERTICAL);
-         llDialog.setPadding(10, 10, 10, 10);
-         TextView tvInfo = new TextView(SettingsActivity.this);
-         tvInfo.setText(getString(R.string.ledger_unplugged_aid));
-         llDialog.addView(tvInfo);
-         llDialog.addView(aidEdit);
-         b.setView(llDialog);
-         b.show();
-         return true;
-      }
-   };
+//   private final OnPreferenceClickListener onClickLedgerSetUnpluggedAID = new OnPreferenceClickListener() {
+//      private EditText aidEdit;
+//
+//      public boolean onPreferenceClick(Preference preference) {
+//         AlertDialog.Builder b = new AlertDialog.Builder(SettingsActivity.this);
+//         b.setTitle(getString(R.string.ledger_set_unplugged_aid_title));
+//         b.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+//            @Override
+//            public void onClick(DialogInterface dialog, int which) {
+//               byte[] aidBinary;
+//               String aid = aidEdit.getText().toString();
+//               try {
+//                  aidBinary = HexUtils.toBytes(aid);
+//               } catch (Exception e) {
+//                  aidBinary = null;
+//               }
+//               if (aidBinary == null) {
+//                  Utils.showSimpleMessageDialog(SettingsActivity.this, getString(R.string.ledger_check_unplugged_aid));
+//               } else {
+//                  _mbwManager.getLedgerManager().setUnpluggedAID(aid);
+//               }
+//            }
+//         });
+//         b.setNegativeButton(R.string.cancel, null);
+//
+//         aidEdit = new EditText(SettingsActivity.this);
+//         aidEdit.setInputType(InputType.TYPE_CLASS_TEXT);
+//         aidEdit.setText(_mbwManager.getLedgerManager().getUnpluggedAID());
+//         LinearLayout llDialog = new LinearLayout(SettingsActivity.this);
+//         llDialog.setOrientation(LinearLayout.VERTICAL);
+//         llDialog.setPadding(10, 10, 10, 10);
+//         TextView tvInfo = new TextView(SettingsActivity.this);
+//         tvInfo.setText(getString(R.string.ledger_unplugged_aid));
+//         llDialog.addView(tvInfo);
+//         llDialog.addView(aidEdit);
+//         b.setView(llDialog);
+//         b.show();
+//         return true;
+//      }
+//   };
 
    private ListPreference _bitcoinDenomination;
    private Preference _localCurrency;
@@ -482,19 +482,19 @@ public class SettingsActivity extends PreferenceActivity {
          }
       });
 
-      CheckBoxPreference ledgerDisableTee = (CheckBoxPreference) findPreference("ledgerDisableTee");
-      Preference ledgerSetUnpluggedAID = findPreference("ledgerUnpluggedAID");
+//      CheckBoxPreference ledgerDisableTee = (CheckBoxPreference) findPreference("ledgerDisableTee");
+//      Preference ledgerSetUnpluggedAID = findPreference("ledgerUnpluggedAID");
 
-      boolean isTeeAvailable = LedgerTransportTEEProxyFactory.isServiceAvailable(this);
-      if (isTeeAvailable) {
-         ledgerDisableTee.setChecked(_mbwManager.getLedgerManager().getDisableTEE());
-         ledgerDisableTee.setOnPreferenceClickListener(onClickLedgerNotificationDisableTee);
-      } else {
-         PreferenceCategory ledger = (PreferenceCategory) findPreference("ledger");
-         ledger.removePreference(ledgerDisableTee);
-      }
+//      boolean isTeeAvailable = LedgerTransportTEEProxyFactory.isServiceAvailable(this);
+//      if (isTeeAvailable) {
+//         ledgerDisableTee.setChecked(_mbwManager.getLedgerManager().getDisableTEE());
+//         ledgerDisableTee.setOnPreferenceClickListener(onClickLedgerNotificationDisableTee);
+//      } else {
+//         PreferenceCategory ledger = (PreferenceCategory) findPreference("ledger");
+//         ledger.removePreference(ledgerDisableTee);
+//      }
 
-      ledgerSetUnpluggedAID.setOnPreferenceClickListener(onClickLedgerSetUnpluggedAID);
+//      ledgerSetUnpluggedAID.setOnPreferenceClickListener(onClickLedgerSetUnpluggedAID);
 
       applyLocalTraderEnablement();
 
