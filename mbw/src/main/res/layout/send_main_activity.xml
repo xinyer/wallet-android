@@ -45,7 +45,6 @@
 
 
                     <!-- Scan button -->
-
                     <Button
                         android:id="@+id/btScan"
                         android:layout_width="220dp"
@@ -54,30 +53,6 @@
                         android:layout_marginBottom="6dp"
                         android:layout_marginTop="6dp"
                         android:text="@string/scan_qr_code"
-                        android:textSize="20sp" />
-
-                    <!-- Address Book -->
-
-                    <Button
-                        android:id="@+id/btAddressBook"
-                        android:layout_width="220dp"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:layout_marginBottom="6dp"
-                        android:layout_marginTop="6dp"
-                        android:text="@string/my_addresses"
-                        android:textSize="20sp" />
-
-                    <!-- Clipboard -->
-
-                    <Button
-                        android:id="@+id/btClipboard"
-                        android:layout_width="220dp"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:layout_marginBottom="6dp"
-                        android:layout_marginTop="6dp"
-                        android:text="@string/clipboard"
                         android:textSize="20sp" />
 
                     <!-- Manual Entry -->
@@ -220,7 +195,6 @@
             </View>
 
             <!-- Amount Title -->
-
             <TextView
                     android:id="@+id/tvAmountTitle"
                     android:layout_width="wrap_content"
@@ -297,22 +271,6 @@
                         android:text="@string/miner_fee_title"
                         android:layout_gravity="center"
                         android:textSize="24sp"/>
-
-                <Button
-                    android:id="@+id/btFromBtcAccount"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    style="@style/MyceliumSlimButton"
-                    android:paddingTop="4sp"
-                    android:paddingBottom="4sp"
-                    android:paddingLeft="10sp"
-                    android:paddingRight="10sp"
-                    android:layout_marginBottom="8dp"
-                    android:layout_gravity="center_horizontal"
-                    android:textSize="16sp"
-                    tools:text="from BtcAccount: AACASD274687ASD"
-                    android:visibility="gone"
-                    />
 
                 <TextView
                     android:id="@+id/tvFeeWarning"

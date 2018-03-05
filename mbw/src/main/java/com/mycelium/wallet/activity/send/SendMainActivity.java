@@ -82,8 +82,6 @@ import com.mycelium.wallet.Utils;
 import com.mycelium.wallet.activity.GetAmountActivity;
 import com.mycelium.wallet.activity.ScanActivity;
 import com.mycelium.wallet.activity.StringHandlerActivity;
-import com.mycelium.wallet.activity.modern.AddressBookFragment;
-import com.mycelium.wallet.activity.modern.GetFromAddressBookActivity;
 import com.mycelium.wallet.activity.send.adapter.FeeLvlViewAdapter;
 import com.mycelium.wallet.activity.send.adapter.FeeViewAdapter;
 import com.mycelium.wallet.activity.send.event.SelectListener;
@@ -98,10 +96,6 @@ import com.mycelium.wallet.event.SyncFailed;
 import com.mycelium.wallet.event.SyncStopped;
 import com.mycelium.wallet.paymentrequest.PaymentRequestHandler;
 import com.mycelium.wapi.api.lib.FeeEstimation;
-import com.mycelium.wapi.api.response.Feature;
-import com.mycelium.wapi.wallet.AbstractAccount;
-import com.mycelium.wapi.wallet.AesKeyCipher;
-import com.mycelium.wapi.wallet.KeyCipher;
 import com.mycelium.wapi.wallet.WalletAccount;
 import com.mycelium.wapi.wallet.WalletManager;
 import com.mycelium.wapi.wallet.bip44.Bip44AccountExternalSignature;
@@ -127,7 +121,6 @@ import butterknife.OnClick;
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
 import static android.widget.Toast.LENGTH_LONG;
-import static android.widget.Toast.LENGTH_SHORT;
 import static android.widget.Toast.makeText;
 import static com.mrd.bitlib.StandardTransactionBuilder.estimateTransactionSize;
 
@@ -136,13 +129,11 @@ public class SendMainActivity extends Activity {
 
     private static final int GET_AMOUNT_RESULT_CODE = 1;
     private static final int SCAN_RESULT_CODE = 2;
-    private static final int ADDRESS_BOOK_RESULT_CODE = 3;
     private static final int MANUAL_ENTRY_RESULT_CODE = 4;
     private static final int REQUEST_PICK_ACCOUNT = 5;
     protected static final int SIGN_TRANSACTION_REQUEST_CODE = 6;
     private static final int BROADCAST_REQUEST_CODE = 7;
     private static final int REQUEST_PAYMENT_HANDLER = 8;
-    private static final int REQUET_BTC_ACCOUNT = 9;
     public static final String RAW_PAYMENT_REQUEST = "rawPaymentRequest";
 
     public static final String ACCOUNT = "account";
@@ -193,12 +184,8 @@ public class SendMainActivity extends Activity {
     TextView tvSatFeeValue;
     @BindView(R.id.btEnterAmount)
     ImageButton btEnterAmount;
-    @BindView(R.id.btClipboard)
-    Button btClipboard;
     @BindView(R.id.btSend)
     Button btSend;
-    @BindView(R.id.btAddressBook)
-    Button btAddressBook;
     @BindView(R.id.btManualEntry)
     Button btManualEntry;
     @BindView(R.id.btScan)
@@ -211,14 +198,10 @@ public class SendMainActivity extends Activity {
     View llEnterRecipient;
     @BindView(R.id.llRecipientAddress)
     LinearLayout llRecipientAddress;
-    @BindView(R.id.btFromBtcAccount)
-    Button btFeeFromAccount;
     @BindView(R.id.colu_tips_check_address)
     View tips_check_address;
     @BindView(R.id.tvFeeWarning)
     TextView tvFeeWarning;
-
-
     @BindView(R.id.feeLvlList)
     SelectableRecyclerView feeLvlList;
     @BindView(R.id.feeValueList)
@@ -538,43 +521,16 @@ public class SendMainActivity extends Activity {
                 .show();
     }
 
-    @OnClick(R.id.btFromBtcAccount)
-    void feeFromAcc() {
-        Intent intent = new Intent(this, GetBtcAccountForFeeActivity.class);
-        startActivityForResult(intent, REQUET_BTC_ACCOUNT);
-    }
-
     @OnClick(R.id.btScan)
     void onClickScan() {
         StringHandleConfig config = StringHandleConfig.returnKeyOrAddressOrUriOrKeynode();
-        WalletAccount account = Preconditions.checkNotNull(_mbwManager.getSelectedAccount());
         ScanActivity.callMe(this, SCAN_RESULT_CODE, config);
-    }
-
-    @OnClick(R.id.btAddressBook)
-    void onClickAddressBook() {
-        Intent intent = new Intent(this, GetFromAddressBookActivity.class);
-        startActivityForResult(intent, ADDRESS_BOOK_RESULT_CODE);
     }
 
     @OnClick(R.id.btManualEntry)
     void onClickManualEntry() {
         Intent intent = new Intent(this, ManualAddressEntry.class);
         startActivityForResult(intent, MANUAL_ENTRY_RESULT_CODE);
-    }
-
-    @OnClick(R.id.btClipboard)
-    void onClickClipboard() {
-        BitcoinUriWithAddress uri = getUriFromClipboard();
-        if (uri != null) {
-            makeText(this, getResources().getString(R.string.using_address_from_clipboard), LENGTH_SHORT).show();
-            _receivingAddress = uri.address;
-            if (uri.amount != null) {
-                _amountToSend = ExactBitcoinValue.from(uri.amount);
-            }
-            _transactionStatus = tryCreateUnsignedTransaction();
-            updateUi();
-        }
     }
 
     @OnClick(R.id.btEnterAmount)
@@ -963,7 +919,6 @@ public class SendMainActivity extends Activity {
             _mbwManager.getExchangeRateManager().requestRefresh();
         }
 
-        btClipboard.setEnabled(getUriFromClipboard() != null);
         pbSend.setVisibility(GONE);
 
         updateUi();
@@ -1000,9 +955,7 @@ public class SendMainActivity extends Activity {
     protected void disableButtons() {
         pbSend.setVisibility(VISIBLE);
         btSend.setEnabled(false);
-        btAddressBook.setEnabled(false);
         btManualEntry.setEnabled(false);
-        btClipboard.setEnabled(false);
         btScan.setEnabled(false);
         btEnterAmount.setEnabled(false);
     }
@@ -1060,23 +1013,6 @@ public class SendMainActivity extends Activity {
 
             }
 
-            _transactionStatus = tryCreateUnsignedTransaction();
-            updateUi();
-        } else if (requestCode == ADDRESS_BOOK_RESULT_CODE && resultCode == RESULT_OK) {
-            // Get result from address chooser
-            String s = Preconditions.checkNotNull(intent.getStringExtra(AddressBookFragment.ADDRESS_RESULT_NAME));
-            String result = s.trim();
-            // Is it really an address?
-            Address address = Address.fromString(result, _mbwManager.getNetwork());
-            if (address == null) {
-                return;
-            }
-            _receivingAddress = address;
-            if (intent.getExtras().containsKey(AddressBookFragment.ADDRESS_RESULT_LABEL)) {
-                _receivingLabel = intent.getStringExtra(AddressBookFragment.ADDRESS_RESULT_LABEL);
-            }
-            // this is where colusend is calling tryCreateUnsigned
-            // why is amountToSend not set ?
             _transactionStatus = tryCreateUnsignedTransaction();
             updateUi();
         } else if (requestCode == MANUAL_ENTRY_RESULT_CODE && resultCode == RESULT_OK) {
@@ -1138,11 +1074,6 @@ public class SendMainActivity extends Activity {
                 // user canceled - also leave this activity
                 setResult(RESULT_CANCELED);
                 finish();
-            }
-        } else if (requestCode == REQUET_BTC_ACCOUNT) {
-            if (resultCode == RESULT_OK) {
-                UUID id = (UUID) intent.getSerializableExtra(AddressBookFragment.ADDRESS_RESULT_ID);
-                fundColuAccount = _mbwManager.getWalletManager(false).getAccount(id);
             }
         } else {
             super.onActivityResult(requestCode, resultCode, intent);
