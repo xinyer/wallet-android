@@ -83,7 +83,6 @@ import com.mycelium.wallet.activity.util.BlockExplorerManager;
 import com.mycelium.wallet.activity.util.Pin;
 import com.mycelium.wallet.api.AndroidAsyncApi;
 import com.mycelium.wallet.bitid.ExternalService;
-import com.mycelium.wallet.coinapult.CoinapultManager;
 import com.mycelium.wallet.colu.ColuManager;
 import com.mycelium.wallet.colu.SqliteColuManagerBacking;
 import com.mycelium.wallet.event.EventTranslator;
@@ -151,7 +150,6 @@ public class MbwManager {
      * 0x424944 = "BID"
      */
     private static final int BIP32_ROOT_AUTHENTICATION_INDEX = 0x80424944;
-    private Optional<CoinapultManager> _coinapultManager;
     private volatile Optional<ColuManager> _coluManager;
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
@@ -287,10 +285,6 @@ public class MbwManager {
         _exchangeRateManager.subscribe(_eventTranslator);
 
         _walletManager.addObserver(_eventTranslator);
-        _coinapultManager = createCoinapultManager();
-        if (_coinapultManager.isPresent()) {
-            addExtraAccounts(_coinapultManager.get());
-        }
 
         new InitColuManagerTask().execute();
         // set the currency-list after we added all extra accounts, they may provide
@@ -330,34 +324,6 @@ public class MbwManager {
         _walletManager.refreshExtraAccounts();
         _hasCoinapultAccounts = null;  // invalidate cache
     }
-
-    private Optional<CoinapultManager> createCoinapultManager() {
-        if (_walletManager.hasBip32MasterSeed() && _storage.isPairedService(MetadataStorage.PAIRED_SERVICE_COINAPULT)) {
-            BitIdKeyDerivation derivation = new BitIdKeyDerivation() {
-                @Override
-                public InMemoryPrivateKey deriveKey(int accountIndex, String site) {
-                    try {
-                        Bip39.MasterSeed masterSeed = _walletManager.getMasterSeed(AesKeyCipher.defaultKeyCipher());
-                        return createBip32WebsitePrivateKey(masterSeed.getBip32Seed(), accountIndex, site);
-                    } catch (KeyCipher.InvalidKeyCipher invalidKeyCipher) {
-                        throw new RuntimeException(invalidKeyCipher);
-                    }
-                }
-            };
-            return Optional.of(new CoinapultManager(
-                    _environment,
-                    derivation,
-                    _eventBus,
-                    new Handler(_applicationContext.getMainLooper()),
-                    _storage,
-                    _exchangeRateManager,
-                    retainingWapiLogger));
-
-        } else {
-            return Optional.absent();
-        }
-    }
-
 
     private Optional<ColuManager> createColuManager(final Context context, MbwEnvironment environment) {
 
@@ -1254,24 +1220,6 @@ public class MbwManager {
         editor.commit();
 
         this._pinRequiredOnStartup = _pinRequiredOnStartup;
-    }
-
-    /**
-     * this should only be called if a coinapult account was created once.
-     */
-    public CoinapultManager getCoinapultManager() {
-        if (_coinapultManager.isPresent()) {
-            return _coinapultManager.get();
-        } else {
-            //lazily create one
-            _coinapultManager = createCoinapultManager();
-            //still not certain, if user never created one
-            if (_coinapultManager.isPresent()) {
-                return _coinapultManager.get();
-            } else {
-                throw new IllegalStateException("tried to obtain coinapult manager without having created one");
-            }
-        }
     }
 
     public ColuManager getColuManager() {

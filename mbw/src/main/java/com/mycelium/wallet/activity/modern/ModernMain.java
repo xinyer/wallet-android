@@ -75,7 +75,6 @@ import com.mycelium.wallet.activity.main.TransactionHistoryFragment;
 import com.mycelium.wallet.activity.modern.adapter.TabsAdapter;
 import com.mycelium.wallet.activity.send.InstantWalletActivity;
 import com.mycelium.wallet.activity.settings.SettingsActivity;
-import com.mycelium.wallet.coinapult.CoinapultAccount;
 import com.mycelium.wallet.event.*;
 import com.mycelium.wallet.persistence.MetadataStorage;
 import com.mycelium.wapi.api.response.Feature;
@@ -365,7 +364,6 @@ public class ModernMain extends ActionBarActivity {
       final boolean isAccountTab = tabIdx == TAB_ID_ACCOUNTS;
       final boolean locked = _mbwManager.isKeyManagementLocked();
       Preconditions.checkNotNull(menu.findItem(R.id.miAddRecord)).setVisible(isAccountTab && !locked);
-      Preconditions.checkNotNull(menu.findItem(R.id.miAddFiatAccount)).setVisible(isAccountTab);
 
       // Lock menu
       final boolean hasPin = _mbwManager.isPinProtected();
@@ -572,10 +570,6 @@ public class ModernMain extends ActionBarActivity {
    @Subscribe
    public void onNewFeatureWarnings(final FeatureWarningsAvailable event) {
       _mbwManager.getVersionManager().showFeatureWarningIfNeeded(this, Feature.MAIN_SCREEN);
-
-      if (_mbwManager.getSelectedAccount() instanceof CoinapultAccount) {
-         _mbwManager.getVersionManager().showFeatureWarningIfNeeded(this, Feature.COINAPULT);
-      }
    }
 
    @Subscribe

@@ -70,7 +70,6 @@ import com.mycelium.wallet.activity.modern.Toaster;
 import com.mycelium.wallet.activity.send.BroadcastTransactionActivity;
 import com.mycelium.wallet.activity.send.SignTransactionActivity;
 import com.mycelium.wallet.activity.util.EnterAddressLabelUtil;
-import com.mycelium.wallet.coinapult.CoinapultTransactionSummary;
 import com.mycelium.wallet.colu.ColuAccount;
 import com.mycelium.wallet.event.AddressBookChanged;
 import com.mycelium.wallet.event.ExchangeRatesRefreshed;
@@ -293,35 +292,6 @@ public class TransactionHistoryFragment extends Fragment {
                   @Override
                   public boolean onActionItemClicked(ActionMode actionMode, MenuItem menuItem) {
                      final int itemId = menuItem.getItemId();
-                     if (itemId == R.id.miShowCoinapultDebug) {
-                        if (record instanceof CoinapultTransactionSummary) {
-                           final CoinapultTransactionSummary summary = (CoinapultTransactionSummary) record;
-                           new AlertDialog.Builder(_context)
-                                 .setMessage(summary.input.toString())
-                                 .setNeutralButton(R.string.copy, new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which) {
-                                       Utils.setClipboardString(
-                                             summary.input.toString(),
-                                             TransactionHistoryFragment.this.getActivity());
-                                       Toast.makeText(
-                                             TransactionHistoryFragment.this.getActivity(),
-                                             R.string.copied_to_clipboard, Toast.LENGTH_SHORT)
-                                             .show();
-
-                                       dialog.dismiss();
-                                    }
-                                 })
-                                 .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which) {
-                                       dialog.dismiss();
-                                    }
-                                 })
-                                 .show();
-                        }
-                        return true;
-                     }
                      switch (itemId) {
                         case R.id.miShowDetails:
                            doShowDetails(record);

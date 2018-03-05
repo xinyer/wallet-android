@@ -83,14 +83,12 @@ import com.mycelium.wallet.activity.AdditionalBackupWarningActivity;
 import com.mycelium.wallet.activity.BackupWordListActivity;
 import com.mycelium.wallet.activity.export.BackupToPdfActivity;
 import com.mycelium.wallet.activity.export.ExportAsQrCodeActivity;
-import com.mycelium.wallet.coinapult.CoinapultAccount;
 import com.mycelium.wallet.colu.ColuAccount;
 import com.mycelium.wallet.persistence.MetadataStorage;
 import com.mycelium.wapi.wallet.AesKeyCipher;
 import com.mycelium.wapi.wallet.ExportableAccount;
 import com.mycelium.wapi.wallet.WalletAccount;
 import com.mycelium.wapi.wallet.bip44.Bip44Account;
-import com.mycelium.wapi.wallet.bip44.Bip44AccountContext;
 import com.mycelium.wapi.wallet.bip44.Bip44AccountExternalSignature;
 import com.mycelium.wapi.wallet.bip44.Bip44PubOnlyAccount;
 import com.mycelium.wapi.wallet.currency.BitcoinValue;
@@ -788,9 +786,6 @@ public class Utils {
             if(input instanceof ColuAccount) {
                return 3;
             }
-            if (input instanceof CoinapultAccount) {
-               return 4; //coinapult last
-            }
             return 2;
          }
       });
@@ -874,13 +869,6 @@ public class Utils {
       if (walletAccount instanceof Bip44Account) {
          return resources.getDrawable(R.drawable.multikeys_grey);
       }
-      if (walletAccount instanceof CoinapultAccount) {
-         if (isSelectedAccount) {
-            return resources.getDrawable(R.drawable.coinapult);
-         } else {
-            return resources.getDrawable(R.drawable.coinapultgrey);
-         }
-      }
 
       //single key account
       return resources.getDrawable(R.drawable.singlekey_grey);
@@ -908,9 +896,6 @@ public class Utils {
    }
 
    public static boolean isAllowedForLocalTrader(WalletAccount account) {
-      if (account instanceof CoinapultAccount) {
-         return false; //we do not support coinapult accs in lt (yet)
-      }
       if (!account.getReceivingAddress().isPresent()) {
          return false;  // the account has no valid receiving address (should not happen) - dont use it
       }

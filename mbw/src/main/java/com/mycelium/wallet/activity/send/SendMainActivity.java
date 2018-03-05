@@ -95,7 +95,6 @@ import com.mycelium.wallet.activity.send.model.FeeItem;
 import com.mycelium.wallet.activity.send.model.FeeLvlItem;
 import com.mycelium.wallet.activity.send.view.SelectableRecyclerView;
 import com.mycelium.wallet.activity.util.AnimationUtils;
-import com.mycelium.wallet.coinapult.CoinapultAccount;
 import com.mycelium.wallet.colu.ColuAccount;
 import com.mycelium.wallet.colu.ColuCurrencyValue;
 import com.mycelium.wallet.colu.ColuManager;
@@ -250,7 +249,6 @@ public class SendMainActivity extends Activity {
     protected boolean _isColdStorage;
     private TransactionStatus _transactionStatus;
     protected UnsignedTransaction _unsigned;
-    protected CoinapultAccount.PreparedCoinapult _preparedCoinapult;
     protected ColuBroadcastTxHex.Json _preparedColuTx;
     private Transaction _signedTransaction;
     private MinerFee feeLvl;
@@ -303,10 +301,6 @@ public class SendMainActivity extends Activity {
     public static Intent getIntent(Activity currentActivity, UUID account, byte[] rawPaymentRequest, boolean isColdStorage) {
         return getIntent(currentActivity, account, isColdStorage)
                 .putExtra(RAW_PAYMENT_REQUEST, rawPaymentRequest);
-    }
-
-    private boolean isCoinapult() {
-        return _account != null && _account instanceof CoinapultAccount;
     }
 
     private boolean isColu() {
@@ -408,12 +402,6 @@ public class SendMainActivity extends Activity {
         if (_bitcoinUri != null && !Strings.isNullOrEmpty(_bitcoinUri.callbackURL) && _paymentRequestHandler == null) {
             verifyPaymentRequest(_bitcoinUri);
         }
-
-        //Remove Miner fee if coinapult
-        if (isCoinapult()) {
-            llFee.setVisibility(GONE);
-        }
-
 
         checkHaveSpendAccount();
 
@@ -703,9 +691,7 @@ public class SendMainActivity extends Activity {
 
    @OnClick(R.id.btSend)
    void onClickSend() {
-      if (isCoinapult()) {
-         sendCoinapultTransaction();
-      } else if (isColu()) {
+      if (isColu()) {
           sendColuTransaction();
       } else if (_isColdStorage || _account instanceof Bip44AccountExternalSignature) {
          // We do not ask for pin when the key is from cold storage or from a external device (trezor,...)
@@ -783,46 +769,6 @@ public class SendMainActivity extends Activity {
                 });
     }
 
-    private void sendCoinapultTransaction() {
-        _mbwManager.getVersionManager().showFeatureWarningIfNeeded(this,
-                Feature.COINAPULT_MAKE_OUTGOING_TX, true, new Runnable() {
-                    @Override
-                    public void run() {
-                        _mbwManager.runPinProtectedFunction(SendMainActivity.this, new Runnable() {
-                            @Override
-                            public void run() {
-                                if (_account instanceof CoinapultAccount) {
-                                    final ProgressDialog progress = new ProgressDialog(SendMainActivity.this);
-                                    progress.setCancelable(false);
-                                    progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-                                    progress.setMessage(getString(R.string.coinapult_sending_via_coinapult));
-                                    progress.show();
-                                    final CoinapultAccount coinapultManager = (CoinapultAccount) _account;
-                                    disableButtons();
-                                    new AsyncTask<CoinapultAccount.PreparedCoinapult, Void, Boolean>() {
-                                        @Override
-                                        protected Boolean doInBackground(CoinapultAccount.PreparedCoinapult... params) {
-                                            return coinapultManager.broadcast(params[0]);
-                                        }
-
-                              @Override
-                              protected void onPostExecute(Boolean aBoolean) {
-                                 super.onPostExecute(aBoolean);
-                                 progress.dismiss();
-                                 if (aBoolean) {
-                                    SendMainActivity.this.finish();
-                                 } else {
-                                    makeText(SendMainActivity.this, R.string.coinapult_failed_to_broadcast, LENGTH_SHORT).show();
-                                    updateUi();
-                                 }
-                              }
-                           }.execute(_preparedCoinapult);
-                        }
-                     }
-                  });
-               }
-            });
-   }
 
     @OnClick(R.id.tvUnconfirmedWarning)
     void onClickUnconfirmedWarning() {
@@ -838,12 +784,9 @@ public class SendMainActivity extends Activity {
                 .show();
     }
 
-
     private TransactionStatus tryCreateUnsignedTransaction() {
         Log.d(TAG, "tryCreateUnsignedTransaction");
-        if (isCoinapult()) {
-            return tryCreateCoinapultTX();
-        } else if (isColu()) {
+        if (isColu()) {
             return tryCreateUnsignedColuTX(null);
         } else {
             return tryCreateUnsignedTransactionFromWallet();
@@ -922,7 +865,6 @@ public class SendMainActivity extends Activity {
         } else {
             final ColuAccount coluAccount = (ColuAccount) _account;
             _unsigned = null;
-            _preparedCoinapult = null;
 
             if (CurrencyValue.isNullOrZero(_amountToSend) || _receivingAddress == null) {
                 Log.d(TAG, "tryCreateUnsignedColuTX Missing argument: amountToSend or receiving address is null.");
@@ -1041,57 +983,6 @@ public class SendMainActivity extends Activity {
         void success();
         void fail();
     }
-
-    private TransactionStatus tryCreateCoinapultTX() {
-        if (_account instanceof CoinapultAccount) {
-            CoinapultAccount coinapultAccount = (CoinapultAccount) _account;
-            _unsigned = null;
-            _preparedCoinapult = null;
-
-         if (CurrencyValue.isNullOrZero(_amountToSend) || _receivingAddress == null) {
-            return TransactionStatus.MissingArguments;
-         }
-
-         try {
-            // try to get it in the accounts native currency, but dont convert anything
-            Optional<ExactCurrencyValue> nativeAmount = CurrencyValue.checkCurrencyAmount(
-                  _amountToSend,
-                  coinapultAccount.getCoinapultCurrency().name
-            );
-
-            BigDecimal minimumConversationValue = coinapultAccount.getCoinapultCurrency().minimumConversationValue;
-            if (nativeAmount.isPresent()) {
-               if (nativeAmount.get().getValue().compareTo(minimumConversationValue) < 0) {
-                  //trying to send less than coinapults minimum withdrawal
-                  return TransactionStatus.OutputTooSmall;
-               }
-               _preparedCoinapult = coinapultAccount.prepareCoinapultTx(_receivingAddress, nativeAmount.get());
-               return TransactionStatus.OK;
-            } else {
-               // if we dont have it in the account-native currency, send it as bitcoin value and
-               // let coinapult to the conversation
-
-               // convert it to native, only to check if its larger the the minValue
-               BigDecimal nativeValue = CurrencyValue.fromValue(
-                     _amountToSend, coinapultAccount.getCoinapultCurrency().name,
-                     _mbwManager.getExchangeRateManager()).getValue();
-
-               if (nativeValue == null || nativeValue.compareTo(minimumConversationValue) < 0) {
-                  // trying to send less than coinapults minimum withdrawal, or no fx rate available
-                  return TransactionStatus.OutputTooSmall;
-               }
-               WalletAccount.Receiver receiver = new WalletAccount.Receiver(_receivingAddress, getBitcoinValueToSend().getLongValue());
-               _preparedCoinapult = coinapultAccount.prepareCoinapultTx(receiver);
-               return TransactionStatus.OK;
-            }
-         } catch (InsufficientFundsException e) {
-            makeText(this, getResources().getString(R.string.insufficient_funds), LENGTH_LONG).show();
-            return TransactionStatus.InsufficientFunds;
-         }
-      } else {
-         throw new IllegalStateException("only attempt this for coinapult accounts");
-      }
-   }
 
    private void checkSpendingUnconfirmed() {
       for (UnspentTransactionOutput out : _unsigned.getFundingOutputs()) {
@@ -1309,17 +1200,7 @@ public class SendMainActivity extends Activity {
         switch (_transactionStatus) {
             case OutputTooSmall:
                 // Amount too small
-                if (isCoinapult()) {
-                    CoinapultAccount coinapultAccount = (CoinapultAccount) _account;
-                    tvError.setText(
-                            getString(
-                                    R.string.coinapult_amount_too_small,
-                                    coinapultAccount.getCoinapultCurrency().minimumConversationValue,
-                                    coinapultAccount.getCoinapultCurrency().name)
-                    );
-                } else {
-                    tvError.setText(R.string.amount_too_small_short);
-                }
+                tvError.setText(R.string.amount_too_small_short);
                 tvErrorShow = true;
                 break;
             case InsufficientFunds:
