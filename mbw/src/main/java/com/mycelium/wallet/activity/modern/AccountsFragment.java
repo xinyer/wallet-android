@@ -574,10 +574,6 @@ public class AccountsFragment extends Fragment {
             menus.add(R.menu.record_options_menu_ignore_warning);
         }
 
-        if (account.getId().equals(_mbwManager.getLocalTraderManager().getLocalTraderAccountId())) {
-            menus.add(R.menu.record_options_menu_detach);
-        }
-
         ActionBarActivity parent = (ActionBarActivity) getActivity();
 
         Callback actionMode = new Callback() {
@@ -626,9 +622,6 @@ public class AccountsFragment extends Fragment {
                     return true;
                 } else if (id == R.id.miSignMessage) {
                     signMessage();
-                    return true;
-                } else if (id == R.id.miDetach) {
-                    detachFromLocalTrader();
                     return true;
                 } else if (id == R.id.miShowOutputs) {
                     showOutputs();
@@ -868,39 +861,6 @@ public class AccountsFragment extends Fragment {
                     return;
                 }
                 Utils.exportSelectedAccount(AccountsFragment.this.getActivity());
-            }
-
-        });
-    }
-
-    private void detachFromLocalTrader() {
-        if (!isAdded()) {
-            return;
-        }
-        _mbwManager.runPinProtectedFunction(AccountsFragment.this.getActivity(), new Runnable() {
-
-            @Override
-            public void run() {
-                if (!AccountsFragment.this.isAdded()) {
-                    return;
-                }
-                AlertDialog.Builder confirmDialog = new AlertDialog.Builder(getActivity());
-                confirmDialog.setTitle(R.string.lt_detaching_title);
-                confirmDialog.setMessage(getString(R.string.lt_detaching_question));
-                confirmDialog.setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
-
-                    public void onClick(DialogInterface arg0, int arg1) {
-                        _mbwManager.getLocalTraderManager().unsetLocalTraderAccount();
-                        _toaster.toast(R.string.lt_detached, false);
-                        update();
-                    }
-                });
-                confirmDialog.setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
-
-                    public void onClick(DialogInterface arg0, int arg1) {
-                    }
-                });
-                confirmDialog.show();
             }
 
         });

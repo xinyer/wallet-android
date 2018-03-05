@@ -52,9 +52,6 @@ import com.mrd.bitlib.model.Address;
 import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.R;
 import com.mycelium.wallet.Utils;
-import com.mycelium.wallet.lt.LocalTraderEventSubscriber;
-import com.mycelium.wallet.lt.LocalTraderManager;
-import com.mycelium.wallet.lt.activity.LtMainActivity;
 import com.mycelium.wallet.simplex.SimplexMainActivity;
 
 public class SimplexFragment extends Fragment {

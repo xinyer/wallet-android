@@ -68,7 +68,6 @@ import com.mycelium.wallet.activity.send.GetSpendingRecordActivity;
 import com.mycelium.wallet.activity.send.SendInitializationActivity;
 import com.mycelium.wallet.bitid.BitIDAuthenticationActivity;
 import com.mycelium.wallet.bitid.BitIDSignRequest;
-import com.mycelium.wallet.external.glidera.activities.GlideraSendToNextStep;
 import com.mycelium.wallet.pop.PopRequest;
 import com.mycelium.wapi.wallet.AesKeyCipher;
 import com.mycelium.wapi.wallet.KeyCipher;
@@ -365,15 +364,15 @@ public class StartupActivity extends Activity {
 
    private void handleMyceliumUri(Uri intentUri) {
       final String host = intentUri.getHost();
-      if (host.equals(URI_HOST_GLIDERA_REGISTRATION)) {
-         Intent glideraIntent = new Intent(this, GlideraSendToNextStep.class);
-         glideraIntent.putExtra("uri", intentUri.toString());
-         startActivity(glideraIntent);
-      } else {
+//      if (host.equals(URI_HOST_GLIDERA_REGISTRATION)) {
+//         Intent glideraIntent = new Intent(this, GlideraSendToNextStep.class);
+//         glideraIntent.putExtra("uri", intentUri.toString());
+//         startActivity(glideraIntent);
+//      } else {
          // If we dont understand the url, just call the balance screen
          Intent balanceIntent = new Intent(this, ModernMain.class);
          startActivity(balanceIntent);
-      }
+//      }
       // close the startup activity to not pollute the backstack
       finish();
    }

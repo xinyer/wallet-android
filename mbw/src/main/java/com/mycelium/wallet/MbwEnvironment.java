@@ -39,7 +39,6 @@ import android.content.Context;
 import com.mrd.bitlib.model.NetworkParameters;
 import com.mycelium.net.ServerEndpoints;
 import com.mycelium.wallet.activity.util.BlockExplorer;
-import com.mycelium.wallet.external.BuySellServiceDescriptor;
 
 import java.util.List;
 
@@ -78,6 +77,5 @@ public abstract class MbwEnvironment {
    public abstract ServerEndpoints getLtEndpoints();
    public abstract ServerEndpoints getWapiEndpoints();
    public abstract List<BlockExplorer> getBlockExplorerList();
-   public abstract List<BuySellServiceDescriptor> getBuySellServices();
 
 }

@@ -93,7 +93,6 @@ import com.mycelium.wallet.event.SelectedCurrencyChanged;
 import com.mycelium.wallet.event.TorStateChanged;
 import com.mycelium.wallet.extsig.common.ExternalSignatureDeviceManager;
 import com.mycelium.wallet.extsig.trezor.TrezorManager;
-import com.mycelium.wallet.lt.LocalTraderManager;
 import com.mycelium.wallet.persistence.MetadataStorage;
 import com.mycelium.wallet.persistence.TradeSessionDb;
 import com.mycelium.wallet.wapi.SqliteWalletManagerBackingWrapper;
@@ -177,7 +176,6 @@ public class MbwManager {
     private Handler _torHandler;
     private Context _applicationContext;
     private MetadataStorage _storage;
-    private LocalTraderManager _localTraderManager;
     private Pin _pin;
     private boolean _pinRequiredOnStartup;
 
@@ -230,7 +228,6 @@ public class MbwManager {
         // Local Trader
         TradeSessionDb tradeSessionDb = new TradeSessionDb(_applicationContext);
         _ltApi = initLt();
-        _localTraderManager = new LocalTraderManager(_applicationContext, tradeSessionDb, getLtApi(), this);
 
         _pin = new Pin(
                 preferences.getString(Constants.PIN_SETTING, ""),
@@ -449,12 +446,6 @@ public class MbwManager {
             return;
         }
 
-        // Get the local trader address, may be null
-        Address localTraderAddress = _localTraderManager.getLocalTraderAddress();
-        if (localTraderAddress == null) {
-            _localTraderManager.unsetLocalTraderAccount();
-        }
-
         //check which address was the last recently selected one
         SharedPreferences prefs = _applicationContext.getSharedPreferences("selected", Context.MODE_PRIVATE);
         String lastAddress = prefs.getString("last", null);
@@ -485,14 +476,6 @@ public class MbwManager {
                 _walletManager.getAccount(account).archiveAccount();
             }
 
-            // See if we need to migrate this account to local trader
-            if (record.address.equals(localTraderAddress)) {
-                if (record.hasPrivateKey()) {
-                    _localTraderManager.setLocalTraderData(account, record.key, record.address, _localTraderManager.getNickname());
-                } else {
-                    _localTraderManager.unsetLocalTraderAccount();
-                }
-            }
         }
     }
 
@@ -606,10 +589,6 @@ public class MbwManager {
 
     private SharedPreferences.Editor getEditor() {
         return getPreferences().edit();
-    }
-
-    public LocalTraderManager getLocalTraderManager() {
-        return _localTraderManager;
     }
 
     public ExchangeRateManager getExchangeRateManager() {

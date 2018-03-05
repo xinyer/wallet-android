@@ -50,37 +50,6 @@
                 android:title="@string/pref_pin_require_on_startup"/>
     </PreferenceCategory>
 
-    <!-- Local Trader Settings -->
-
-    <PreferenceCategory
-            android:title="@string/lt_pref_category"
-            android:key="localtraderPrefs">
-        <CheckBoxPreference
-                android:key="ltDisable"
-                android:layout="@layout/preference_layout"
-                android:summary="@string/lt_disable_preference_summary"
-                android:title="@string/lt_disable_preference"/>
-
-        <CheckBoxPreference
-                android:key="ltNotificationSound"
-                android:layout="@layout/preference_layout"
-                android:summary="@string/lt_sound_on_trade_preference_summary"
-                android:title="@string/lt_sound_on_trade_preference"/>
-
-        <CheckBoxPreference
-                android:key="ltMilesKilometers"
-                android:layout="@layout/preference_layout"
-                android:summary="@string/lt_miles_kilometers_preference_summary"
-                android:title="@string/lt_miles_kilometers_preference"/>
-
-        <Preference
-                android:key="ltNotificationEmail2"
-                android:layout="@layout/preference_layout"
-                android:title="@string/lt_use_email_for_notifications"
-                android:summary="@string/email_notification_setting_explanation"
-                />
-    </PreferenceCategory>
-
 
     <!-- Advanced Settings -->
 
@@ -136,9 +105,9 @@
 
     <!-- External services -->
 
-    <PreferenceCategory
-            android:key="external"
-            android:title="External Services">
-    </PreferenceCategory>
+    <!--<PreferenceCategory-->
+            <!--android:key="external"-->
+            <!--android:title="External Services">-->
+    <!--</PreferenceCategory>-->
 
 </PreferenceScreen>
