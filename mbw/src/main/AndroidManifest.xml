@@ -55,17 +55,6 @@
         android:label="@string/app_name"
         android:theme="@style/MyceliumModern">
 
-        <!-- Receiver for Google Cloud Messaging -->
-        <receiver
-            android:name=".lt.notification.GcmBroadcastReceiver"
-            android:permission="com.google.android.c2dm.permission.SEND">
-            <intent-filter>
-                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
-                <!-- Note that the below must match the package name -->
-                <category android:name="${applicationId}" />
-            </intent-filter>
-        </receiver>
-
         <!-- file provider to enable secure intent sharing for encrypted backups -->
         <provider
             android:name="android.support.v4.content.FileProvider"
@@ -76,19 +65,6 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/my_paths" />
         </provider>
-
-        <!-- Service for Google Cloud Messaging -->
-        <service android:name=".lt.notification.GcmIntentService" />
-        <service
-            android:name=".service.TaskExecutionService"
-            android:enabled="true"
-            android:exported="false"
-            android:process=":Task" />
-        <service android:name=".external.changelly.ChangellyService"/>
-        <!-- hack - hardcode to be able to support froyo -->
-        <meta-data
-            android:name="com.google.android.gms.version"
-            android:value="@integer/google_play_services_version" />
 
         <!-- Startup -->
         <activity
@@ -174,32 +150,17 @@
             android:name=".activity.modern.ModernMain"
             android:theme="@style/MyceliumActionBar" />
         <activity android:name=".activity.AboutActivity" />
-        <activity android:name=".activity.modern.GetFromAddressBookActivity" />
         <activity android:name=".activity.AddAccountActivity" />
         <activity android:name=".activity.AddAdvancedAccountActivity" />
-        <activity android:name=".activity.AddCoinapultAccountActivity" />
-        <activity android:name=".activity.AddColuAccountActivity" />
         <activity android:name=".activity.ScanActivity" />
         <activity android:name=".activity.TransactionDetailsActivity" />
         <activity android:name=".activity.settings.SettingsActivity" />
         <activity android:name=".activity.settings.SetLocalCurrencyActivity" />
-        <activity android:name=".activity.export.ExportAsQrCodeActivity" />
-        <activity android:name=".activity.export.BackupToPdfActivity" />
         <activity android:name=".activity.export.MrdDecryptDataActivity" />
-        <activity android:name=".activity.export.VerifyBackupActivity" />
         <activity android:name=".activity.export.DecryptBip38PrivateKeyActivity" />
         <activity android:name=".activity.send.GetSpendingRecordActivity" />
         <activity android:name=".activity.modern.UnspentOutputsActivity" />
-        <activity android:name=".activity.send.InstantWalletActivity">
-
-            <!--
-             <intent-filter>
-                 <action android:name="android.nfc.action.NDEF_DISCOVERED" />
-                 <data android:mimeType="application/bitcoin-privatekey" />
-                 <category android:name="android.intent.category.DEFAULT" />
-             </intent-filter>
-            -->
-        </activity>
+        <activity android:name=".activity.send.InstantWalletActivity" />
         <activity android:name=".activity.send.SendInitializationActivity" />
         <activity android:name=".activity.send.ColdStorageSummaryActivity" />
         <activity android:name=".activity.send.SendMainActivity" />
@@ -212,39 +173,12 @@
             android:configChanges="orientation|keyboardHidden"
             android:screenOrientation="landscape"
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
-            android:windowSoftInputMode="stateAlwaysHidden"/>
-        <activity android:name=".simplex.SimplexMainActivity" />
-        <activity android:name=".external.changelly.ChangellyActivity"
-            android:screenOrientation="portrait"/>
-        <activity android:name=".external.changelly.ChangellyOfferActivity" />
-        <activity android:name=".lt.activity.LtMainActivity" />
-        <activity android:name=".lt.activity.CreateTrader1Activity" />
-        <activity android:name=".lt.activity.CreateTrader2Activity" />
-        <activity android:name=".lt.activity.CreateTrader3Activity" />
-        <activity android:name=".lt.activity.SolveCaptchaActivity" />
-        <activity
-            android:name=".lt.activity.TradeActivity"
-            android:windowSoftInputMode="stateHidden|adjustPan" />
-        <activity android:name=".lt.activity.ChangeLocationActivity" />
-        <activity
-            android:name=".lt.activity.EnterLocationActivity"
-            android:windowSoftInputMode="stateVisible" />
-        <activity android:name=".lt.activity.ChangePriceActivity" />
-        <activity android:name=".lt.activity.RefreshPriceActivity" />
-        <activity android:name=".lt.activity.EnterFiatAmountActivity" />
-        <activity android:name=".lt.activity.ViewTraderInfoActivity" />
-        <activity android:name=".lt.activity.buy.CreateTradeActivity" />
-        <activity android:name=".lt.activity.buy.SetTradeAddress" />
-        <activity android:name=".lt.activity.sell.CreateOrEditAdActivity" />
-        <activity android:name=".lt.activity.SendRequestActivity" />
+            android:windowSoftInputMode="stateAlwaysHidden" />
         <activity android:name=".activity.UpdateNotificationActivity" />
-        <activity android:name=".activity.PinProtectedActivity" />
         <activity android:name=".activity.MessageSigningActivity" />
         <activity android:name=".activity.ImportSeedActivity" />
         <activity android:name=".activity.EnterWordListActivity" />
-        <activity android:name=".activity.BackupWordListActivity" />
         <activity android:name=".activity.VerifyWordListActivity" />
-        <activity android:name=".activity.AdditionalBackupWarningActivity" />
         <activity android:name=".activity.modern.HDSigningActivity" />
         <activity android:name=".activity.BipSsImportActivity" />
         <activity android:name=".activity.CreateKeyActivity" />
@@ -252,11 +186,6 @@
         <activity android:name=".extsig.trezor.activity.InstantTrezorActivity" />
         <activity android:name=".extsig.trezor.activity.TrezorAccountImportActivity" />
         <activity android:name=".extsig.trezor.activity.TrezorSignTransactionActivity" />
-        <activity android:name=".extsig.keepkey.activity.InstantKeepKeyActivity" />
-        <activity android:name=".extsig.keepkey.activity.KeepKeyAccountImportActivity" />
-        <activity android:name=".extsig.keepkey.activity.KeepKeySignTransactionActivity" />
-        <activity android:name=".extsig.ledger.activity.LedgerAccountImportActivity" />
-        <activity android:name=".extsig.ledger.activity.LedgerSignTransactionActivity" />
         <activity android:name=".activity.InstantMasterseedActivity" />
         <activity android:name=".activity.ConnectionLogsActivity" />
         <activity android:name=".activity.GetAmountActivity" />
@@ -267,12 +196,7 @@
             android:label="@string/title_activity_bit_idauthentication" />
         <activity android:name=".activity.pop.PopActivity" />
         <activity android:name=".activity.pop.PopSelectTransactionActivity" />
-        <activity android:name=".external.glidera.activities.GlideraSendToNextStep" />
-        <activity android:name=".external.BuySellSelectFragment" />
-        <activity android:name=".external.glidera.activities.GlideraMainActivity" />
-        <activity android:name=".external.glidera.activities.GlideraTransaction" />
-        <activity android:name=".activity.send.GetBtcAccountForFeeActivity" />
-        <activity android:name=".activity.MessageVerifyActivity"/>
+        <activity android:name=".activity.MessageVerifyActivity" />
     </application>
 
 </manifest>

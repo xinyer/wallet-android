@@ -106,7 +106,6 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Locale;
 
-import javax.annotation.Nullable;
 
 public class Utils {
     private static final DecimalFormat FIAT_FORMAT;
@@ -698,9 +697,8 @@ public class Utils {
 
     public static List<WalletAccount> sortAccounts(final List<WalletAccount> accounts, final MetadataStorage storage) {
         Ordering<WalletAccount> type = Ordering.natural().onResultOf(new Function<WalletAccount, Integer>() {
-            @Nullable
             @Override
-            public Integer apply(@Nullable WalletAccount input) {
+            public Integer apply(WalletAccount input) {
                 if (input instanceof Bip44Account) {
                     return 0;
                 }
@@ -711,9 +709,8 @@ public class Utils {
             }
         });
         Ordering<WalletAccount> index = Ordering.natural().onResultOf(new Function<WalletAccount, Integer>() {
-            @Nullable
             @Override
-            public Integer apply(@Nullable WalletAccount input) {
+            public Integer apply(WalletAccount input) {
                 if (input instanceof Bip44Account) {
                     Bip44Account bip44Account = (Bip44Account) input;
                     return bip44Account.getAccountIndex();
@@ -730,9 +727,8 @@ public class Utils {
         };
 
         Ordering<WalletAccount> name = Ordering.natural().onResultOf(new Function<WalletAccount, String>() {
-            @Nullable
             @Override
-            public String apply(@Nullable WalletAccount input) {
+            public String apply(WalletAccount input) {
                 return storage.getLabelByAccount(input.getId());
             }
         });

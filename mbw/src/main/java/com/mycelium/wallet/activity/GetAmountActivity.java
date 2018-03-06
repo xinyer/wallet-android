@@ -1,42 +1,7 @@
-/*
- * Copyright 2013, 2014 Megion Research and Development GmbH
- *
- * Licensed under the Microsoft Reference Source License (MS-RSL)
- *
- * This license governs use of the accompanying software. If you use the software, you accept this license.
- * If you do not accept the license, do not use the software.
- *
- * 1. Definitions
- * The terms "reproduce," "reproduction," and "distribution" have the same meaning here as under U.S. copyright law.
- * "You" means the licensee of the software.
- * "Your company" means the company you worked for when you downloaded the software.
- * "Reference use" means use of the software within your company as a reference, in read only form, for the sole purposes
- * of debugging your products, maintaining your products, or enhancing the interoperability of your products with the
- * software, and specifically excludes the right to distribute the software outside of your company.
- * "Licensed patents" means any Licensor patent claims which read directly on the software as distributed by the Licensor
- * under this license.
- *
- * 2. Grant of Rights
- * (A) Copyright Grant- Subject to the terms of this license, the Licensor grants you a non-transferable, non-exclusive,
- * worldwide, royalty-free copyright license to reproduce the software for reference use.
- * (B) Patent Grant- Subject to the terms of this license, the Licensor grants you a non-transferable, non-exclusive,
- * worldwide, royalty-free patent license under licensed patents for reference use.
- *
- * 3. Limitations
- * (A) No Trademark License- This license does not grant you any rights to use the Licensor’s name, logo, or trademarks.
- * (B) If you begin patent litigation against the Licensor over patents that you think may apply to the software
- * (including a cross-claim or counterclaim in a lawsuit), your license to the software ends automatically.
- * (C) The software is licensed "as-is." You bear the risk of using it. The Licensor gives no express warranties,
- * guarantees or conditions. You may have additional consumer rights under your local laws which this license cannot
- * change. To the extent permitted under your local laws, the Licensor excludes the implied warranties of merchantability,
- * fitness for a particular purpose and non-infringement.
- */
-
 package com.mycelium.wallet.activity;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -59,14 +24,10 @@ import com.mycelium.wallet.NumberEntry;
 import com.mycelium.wallet.NumberEntry.NumberEntryListener;
 import com.mycelium.wallet.R;
 import com.mycelium.wallet.Utils;
-import com.mycelium.wallet.event.ExchangeRatesRefreshed;
-import com.mycelium.wallet.event.SelectedCurrencyChanged;
 import com.mycelium.wapi.wallet.WalletAccount;
 import com.mycelium.wapi.wallet.currency.CurrencyValue;
 import com.mycelium.wapi.wallet.currency.ExactBitcoinValue;
 import com.mycelium.wapi.wallet.currency.ExactCurrencyValue;
-import com.mycelium.wapi.wallet.currency.ExchangeBasedCurrencyValue;
-import com.squareup.otto.Subscribe;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -84,22 +45,12 @@ public class GetAmountActivity extends Activity implements NumberEntryListener {
     public static final String IS_COLD_STORAGE = "isColdStorage";
     public static final String SEND_MODE = "sendmode";
 
-    @BindView(R.id.btCurrency)
-    Button btCurrency;
-    @BindView(R.id.btPaste)
-    Button btPaste;
-    @BindView(R.id.btMax)
-    Button btMax;
     @BindView(R.id.btOk)
     Button btOk;
     @BindView(R.id.tvMaxAmount)
     TextView tvMaxAmount;
-    @BindView(R.id.tvHowIsItCalculated)
-    TextView tvHowIsItCalculated;
     @BindView(R.id.tvAmount)
     TextView tvAmount;
-    @BindView(R.id.tvAlternateAmount)
-    TextView tvAlternateAmount;
 
     private boolean isSendMode;
 
@@ -123,16 +74,6 @@ public class GetAmountActivity extends Activity implements NumberEntryListener {
         currentActivity.startActivityForResult(intent, requestCode);
     }
 
-    /**
-     * Get Amount for receiving
-     */
-    public static void callMeToReceive(Activity currentActivity, CurrencyValue amountToReceive, int requestCode) {
-        Intent intent = new Intent(currentActivity, GetAmountActivity.class)
-                .putExtra(ENTERED_AMOUNT, amountToReceive)
-                .putExtra(SEND_MODE, false);
-        currentActivity.startActivityForResult(intent, requestCode);
-    }
-
     @SuppressLint("ShowToast")
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -149,7 +90,6 @@ public class GetAmountActivity extends Activity implements NumberEntryListener {
             initSendMode();
         }
 
-        initListeners();
         updateUI();
         checkEntry();
     }
@@ -173,13 +113,6 @@ public class GetAmountActivity extends Activity implements NumberEntryListener {
 
         // Max Button
         tvMaxAmount.setVisibility(View.VISIBLE);
-        tvHowIsItCalculated.setVisibility(View.VISIBLE);
-        btMax.setVisibility(View.VISIBLE);
-    }
-
-    private void initListeners() {
-        // set the text for the currency button
-        btCurrency.setEnabled(_mbwManager.getCurrencySwitcher().getExchangeRatePrice() != null);
     }
 
     private void initNumberEntry(Bundle savedInstanceState) {
@@ -218,107 +151,13 @@ public class GetAmountActivity extends Activity implements NumberEntryListener {
         GetAmountActivity.this.finish();
     }
 
-    @OnClick(R.id.btMax)
-    void onMaxButtonClick() {
-        if (CurrencyValue.isNullOrZero(_maxSpendableAmount)) {
-            String msg = getResources().getString(R.string.insufficient_funds);
-            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
-        } else {
-            _amount = _maxSpendableAmount;
-            // set the current shown currency to the amounts currency
-            _mbwManager.getCurrencySwitcher().setCurrency(_amount.getCurrency());
-            updateUI();
-            checkEntry();
-        }
-    }
-
-
-    @OnClick({R.id.btRight, R.id.btCurrency})
-    void onSwitchCurrencyClick() {
-
-
-        // if we have a fiat currency selected and the price is not available, switch on -> no point in showing it
-        // if there is no exchange rate at all available, we will get to BTC and stay there
-        // this does not apply to digital assets such as Colu for which we do not have a rate
-        if (_amount != null) {
-            String targetCurrency = _mbwManager.getNextCurrency(true);
-            CurrencySwitcher currencySwitcher = _mbwManager.getCurrencySwitcher();
-            while (!targetCurrency.equals(CurrencyValue.BTC) && !currencySwitcher.isFiatExchangeRateAvailable()) {
-                targetCurrency = _mbwManager.getNextCurrency(true);
-            }
-            _amount = CurrencyValue.fromValue(_amount, targetCurrency, _mbwManager.getExchangeRateManager());
-        }
-
-        updateUI();
-    }
-
-
-    @OnClick({R.id.btLeft, R.id.btPaste})
-    void onPasteButtonClick() {
-        BigDecimal clipboardValue = getAmountFromClipboard();
-        if (clipboardValue == null) {
-            return;
-        }
-        setEnteredAmount(clipboardValue);
-
-        _numberEntry.setEntry(clipboardValue, _mbwManager.getBitcoinDenomination().getDecimalPlaces());
-    }
-
-    @OnClick(R.id.tvHowIsItCalculated)
-    void howIsItCalculatedClick() {
-        new AlertDialog.Builder(this)
-                .setMessage(getString(R.string.how_is_it_calculated_text))
-                .setPositiveButton(R.string.button_ok, null)
-                .create()
-                .show();
-    }
-
-
-    private boolean enablePaste() {
-        return getAmountFromClipboard() != null;
-    }
-
-    private BigDecimal getAmountFromClipboard() {
-        String content = Utils.getClipboardString(this);
-        if (content.length() == 0) {
-            return null;
-        }
-        String number = content.trim();
-        if (CurrencyValue.BTC.equals(_mbwManager.getCurrencySwitcher().getCurrentCurrency())) {
-            number = Utils
-                    .truncateAndConvertDecimalString(number, _mbwManager.getBitcoinDenomination().getDecimalPlaces());
-            if (number == null) {
-                return null;
-            }
-            BigDecimal value = new BigDecimal(number);
-            if (value.compareTo(BigDecimal.ZERO) < 1) {
-                return null;
-            }
-            return value;
-        } else {
-            number = Utils.truncateAndConvertDecimalString(number, 2);
-            if (number == null) {
-                return null;
-            }
-            BigDecimal value = new BigDecimal(number);
-            if (value.compareTo(BigDecimal.ZERO) < 1) {
-                return null;
-            }
-            return value;
-        }
-    }
-
     private void updateUI() {
-        //update buttons and views
-
         // Show maximum spendable amount
         if (isSendMode) {
             showMaxAmount();
         }
 
         if (_amount != null) {
-            // Set current currency name button
-            btCurrency.setText(_mbwManager.getCurrencySwitcher().getCurrentCurrencyIncludingDenomination());
             //update amount
             int showDecimalPlaces;
             BigDecimal newAmount = null;
@@ -339,8 +178,6 @@ public class GetAmountActivity extends Activity implements NumberEntryListener {
             tvAmount.setText("");
         }
 
-        // Check whether we can show the paste button
-        btPaste.setVisibility(enablePaste() ? View.VISIBLE : View.GONE);
     }
 
     private void showMaxAmount() {
@@ -360,13 +197,7 @@ public class GetAmountActivity extends Activity implements NumberEntryListener {
     @Override
     protected void onResume() {
         _mbwManager.getEventBus().register(this);
-
         _mbwManager.getExchangeRateManager().requestOptionalRefresh();
-        btCurrency.setEnabled(_mbwManager.hasFiatCurrency()
-                && _mbwManager.getCurrencySwitcher().isFiatExchangeRateAvailable()
-                && _amount != null);
-
-        btPaste.setVisibility(enablePaste() ? View.VISIBLE : View.GONE);
         super.onResume();
     }
 
@@ -385,7 +216,7 @@ public class GetAmountActivity extends Activity implements NumberEntryListener {
             BigDecimal value = _numberEntry.getEntryAsBigDecimal();
             setEnteredAmount(value);
         }
-        updateAmountsDisplay(entry);
+        tvAmount.setText(entry);
         checkEntry();
     }
 
@@ -405,43 +236,6 @@ public class GetAmountActivity extends Activity implements NumberEntryListener {
             _amount = ExactBitcoinValue.from(satoshis);
         } else {
             _amount = ExactCurrencyValue.from(value, currentCurrency);
-        }
-
-        if (isSendMode) {
-            // enable/disable Max button
-            btMax.setEnabled(_maxSpendableAmount.getExactValue() != _amount.getExactValue());
-        }
-    }
-
-
-    private void updateAmountsDisplay(String amountText) {
-        // update main-currency display
-        tvAmount.setText(amountText);
-
-
-        // Set alternate amount if we can
-        if (!_mbwManager.hasFiatCurrency()
-                || !_mbwManager.getCurrencySwitcher().isFiatExchangeRateAvailable()
-                || CurrencyValue.isNullOrZero(_amount)) {
-            tvAlternateAmount.setText("");
-        } else {
-            CurrencyValue convertedAmount;
-            if (CurrencyValue.BTC.equals(_mbwManager.getCurrencySwitcher().getCurrentCurrency())) {
-                // Show Fiat as alternate amount
-                String currency = MbwManager.getInstance(getApplication()).getFiatCurrency();
-                convertedAmount = ExchangeBasedCurrencyValue.fromValue(
-                        _amount, currency, _mbwManager.getExchangeRateManager());
-            } else {
-                // Show BTC as alternate amount
-                try {
-                    convertedAmount = ExchangeBasedCurrencyValue.fromValue(
-                            _amount, "BTC", _mbwManager.getExchangeRateManager());
-                } catch (IllegalArgumentException ex) {
-                    // something failed while calculating the bitcoin amount
-                    convertedAmount = ExactBitcoinValue.ZERO;
-                }
-            }
-            tvAlternateAmount.setText(Utils.getFormattedValueWithUnit(convertedAmount, _mbwManager.getBitcoinDenomination()));
         }
     }
 
@@ -481,18 +275,6 @@ public class GetAmountActivity extends Activity implements NumberEntryListener {
             // debug it
             _mbwManager.reportIgnoredException("MinerFeeException", e);
             return AmountValidation.Invalid;
-        }
-        return AmountValidation.Ok;
-    }
-
-    private AmountValidation checkSendAmount(CurrencyValue value) {
-        if (value == null) {
-            return AmountValidation.Ok; //entering a fiat value + exchange is not availible
-        }
-        if (_account.getCurrencyBasedBalance().confirmed.getValue().compareTo(value.getValue()) == -1) {
-            return AmountValidation.ValueTooSmall;
-        } else if (_account.getCurrencyBasedBalance().confirmed.getValue().compareTo(BigDecimal.ZERO) < 1) {
-            return AmountValidation.NotEnoughFunds;
         }
         return AmountValidation.Ok;
     }
@@ -537,25 +319,5 @@ public class GetAmountActivity extends Activity implements NumberEntryListener {
             // }
         }
         return result;
-    }
-
-    @Subscribe
-    public void exchangeRatesRefreshed(ExchangeRatesRefreshed event) {
-        updateExchangeRateDisplay();
-    }
-
-    @Subscribe
-    public void selectedCurrencyChanged(SelectedCurrencyChanged event) {
-        updateExchangeRateDisplay();
-    }
-
-    private void updateExchangeRateDisplay() {
-        if (_amount != null) {
-            Double exchangeRatePrice = _mbwManager.getCurrencySwitcher().getExchangeRatePrice();
-            btCurrency.setEnabled(exchangeRatePrice != null);
-            if (exchangeRatePrice != null) {
-                updateAmountsDisplay(_numberEntry.getEntry());
-            }
-        }
     }
 }

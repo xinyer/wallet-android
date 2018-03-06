@@ -3,7 +3,7 @@
     android:id="@+id/llNumberEntry"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:orientation="vertical" >
+    android:orientation="vertical">
 
     <!-- 1, 2, 3 -->
 
@@ -11,15 +11,13 @@
         android:layout_width="fill_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:orientation="horizontal" >
+        android:orientation="horizontal">
 
         <Button
             android:id="@+id/btOne"
-
             android:layout_width="0dp"
             android:layout_height="fill_parent"
             android:layout_weight="1"
-
             android:text="@string/one"
             android:textSize="30sp" />
 
@@ -50,7 +48,7 @@
         android:layout_width="fill_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:orientation="horizontal" >
+        android:orientation="horizontal">
 
         <Button
             android:id="@+id/btFour"
@@ -89,7 +87,7 @@
         android:layout_width="fill_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:orientation="horizontal" >
+        android:orientation="horizontal">
 
         <Button
             android:id="@+id/btSeven"
@@ -128,15 +126,15 @@
         android:layout_width="fill_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:orientation="horizontal" >
+        android:orientation="horizontal">
 
         <Button
             android:id="@+id/btDot"
 
+            style="@style/MyceliumNumPadButtonFn"
             android:layout_width="0dp"
             android:layout_height="fill_parent"
             android:layout_weight="1"
-            style="@style/MyceliumNumPadButtonFn"
 
             android:text="@string/dot"
             android:textSize="30sp" />
@@ -154,10 +152,10 @@
         <Button
             android:id="@+id/btDel"
 
+            style="@style/MyceliumNumPadButtonFn"
             android:layout_width="0dp"
             android:layout_height="fill_parent"
             android:layout_weight="1"
-            style="@style/MyceliumNumPadButtonFn"
 
 
             android:text="@string/del"
