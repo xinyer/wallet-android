@@ -336,10 +336,8 @@ public class TransactionHistoryFragment extends Fragment {
                 }
 
                 private void updateActionBar(ActionMode actionMode, Menu menu) {
-                    checkNotNull(menu.findItem(R.id.miAddToAddressBook)).setVisible(record.hasAddressBook());
                     checkNotNull(menu.findItem(R.id.miCancelTransaction)).setVisible(record.canCancel());
                     checkNotNull(menu.findItem(R.id.miShowDetails)).setVisible(record.hasDetails());
-                    checkNotNull(menu.findItem(R.id.miShowCoinapultDebug)).setVisible(record.canCoinapult());
                     checkNotNull(menu.findItem(R.id.miRebroadcastTransaction)).setVisible((record.confirmations == 0) && !record.canCoinapult());
                     checkNotNull(menu.findItem(R.id.miShare)).setVisible(!record.canCoinapult());
                     checkNotNull(menu.findItem(R.id.miBumpFee)).setVisible((record.confirmations == 0) && !record.canCoinapult());
@@ -475,15 +473,6 @@ public class TransactionHistoryFragment extends Fragment {
                         case R.id.miSetLabel:
                             setTransactionLabel(record);
                             finishActionMode();
-                            break;
-                        case R.id.miAddToAddressBook:
-                            String defaultName = "";
-                            EnterAddressLabelUtil.enterAddressLabel(
-                                    getActivity(),
-                                    mbwManager.getMetadataStorage(),
-                                    record.destinationAddress.get(),
-                                    defaultName,
-                                    addressLabelChanged);
                             break;
                         case R.id.miCancelTransaction:
                             cancelTransaction();
