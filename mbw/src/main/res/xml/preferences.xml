@@ -7,17 +7,6 @@
             android:layout="@layout/preference_layout"
             android:title="@string/pref_change_language"/>
 
-    <Preference
-            android:key="local_currency"
-            android:layout="@layout/preference_layout"
-            android:summary="@string/pref_local_currency_summary"
-            android:title="@string/pref_local_currency"/>
-
-    <ListPreference
-            android:key="exchange_source"
-            android:layout="@layout/preference_layout"
-            android:summary="@string/pref_exchange_source_summary"
-            android:title="@string/pref_exchange_source"/>
     <ListPreference
             android:key="bitcoin_denomination"
             android:layout="@layout/preference_layout"
@@ -42,44 +31,5 @@
                 android:summary="Show the BIP44 address path for the current address on the homescreen"
                 android:title="Show address path"/>
     </PreferenceCategory>
-
-    <PreferenceCategory
-            android:key="legacy"
-            android:title="@string/pref_legacy_backup_title">
-        <Preference
-                android:key="legacyBackup"
-                android:layout="@layout/preference_layout"
-                android:summary="@string/pref_legacy_backup_summary"
-                android:title="@string/pref_legacy_backup_title"/>
-        <Preference
-                android:key="legacyBackupVerify"
-                android:layout="@layout/preference_layout"
-                android:summary="@string/pref_legacy_backup_verify_summary"
-                android:title="@string/pref_legacy_backup_verify_title"/>
-    </PreferenceCategory>
-
-    <!-- Ledger -->
-
-    <!--<PreferenceCategory-->
-            <!--android:key="ledger"-->
-            <!--android:title="@string/pref_ledger_title">-->
-        <!--<CheckBoxPreference-->
-                <!--android:key="ledgerDisableTee"-->
-                <!--android:layout="@layout/preference_layout"-->
-                <!--android:summary="@string/ledger_disable_tee_preference_summary"-->
-                <!--android:title="@string/ledger_disable_tee_preference"/>-->
-        <!--<Preference-->
-                <!--android:key="ledgerUnpluggedAID"-->
-                <!--android:layout="@layout/preference_layout"-->
-                <!--android:summary="@string/ledger_unplugged_aid_preference_summary"-->
-                <!--android:title="@string/ledger_unplugged_aid_preference"/>-->
-    <!--</PreferenceCategory>-->
-
-    <!-- External services -->
-
-    <!--<PreferenceCategory-->
-            <!--android:key="external"-->
-            <!--android:title="External Services">-->
-    <!--</PreferenceCategory>-->
 
 </PreferenceScreen>

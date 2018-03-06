@@ -1,6 +1,5 @@
 package com.mycelium.wallet.activity.settings;
 
-import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
@@ -9,58 +8,23 @@ import android.preference.Preference;
 import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
-import android.preference.PreferenceCategory;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CharMatcher;
-import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
-import com.ledger.tbase.comm.LedgerTransportTEEProxyFactory;
 import com.mrd.bitlib.util.CoinUtil.Denomination;
-import com.mrd.bitlib.util.HexUtils;
-import com.mycelium.net.ServerEndpointType;
 import com.mycelium.wallet.Constants;
-import com.mycelium.wallet.ExchangeRateManager;
 import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.MinerFee;
 import com.mycelium.wallet.R;
 import com.mycelium.wallet.Utils;
 import com.mycelium.wallet.WalletApplication;
-import com.mycelium.wallet.activity.export.VerifyBackupActivity;
-import com.mycelium.wallet.activity.modern.Toaster;
-import com.mycelium.wapi.wallet.WalletAccount;
-import com.mycelium.wapi.wallet.single.SingleAddressAccount;
 
-import java.util.List;
 import java.util.Locale;
 
-/**
- * PreferenceActivity is a built-in Activity for preferences management
- * <p/>
- * To retrieve the values stored by this activity in other activities use the
- * following snippet:
- * <p/>
- * SharedPreferences sharedPreferences =
- * PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
- * <Preference Type> preferenceValue = sharedPreferences.get<Preference
- * Type>("<Preference Key>",<default value>);
- */
 public class SettingsActivity extends PreferenceActivity {
+
     public static final CharMatcher AMOUNT = CharMatcher.JAVA_DIGIT.or(CharMatcher.anyOf(".,"));
-    private final OnPreferenceClickListener localCurrencyClickListener = new OnPreferenceClickListener() {
-        public boolean onPreferenceClick(Preference preference) {
-            SetLocalCurrencyActivity.callMe(SettingsActivity.this);
-            return true;
-        }
-    };
-    private final OnPreferenceClickListener legacyBackupVerifyClickListener = new OnPreferenceClickListener() {
-        public boolean onPreferenceClick(Preference preference) {
-            VerifyBackupActivity.callMe(SettingsActivity.this);
-            return true;
-        }
-    };
 
     private final OnPreferenceClickListener showBip44PathClickListener = new OnPreferenceClickListener() {
         public boolean onPreferenceClick(Preference preference) {
@@ -71,10 +35,6 @@ public class SettingsActivity extends PreferenceActivity {
     };
 
     private ListPreference _bitcoinDenomination;
-    private Preference _localCurrency;
-    private ListPreference _exchangeSource;
-    private CheckBoxPreference _ltNotificationSound;
-    private CheckBoxPreference _ltMilesKilometers;
     private MbwManager _mbwManager;
     private ListPreference _minerFee;
     private ListPreference _blockExplorer;
@@ -177,40 +137,6 @@ public class SettingsActivity extends PreferenceActivity {
             }
         });
 
-        //localcurrency
-        _localCurrency = findPreference("local_currency");
-        _localCurrency.setOnPreferenceClickListener(localCurrencyClickListener);
-        _localCurrency.setTitle(localCurrencyTitle());
-
-        // Exchange Source
-        _exchangeSource = (ListPreference) findPreference("exchange_source");
-        ExchangeRateManager exchangeManager = _mbwManager.getExchangeRateManager();
-        List<String> exchangeSourceNamesList = exchangeManager.getExchangeSourceNames();
-        CharSequence[] exchangeNames = exchangeSourceNamesList.toArray(new String[exchangeSourceNamesList.size()]);
-        _exchangeSource.setEntries(exchangeNames);
-        if (exchangeNames.length == 0) {
-            _exchangeSource.setEnabled(false);
-        } else {
-            String currentName = exchangeManager.getCurrentExchangeSourceName();
-            if (currentName == null) {
-                currentName = "";
-            }
-            _exchangeSource.setEntries(exchangeNames);
-            _exchangeSource.setEntryValues(exchangeNames);
-            _exchangeSource.setDefaultValue(currentName);
-            _exchangeSource.setValue(currentName);
-        }
-        _exchangeSource.setTitle(exchangeSourceTitle());
-        _exchangeSource.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
-
-            @Override
-            public boolean onPreferenceChange(Preference preference, Object newValue) {
-                _mbwManager.getExchangeRateManager().setCurrentExchangeSourceName(newValue.toString());
-                _exchangeSource.setTitle(exchangeSourceTitle());
-                return true;
-            }
-        });
-
         ListPreference language = (ListPreference) findPreference(Constants.LANGUAGE_SETTING);
         language.setTitle(getLanguageSettingTitle());
         language.setDefaultValue(Locale.getDefault().getLanguage());
@@ -236,41 +162,10 @@ public class SettingsActivity extends PreferenceActivity {
             }
         });
 
-        // Legacy backup function
-        Preference legacyBackupVerify = Preconditions.checkNotNull(findPreference("legacyBackupVerify"));
-        legacyBackupVerify.setOnPreferenceClickListener(legacyBackupVerifyClickListener);
-
         // show bip44 path
         CheckBoxPreference showBip44Path = (CheckBoxPreference) findPreference("showBip44Path");
         showBip44Path.setChecked(_mbwManager.getMetadataStorage().getShowBip44Path());
         showBip44Path.setOnPreferenceClickListener(showBip44PathClickListener);
-    }
-
-    @Override
-    protected void onResume() {
-        showOrHideLegacyBackup();
-        _localCurrency.setTitle(localCurrencyTitle());
-        super.onResume();
-    }
-
-    private ProgressDialog pleaseWait;
-
-    @SuppressWarnings("deprecation")
-    private void showOrHideLegacyBackup() {
-        List<WalletAccount> accounts = _mbwManager.getWalletManager().getSpendingAccounts();
-        Preference legacyPref = findPreference("legacyBackup");
-        if (legacyPref == null) {
-            return; // it was already removed, don't remove it again.
-        }
-
-        PreferenceCategory legacyCat = (PreferenceCategory) findPreference("legacy");
-        for (WalletAccount account : accounts) {
-            if (account instanceof SingleAddressAccount) {
-                return; //we have a single address account with priv key, so its fine to show the setting
-            }
-        }
-        //no matching account, hide setting
-        legacyCat.removePreference(legacyPref);
     }
 
     private String getLanguageSettingTitle() {
@@ -296,28 +191,6 @@ public class SettingsActivity extends PreferenceActivity {
         Intent running = getIntent();
         finish();
         startActivity(running);
-    }
-
-    private String localCurrencyTitle() {
-        if (_mbwManager.hasFiatCurrency()) {
-            String currency = _mbwManager.getFiatCurrency();
-            if (_mbwManager.getCurrencyList().size() > 1) {
-                //multiple selected, add ...
-                currency = currency + "...";
-            }
-            return getResources().getString(R.string.pref_local_currency_with_currency, currency);
-        } else {
-            //nothing selected
-            return getResources().getString(R.string.pref_no_fiat_selected);
-        }
-    }
-
-    private String exchangeSourceTitle() {
-        String name = _mbwManager.getExchangeRateManager().getCurrentExchangeSourceName();
-        if (name == null) {
-            name = "";
-        }
-        return getResources().getString(R.string.pref_exchange_source_with_value, name);
     }
 
     private String bitcoinDenominationTitle() {
