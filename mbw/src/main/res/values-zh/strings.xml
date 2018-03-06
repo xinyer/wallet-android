@@ -27,7 +27,7 @@
   <string name="sending">正在汇款 %1$s</string>
   <string name="receiving">正在收款 %1$s</string>
   <string name="confirmations">%d 确认</string>
-  <string name="send">汇款</string>
+  <string name="send">发送</string>
   <string name="receive">接收</string>
   <string name="private_key_deleted">私钥已清除</string>
   <string name="account_deleted">帐户删除</string>

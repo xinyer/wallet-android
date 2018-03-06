@@ -35,18 +35,8 @@ public class BalanceMasterFragment extends Fragment {
 
     @Override
     public void onResume() {
+        updateBuildText();
         Activity activity = getActivity();
-        // Set beta build
-        PackageInfo pInfo;
-        try {
-            pInfo = activity.getPackageManager().getPackageInfo(activity.getPackageName(), 0);
-            ((TextView) activity.findViewById(R.id.tvBuildText)).setText(getResources().getString(R.string.build_text,
-                    pInfo.versionName));
-        } catch (NameNotFoundException e) {
-            // Ignore
-            //todo insert uncaught error handler
-        }
-
         MbwManager mbwManager = MbwManager.getInstance(activity);
         tvTor = activity.findViewById(R.id.tvTorState);
         if (mbwManager.getTorMode() == ServerEndpointType.Types.ONLY_TOR && mbwManager.getTorManager() != null) {
@@ -74,6 +64,18 @@ public class BalanceMasterFragment extends Fragment {
     @Subscribe
     public void selectedAccountChanged(SelectedAccountChanged event) {
         updateAddressView();
+    }
+
+    private void updateBuildText() {
+        Activity activity = getActivity();
+        PackageInfo pInfo;
+        try {
+            pInfo = activity.getPackageManager().getPackageInfo(activity.getPackageName(), 0);
+            ((TextView) activity.findViewById(R.id.tvBuildText)).setText(getResources().getString(R.string.build_text,
+                    pInfo.versionName));
+        } catch (NameNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 
     private void updateAddressView() {

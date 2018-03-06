@@ -87,7 +87,6 @@ public class ColdStorageSummaryActivity extends Activity {
          finish();
          return;
       }
-
    }
 
    @Override
