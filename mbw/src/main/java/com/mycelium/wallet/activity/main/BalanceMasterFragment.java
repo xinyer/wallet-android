@@ -65,7 +65,7 @@ public class BalanceMasterFragment extends Fragment {
         WalletAccount account = MbwManager.getInstance(this.getActivity()).getSelectedAccount();
         defineAddressAccountView(fragmentTransaction, account);
         fragmentTransaction.replace(R.id.phFragmentBalance, new BalanceFragment());
-        fragmentTransaction.replace(R.id.phFragmentNotice, new NoticeFragment());
+//        fragmentTransaction.replace(R.id.phFragmentNotice, new NoticeFragment());
         fragmentTransaction.commitAllowingStateLoss();
         return view;
     }
