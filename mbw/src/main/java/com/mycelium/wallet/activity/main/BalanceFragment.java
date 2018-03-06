@@ -80,8 +80,7 @@ public class BalanceFragment extends Fragment {
     void onClickReceive() {
         Optional<Address> receivingAddress = mbwManager.getSelectedAccount().getReceivingAddress();
         if (receivingAddress.isPresent()) {
-            ReceiveCoinsActivity.callMe(getActivity(), receivingAddress.get(),
-                    mbwManager.getSelectedAccount().canSpend(), true);
+            ReceiveCoinsActivity.callMe(getActivity(), receivingAddress.get());
         }
     }
 

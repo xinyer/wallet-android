@@ -34,7 +34,6 @@ public class AddressFragment extends Fragment {
         root = Preconditions.checkNotNull(inflater.inflate(R.layout.address_view, container, false));
         QrImageView qrButton = (QrImageView) Preconditions.checkNotNull(root.findViewById(R.id.ivQR));
         qrButton.setTapToCycleBrightness(false);
-        qrButton.setOnClickListener(new QrClickListener());
         return root;
     }
 
@@ -111,17 +110,6 @@ public class AddressFragment extends Fragment {
 
     public Optional<Address> getAddress() {
         return mbwManager.getSelectedAccount().getReceivingAddress();
-    }
-
-    private class QrClickListener implements OnClickListener {
-        @Override
-        public void onClick(View v) {
-            Optional<Address> receivingAddress = mbwManager.getSelectedAccount().getReceivingAddress();
-            if (receivingAddress.isPresent()) {
-                ReceiveCoinsActivity.callMe(AddressFragment.this.getActivity(),
-                        receivingAddress.get(), mbwManager.getSelectedAccount().canSpend());
-            }
-        }
     }
 
     /**
