@@ -54,13 +54,11 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.io.ByteSource;
 import com.mycelium.wallet.*;
-import com.mycelium.wallet.activity.modern.DarkThemeChangeLog;
 import com.mycelium.wallet.activity.modern.Toaster;
 import com.mycelium.wallet.activity.util.QrImageView;
 import com.mycelium.wallet.api.AbstractCallbackHandler;
 import com.mycelium.wapi.api.WapiException;
 import com.mycelium.wapi.api.response.VersionInfoExResponse;
-import de.cketti.library.changelog.ChangeLog;
 
 public class AboutActivity extends Activity {
    @Override
@@ -80,14 +78,6 @@ public class AboutActivity extends Activity {
       findViewById(R.id.bt_license_zxing).setOnClickListener(new ShowLicenseListener(R.raw.license_zxing));
       findViewById(R.id.bt_license_pdfwriter).setOnClickListener(new ShowLicenseListener(R.raw.license_pdfwriter));
       findViewById(R.id.bt_special_thanks).setOnClickListener(new ShowLicenseListener(R.raw.special_thanks));
-
-      findViewById(R.id.bt_show_changelog).setOnClickListener(new OnClickListener() {
-         @Override
-         public void onClick(View view) {
-            ChangeLog cl = new DarkThemeChangeLog(AboutActivity.this);
-            cl.getFullLogDialog().show();
-         }
-      });
 
       findViewById(R.id.bt_check_update).setOnClickListener(new View.OnClickListener() {
          @Override

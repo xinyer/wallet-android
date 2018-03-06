@@ -48,8 +48,6 @@ import com.mycelium.wapi.api.response.Feature;
 import com.mycelium.wapi.wallet.*;
 import com.squareup.otto.Subscribe;
 
-import de.cketti.library.changelog.ChangeLog;
-
 import java.io.*;
 import java.util.Date;
 import java.util.List;
@@ -69,25 +67,28 @@ public class ModernMain extends ActionBarActivity {
     public static final int GENERIC_SCAN_REQUEST = 4;
     public static final int MIN_AUTOSYNC_INTERVAL = (int) Constants.MS_PR_MINUTE;
     public static final int MIN_FULLSYNC_INTERVAL = (int) (5 * Constants.MS_PR_HOUR);
+
     public static final String LAST_SYNC = "LAST_SYNC";
     private static final String APP_START = "APP_START";
-    private MbwManager _mbwManager;
+
 
     ViewPager mViewPager;
     TabsAdapter mTabsAdapter;
     ActionBar.Tab mBalanceTab;
     ActionBar.Tab mAccountsTab;
     private MenuItem refreshItem;
-    private Toaster _toaster;
-    private volatile long _lastSync = 0;
-    private boolean _isAppStart = true;
+    private Toaster toaster;
+
+    private MbwManager mbwManager;
+    private volatile long lastSync = 0;
+    private boolean isAppStart = true;
 
     private Timer balanceRefreshTimer;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        _mbwManager = MbwManager.getInstance(this);
+        mbwManager = MbwManager.getInstance(this);
         mViewPager = new ViewPager(this);
         mViewPager.setId(R.id.pager);
         setContentView(mViewPager);
@@ -99,7 +100,7 @@ public class ModernMain extends ActionBarActivity {
         // pixel format, this saves around 10MB of allocated memory
         // persist the loaded Bitmap in the context of mbw-manager and reuse it every time this activity gets created
         try {
-            BitmapDrawable background = (BitmapDrawable) _mbwManager.getBackgroundObjectsCache().get("mainBackground", new Callable<BitmapDrawable>() {
+            BitmapDrawable background = (BitmapDrawable) mbwManager.getBackgroundObjectsCache().get("mainBackground", new Callable<BitmapDrawable>() {
                 @Override
                 public BitmapDrawable call() throws Exception {
                     BitmapFactory.Options options = new BitmapFactory.Options();
@@ -114,34 +115,29 @@ public class ModernMain extends ActionBarActivity {
         } catch (ExecutionException ignore) {
         }
 
-        mTabsAdapter = new TabsAdapter(this, mViewPager, _mbwManager);
+        mTabsAdapter = new TabsAdapter(this, mViewPager, mbwManager);
         mAccountsTab = bar.newTab();
         mTabsAdapter.addTab(mAccountsTab.setText(getString(R.string.tab_accounts)), AccountsFragment.class, null);
         mBalanceTab = bar.newTab();
         mTabsAdapter.addTab(mBalanceTab.setText(getString(R.string.tab_balance)), BalanceMasterFragment.class, null);
         mTabsAdapter.addTab(bar.newTab().setText(getString(R.string.tab_transactions)), TransactionHistoryFragment.class, null);
         bar.selectTab(mBalanceTab);
-        _toaster = new Toaster(this);
-
-        ChangeLog cl = new DarkThemeChangeLog(this);
-        if (cl.isFirstRun() && cl.getChangeLog(false).size() > 0 && !cl.isFirstRunEver()) {
-            cl.getLogDialog().show();
-        }
+        toaster = new Toaster(this);
 
         if (savedInstanceState != null) {
-            _lastSync = savedInstanceState.getLong(LAST_SYNC, 0);
-            _isAppStart = savedInstanceState.getBoolean(APP_START, true);
+            lastSync = savedInstanceState.getLong(LAST_SYNC, 0);
+            isAppStart = savedInstanceState.getBoolean(APP_START, true);
         }
 
-        if (_isAppStart) {
-            _mbwManager.getVersionManager().showFeatureWarningIfNeeded(this, Feature.APP_START);
+        if (isAppStart) {
+            mbwManager.getVersionManager().showFeatureWarningIfNeeded(this, Feature.APP_START);
             checkGapBug();
-            _isAppStart = false;
+            isAppStart = false;
         }
     }
 
     private void checkGapBug() {
-        final WalletManager walletManager = _mbwManager.getWalletManager();
+        final WalletManager walletManager = mbwManager.getWalletManager();
         final List<Integer> gaps = walletManager.getGapsBug();
         if (!gaps.isEmpty()) {
             try {
@@ -162,7 +158,7 @@ public class ModernMain extends ActionBarActivity {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 createPlaceHolderAccounts(gaps);
-                                _mbwManager.reportIgnoredException(new RuntimeException("Address gaps: " + gapsString));
+                                mbwManager.reportIgnoredException(new RuntimeException("Address gaps: " + gapsString));
                             }
                         })
                         .setNegativeButton("Ignore", new DialogInterface.OnClickListener() {
@@ -183,11 +179,11 @@ public class ModernMain extends ActionBarActivity {
     }
 
     private void createPlaceHolderAccounts(List<Integer> gapIndex) {
-        final WalletManager walletManager = _mbwManager.getWalletManager();
+        final WalletManager walletManager = mbwManager.getWalletManager();
         for (Integer index : gapIndex) {
             try {
                 final UUID newAccount = walletManager.createArchivedGapFiller(AesKeyCipher.defaultKeyCipher(), index);
-                _mbwManager.getMetadataStorage().storeAccountLabel(newAccount, "Gap Account " + (index + 1));
+                mbwManager.getMetadataStorage().storeAccountLabel(newAccount, "Gap Account " + (index + 1));
             } catch (KeyCipher.InvalidKeyCipher invalidKeyCipher) {
                 throw new RuntimeException(invalidKeyCipher);
             }
@@ -197,8 +193,8 @@ public class ModernMain extends ActionBarActivity {
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putLong(LAST_SYNC, _lastSync);
-        outState.putBoolean(APP_START, _isAppStart);
+        outState.putLong(LAST_SYNC, lastSync);
+        outState.putBoolean(APP_START, isAppStart);
     }
 
     protected void stopBalanceRefreshTimer() {
@@ -209,15 +205,15 @@ public class ModernMain extends ActionBarActivity {
 
     @Override
     protected void onResume() {
-        _mbwManager.getEventBus().register(this);
+        mbwManager.getEventBus().register(this);
 
         long curTime = new Date().getTime();
-        if (_lastSync == 0 || curTime - _lastSync > MIN_AUTOSYNC_INTERVAL) {
+        if (lastSync == 0 || curTime - lastSync > MIN_AUTOSYNC_INTERVAL) {
             Handler h = new Handler();
             h.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    _mbwManager.getVersionManager().checkForUpdate();
+                    mbwManager.getVersionManager().checkForUpdate();
                 }
             }, 50);
         }
@@ -227,20 +223,20 @@ public class ModernMain extends ActionBarActivity {
         balanceRefreshTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                _mbwManager.getExchangeRateManager().requestRefresh();
+                mbwManager.getExchangeRateManager().requestRefresh();
 
                 // if the last full sync is too old (or not known), start a full sync for _all_ accounts
                 // otherwise just run a normal sync for the current account
-                final Optional<Long> lastFullSync = _mbwManager.getMetadataStorage().getLastFullSync();
+                final Optional<Long> lastFullSync = mbwManager.getMetadataStorage().getLastFullSync();
                 if (lastFullSync.isPresent()
                         && (new Date().getTime() - lastFullSync.get() < MIN_FULLSYNC_INTERVAL)) {
-                    _mbwManager.getWalletManager().startSynchronization();
+                    mbwManager.getWalletManager().startSynchronization();
                 } else {
-                    _mbwManager.getWalletManager().startSynchronization(SyncMode.FULL_SYNC_ALL_ACCOUNTS);
-                    _mbwManager.getMetadataStorage().setLastFullSync(new Date().getTime());
+                    mbwManager.getWalletManager().startSynchronization(SyncMode.FULL_SYNC_ALL_ACCOUNTS);
+                    mbwManager.getMetadataStorage().setLastFullSync(new Date().getTime());
                 }
 
-                _lastSync = new Date().getTime();
+                lastSync = new Date().getTime();
             }
         }, 100, MIN_AUTOSYNC_INTERVAL);
 
@@ -251,8 +247,8 @@ public class ModernMain extends ActionBarActivity {
     @Override
     protected void onPause() {
         stopBalanceRefreshTimer();
-        _mbwManager.getEventBus().unregister(this);
-        _mbwManager.getVersionManager().closeDialog();
+        mbwManager.getEventBus().unregister(this);
+        mbwManager.getVersionManager().closeDialog();
         super.onPause();
     }
 
@@ -267,7 +263,7 @@ public class ModernMain extends ActionBarActivity {
 //         }
             // this is not finishing on Android 6 LG G4, so the pin on startup is not requested.
             // commented out code above doesn't do the trick, neither.
-//         _mbwManager.setStartUpPinUnlocked(false);
+//         mbwManager.setStartUpPinUnlocked(false);
             super.onBackPressed();
         } else {
             bar.selectTab(mBalanceTab);
@@ -311,7 +307,7 @@ public class ModernMain extends ActionBarActivity {
         Preconditions.checkNotNull(menu.findItem(R.id.miAddRecord)).setVisible(isAccountTab);
 
         // Lock menu
-//      final boolean hasPin = _mbwManager.isPinProtected();
+//      final boolean hasPin = mbwManager.isPinProtected();
 //      Preconditions.checkNotNull(menu.findItem(R.id.miLockKeys)).setVisible(isAccountTab && hasPin);
 
         // Refresh menu
@@ -372,9 +368,9 @@ public class ModernMain extends ActionBarActivity {
                     // if we are in the accounts tab, sync all accounts if the users forces a sync
                     syncMode = SyncMode.NORMAL_ALL_ACCOUNTS_FORCED;
                 }
-                _mbwManager.getWalletManager().startSynchronization(syncMode);
+                mbwManager.getWalletManager().startSynchronization(syncMode);
                 // also fetch a new exchange rate, if necessary
-                _mbwManager.getExchangeRateManager().requestOptionalRefresh();
+                mbwManager.getExchangeRateManager().requestOptionalRefresh();
                 return true;
             case R.id.miHelp:
                 openMyceliumHelp();
@@ -385,8 +381,8 @@ public class ModernMain extends ActionBarActivity {
                 break;
             }
             case R.id.miRescanTransactions:
-                _mbwManager.getSelectedAccount().dropCachedData();
-                _mbwManager.getWalletManager().startSynchronization(SyncMode.FULL_SYNC_CURRENT_ACCOUNT_FORCED);
+                mbwManager.getSelectedAccount().dropCachedData();
+                mbwManager.getWalletManager().startSynchronization(SyncMode.FULL_SYNC_CURRENT_ACCOUNT_FORCED);
                 break;
             case R.id.miExportHistory:
                 shareTransactionHistory();
@@ -399,8 +395,8 @@ public class ModernMain extends ActionBarActivity {
     }
 
     private void shareTransactionHistory() {
-        WalletAccount account = _mbwManager.getSelectedAccount();
-        MetadataStorage metaData = _mbwManager.getMetadataStorage();
+        WalletAccount account = mbwManager.getSelectedAccount();
+        MetadataStorage metaData = mbwManager.getMetadataStorage();
         try {
             String fileName = "MyceliumExport_" + System.currentTimeMillis() + ".csv";
             File historyData = DataExport.getTxHistoryCsv(account, metaData, getFileStreamPath(fileName));
@@ -426,7 +422,7 @@ public class ModernMain extends ActionBarActivity {
                 }
             }
         } catch (IOException | PackageManager.NameNotFoundException e) {
-            _toaster.toast("Export failed. Check your logs", false);
+            toaster.toast("Export failed. Check your logs", false);
             e.printStackTrace();
         }
     }
@@ -462,15 +458,15 @@ public class ModernMain extends ActionBarActivity {
 
     public void setRefreshAnimation() {
         if (refreshItem != null) {
-            if (_mbwManager.getWalletManager().getState() == WalletManager.State.SYNCHRONIZING) {
+            if (mbwManager.getWalletManager().getState() == WalletManager.State.SYNCHRONIZING) {
                 if (commonSyncState != WalletManager.State.SYNCHRONIZING) {
                     commonSyncState = WalletManager.State.SYNCHRONIZING;
                     MenuItem menuItem = MenuItemCompat.setActionView(refreshItem, R.layout.actionbar_indeterminate_progress);
                     ImageView ivTorIcon = (ImageView) menuItem.getActionView().findViewById(R.id.ivTorIcon);
 
-                    if (_mbwManager.getTorMode() == ServerEndpointType.Types.ONLY_TOR && _mbwManager.getTorManager() != null) {
+                    if (mbwManager.getTorMode() == ServerEndpointType.Types.ONLY_TOR && mbwManager.getTorManager() != null) {
                         ivTorIcon.setVisibility(View.VISIBLE);
-                        if (_mbwManager.getTorManager().getInitState() == 100) {
+                        if (mbwManager.getTorManager().getInitState() == 100) {
                             ivTorIcon.setImageResource(R.drawable.tor);
                         } else {
                             ivTorIcon.setImageResource(R.drawable.tor_gray);
@@ -503,21 +499,21 @@ public class ModernMain extends ActionBarActivity {
 
     @Subscribe
     public void synchronizationFailed(SyncFailed event) {
-        _toaster.toastConnectionError();
+        toaster.toastConnectionError();
     }
 
     @Subscribe
     public void transactionBroadcasted(TransactionBroadcasted event) {
-        _toaster.toast(R.string.transaction_sent, false);
+        toaster.toast(R.string.transaction_sent, false);
     }
 
     @Subscribe
     public void onNewFeatureWarnings(final FeatureWarningsAvailable event) {
-        _mbwManager.getVersionManager().showFeatureWarningIfNeeded(this, Feature.MAIN_SCREEN);
+        mbwManager.getVersionManager().showFeatureWarningIfNeeded(this, Feature.MAIN_SCREEN);
     }
 
     @Subscribe
     public void onNewVersion(final NewWalletVersionAvailable event) {
-        _mbwManager.getVersionManager().showIfRelevant(event.versionInfo, this);
+        mbwManager.getVersionManager().showIfRelevant(event.versionInfo, this);
     }
 }
