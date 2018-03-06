@@ -36,8 +36,6 @@ import com.mycelium.wapi.wallet.single.SingleAddressAccount;
 import java.util.List;
 import java.util.Locale;
 
-import info.guardianproject.onionkit.ui.OrbotHelper;
-
 /**
  * PreferenceActivity is a built-in Activity for preferences management
  * <p/>
@@ -239,10 +237,6 @@ public class SettingsActivity extends PreferenceActivity {
         });
 
         // Legacy backup function
-//        Preference legacyBackup = Preconditions.checkNotNull(findPreference("legacyBackup"));
-//        legacyBackup.setOnPreferenceClickListener(legacyBackupClickListener);
-
-        // Legacy backup function
         Preference legacyBackupVerify = Preconditions.checkNotNull(findPreference("legacyBackupVerify"));
         legacyBackupVerify.setOnPreferenceClickListener(legacyBackupVerifyClickListener);
 
@@ -250,55 +244,6 @@ public class SettingsActivity extends PreferenceActivity {
         CheckBoxPreference showBip44Path = (CheckBoxPreference) findPreference("showBip44Path");
         showBip44Path.setChecked(_mbwManager.getMetadataStorage().getShowBip44Path());
         showBip44Path.setOnPreferenceClickListener(showBip44PathClickListener);
-
-
-        // Socks Proxy
-        final ListPreference useTor = Preconditions.checkNotNull((ListPreference) findPreference("useTor"));
-        useTor.setTitle(getUseTorTitle());
-
-        useTor.setEntries(new String[]{
-                getString(R.string.use_https),
-                getString(R.string.use_external_tor),
-//            getString(R.string.both),
-        });
-
-        useTor.setEntryValues(new String[]{
-                ServerEndpointType.Types.ONLY_HTTPS.toString(),
-                ServerEndpointType.Types.ONLY_TOR.toString(),
-                //      ServerEndpointType.Types.HTTPS_AND_TOR.toString(),
-        });
-
-        useTor.setValue(_mbwManager.getTorMode().toString());
-
-        useTor.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
-            @Override
-            public boolean onPreferenceChange(Preference preference, Object newValue) {
-                if (newValue.equals(ServerEndpointType.Types.ONLY_TOR.toString())) {
-                    OrbotHelper obh = new OrbotHelper(SettingsActivity.this);
-                    if (!obh.isOrbotInstalled()) {
-                        obh.promptToInstall(SettingsActivity.this);
-                    }
-                }
-                _mbwManager.setTorMode(ServerEndpointType.Types.valueOf((String) newValue));
-                useTor.setTitle(getUseTorTitle());
-                return true;
-            }
-        });
-
-//      CheckBoxPreference ledgerDisableTee = (CheckBoxPreference) findPreference("ledgerDisableTee");
-//      Preference ledgerSetUnpluggedAID = findPreference("ledgerUnpluggedAID");
-
-//      boolean isTeeAvailable = LedgerTransportTEEProxyFactory.isServiceAvailable(this);
-//      if (isTeeAvailable) {
-//         ledgerDisableTee.setChecked(_mbwManager.getLedgerManager().getDisableTEE());
-//         ledgerDisableTee.setOnPreferenceClickListener(onClickLedgerNotificationDisableTee);
-//      } else {
-//         PreferenceCategory ledger = (PreferenceCategory) findPreference("ledger");
-//         ledger.removePreference(ledgerDisableTee);
-//      }
-
-//      ledgerSetUnpluggedAID.setOnPreferenceClickListener(onClickLedgerSetUnpluggedAID);
-
     }
 
     @Override
@@ -351,16 +296,6 @@ public class SettingsActivity extends PreferenceActivity {
         Intent running = getIntent();
         finish();
         startActivity(running);
-    }
-
-    private String getUseTorTitle() {
-        if (_mbwManager.getTorMode() == ServerEndpointType.Types.ONLY_HTTPS) {
-            return getResources().getString(R.string.useTorOnlyHttps);
-        } else if (_mbwManager.getTorMode() == ServerEndpointType.Types.ONLY_TOR) {
-            return getResources().getString(R.string.useTorOnlyExternalTor);
-        } else {
-            return getResources().getString(R.string.useTorBoth);
-        }
     }
 
     private String localCurrencyTitle() {

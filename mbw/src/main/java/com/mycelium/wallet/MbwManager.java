@@ -149,12 +149,7 @@ public class MbwManager {
         _eventBus = new Bus();
         _eventBus.register(this);
 
-        // init tor - if needed
-        try {
-            setTorMode(ServerEndpointType.Types.valueOf(preferences.getString(Constants.TOR_MODE, "")));
-        } catch (IllegalArgumentException ex) {
-            setTorMode(ServerEndpointType.Types.ONLY_HTTPS);
-        }
+        setTorMode(ServerEndpointType.Types.ONLY_HTTPS);
 
         _wapi = initWapi();
         _httpErrorCollector = HttpErrorCollector.registerInVM(_applicationContext, _wapi);
@@ -591,9 +586,6 @@ public class MbwManager {
 
     public void setTorMode(ServerEndpointType.Types torMode) {
         this._torMode = torMode;
-        SharedPreferences.Editor editor = getEditor();
-        editor.putString(Constants.TOR_MODE, torMode.toString());
-        editor.commit();
 
         ServerEndpointType serverEndpointType = ServerEndpointType.fromType(torMode);
         if (serverEndpointType.mightUseTor()) {

@@ -41,13 +41,6 @@
                 android:layout="@layout/preference_layout"
                 android:summary="Show the BIP44 address path for the current address on the homescreen"
                 android:title="Show address path"/>
-
-        <ListPreference
-                android:inputType="text"
-                android:key="useTor"
-                android:layout="@layout/preference_layout"
-                android:summary="@string/useTorDescription"
-                android:title="@string/useTor"/>
     </PreferenceCategory>
 
     <PreferenceCategory
