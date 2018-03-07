@@ -136,8 +136,6 @@ public class SendMainActivity extends Activity {
     TextView tvReceiver;
     @BindView(R.id.tvRecipientTitle)
     TextView tvRecipientTitle;
-    @BindView(R.id.tvWarning)
-    TextView tvWarning;
     @BindView(R.id.tvReceiverLabel)
     TextView tvReceiverLabel;
     @BindView(R.id.tvReceiverAddress)
@@ -164,8 +162,6 @@ public class SendMainActivity extends Activity {
     View llEnterRecipient;
     @BindView(R.id.llRecipientAddress)
     LinearLayout llRecipientAddress;
-    @BindView(R.id.colu_tips_check_address)
-    View tips_check_address;
     @BindView(R.id.tvFeeWarning)
     TextView tvFeeWarning;
     @BindView(R.id.feeLvlList)
@@ -182,7 +178,6 @@ public class SendMainActivity extends Activity {
     private CurrencyValue _amountToSend;
     private BitcoinValue _lastBitcoinAmountToSend = null;
     private Address _receivingAddress;
-    private String _receivingLabel;
     protected String _transactionLabel;
     private BitcoinUri _bitcoinUri;
     private ColuAssetUri _coluAssetUri;
@@ -197,8 +192,6 @@ public class SendMainActivity extends Activity {
     private boolean _xpubSyncing = false;
     private boolean _spendingUnconfirmed = false;
     private boolean _paymentFetched = false;
-    private WalletAccount fundColuAccount;
-    private ProgressDialog progress;
     private FeeEstimation feeEstimation;
     private SharedPreferences transactionFiatValuePref;
     private FeeItemsBuilder feeItemsBuilder;
@@ -335,7 +328,6 @@ public class SendMainActivity extends Activity {
         // Amount Hint
         tvAmount.setHint(getResources().getString(R.string.amount_hint_denomination,
                 _mbwManager.getBitcoinDenomination().toString()));
-        tips_check_address.setVisibility(View.GONE);
 
         int senderFinalWidth = getWindowManager().getDefaultDisplay().getWidth();
         feeFirstItemWidth = (senderFinalWidth - getResources().getDimensionPixelSize(R.dimen.item_dob_width)) / 2;
@@ -478,15 +470,6 @@ public class SendMainActivity extends Activity {
         savedInstanceState.putSerializable(SIGNED_TRANSACTION, _signedTransaction);
     }
 
-    @OnClick(R.id.colu_tips_check_address)
-    void tipsClick() {
-        new AlertDialog.Builder(this)
-                .setMessage(R.string.tips_rmc_check_address)
-                .setPositiveButton(R.string.button_ok, null)
-                .create()
-                .show();
-    }
-
     @OnClick(R.id.btScan)
     void onClickScan() {
         StringHandleConfig config = StringHandleConfig.returnKeyOrAddressOrUriOrKeynode();
@@ -503,7 +486,6 @@ public class SendMainActivity extends Activity {
     void onClickAmount() {
         CurrencyValue presetAmount = _amountToSend;
         if (CurrencyValue.isNullOrZero(presetAmount)) {
-            // if no amount is set so far, use an unknown amount but in the current accounts currency
             presetAmount = ExactCurrencyValue.from(null, _account.getAccountDefaultCurrency());
         }
         GetAmountActivity.callMeToSend(this, GET_AMOUNT_RESULT_CODE, _account.getId(), presetAmount, feePerKbValue, _isColdStorage);
@@ -631,7 +613,6 @@ public class SendMainActivity extends Activity {
             tvRecipientTitle.setText(R.string.enter_recipient_title);
             llEnterRecipient.setVisibility(View.VISIBLE);
             llRecipientAddress.setVisibility(View.GONE);
-            tvWarning.setVisibility(View.GONE);
             return;
         }
         // Hide "Enter", show address
@@ -641,9 +622,7 @@ public class SendMainActivity extends Activity {
 
         // See if the address is in the address book or one of our accounts
         String label = null;
-        if (_receivingLabel != null) {
-            label = _receivingLabel;
-        } else if (_receivingAddress != null) {
+        if (_receivingAddress != null) {
             label = getAddressLabel(_receivingAddress);
         }
         if (label == null || label.length() == 0) {
@@ -676,25 +655,6 @@ public class SendMainActivity extends Activity {
             tvReceiverAddress.setVisibility(VISIBLE);
         } else {
             tvReceiverAddress.setVisibility(GONE);
-        }
-
-        //Check the wallet manager to see whether its our own address, and whether we can spend from it
-        WalletManager walletManager = _mbwManager.getWalletManager();
-        if (_receivingAddress != null && walletManager.isMyAddress(_receivingAddress)) {
-            if (walletManager.hasPrivateKeyForAddress(_receivingAddress)) {
-                // Show a warning as we are sending to one of our own addresses
-                tvWarning.setVisibility(VISIBLE);
-                tvWarning.setText(R.string.my_own_address_warning);
-                tvWarning.setTextColor(getResources().getColor(R.color.yellow));
-            } else {
-                // Show a warning as we are sending to one of our own addresses,
-                // which is read-only
-                tvWarning.setVisibility(VISIBLE);
-                tvWarning.setText(R.string.read_only_warning);
-                tvWarning.setTextColor(getResources().getColor(R.color.red));
-            }
-        } else {
-            tvWarning.setVisibility(GONE);
         }
 
         //if present, show transaction label
@@ -801,7 +761,6 @@ public class SendMainActivity extends Activity {
         }
     }
 
-
     void updateError() {
         boolean tvErrorShow;
         switch (_transactionStatus) {
@@ -895,13 +854,6 @@ public class SendMainActivity extends Activity {
         _mbwManager.getVersionManager().closeDialog();
         super.onPause();
     }
-
-    final Runnable pinProtectedSignAndSend = new Runnable() {
-        @Override
-        public void run() {
-            signTransaction();
-        }
-    };
 
     protected void signTransaction() {
         // if we have a payment request, check if it is expired
@@ -1054,29 +1006,6 @@ public class SendMainActivity extends Activity {
         _receivingAcc = _mbwManager.getWalletManager().createUnrelatedBip44Account(hdKeyNode);
         _xpubSyncing = true;
         _mbwManager.getWalletManager().startSynchronization(_receivingAcc);
-    }
-
-    private BitcoinUriWithAddress getUriFromClipboard() {
-        String content = Utils.getClipboardString(SendMainActivity.this);
-        if (content.length() == 0) {
-            return null;
-        }
-        String string = content.trim();
-        if (string.matches("[a-zA-Z0-9]*")) {
-            // Raw format
-            Address address = Address.fromString(string, _mbwManager.getNetwork());
-            if (address == null) {
-                return null;
-            }
-            return new BitcoinUriWithAddress(address, null, null);
-        } else {
-            Optional<BitcoinUriWithAddress> b = BitcoinUriWithAddress.parseWithAddress(string, _mbwManager.getNetwork());
-            if (b.isPresent()) {
-                // On URI format
-                return b.get();
-            }
-        }
-        return null;
     }
 
     @Subscribe

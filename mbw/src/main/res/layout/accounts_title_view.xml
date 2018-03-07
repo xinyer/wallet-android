@@ -21,8 +21,7 @@
         android:layout_height="wrap_content"
         tools:text="My HD Accounts"
         android:textSize="23sp"
-        android:layout_toRightOf="@+id/expand"
-        style="@style/GenericText"/>
+        android:layout_toRightOf="@+id/expand"/>
 
     <TextView
         android:id="@+id/tvAccountsCount"
@@ -42,7 +41,6 @@
         android:ellipsize="end"
         android:layout_alignBottom="@id/tvTitle"
         custom:textSize="15sp"
-        custom:precision="2"
-        style="@style/GenericText"/>
+        custom:precision="2"/>
 
 </RelativeLayout>

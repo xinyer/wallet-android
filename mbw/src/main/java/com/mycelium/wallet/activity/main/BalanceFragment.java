@@ -73,7 +73,7 @@ public class BalanceFragment extends Fragment {
 
     @OnClick(R.id.btSend)
     void onClickSend() {
-        SendInitializationActivity.callMe(BalanceFragment.this.getActivity(), mbwManager.getSelectedAccount().getId(), false);
+        SendInitializationActivity.callMe(BalanceFragment.this.getActivity(), mbwManager.getSelectedAccount().getId(), true);
     }
 
     @OnClick(R.id.btReceive)
