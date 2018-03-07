@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-    <style name="QRCodeStyle">
-        <item name="android:background">@drawable/qr_code</item>
-    </style>
-
     <style name="AppBaseTheme" parent="Theme.AppCompat">
     </style>
 
@@ -14,13 +10,6 @@
 
     <style name="MyceliumActionBar" parent="MyceliumModern">
         <item name="android:windowBackground">@drawable/background_witherrors_centered</item>-->
-    </style>
-
-    <style name="MyceliumModern.Dialog" parent="Theme.AppCompat.Dialog">
-        <item name="android:actionButtonStyle" tools:ignore="NewApi">@style/ActionButtonStyle</item>
-        <item name="actionButtonStyle">@style/ActionButtonStyle</item>
-        <item name="android:buttonStyle">@style/MyceliumButton</item>
-        <item name="android:textViewStyle">@style/MyceliumText</item>
     </style>
 
     <style name="MyceliumModern" parent="AppBaseTheme">
@@ -37,29 +26,13 @@
         <item name="android:textColor">@color/button_text_color</item>
     </style>
 
-    <style name="MyceliumSlimButtonExchangeRate" parent="android:style/Widget.Button">
-        <item name="android:layout_marginLeft">1dp</item>
-        <item name="android:layout_marginRight">1dp</item>
-        <item name="android:background">@drawable/btn_gray_slim</item>
-        <item name="android:textColor">@color/button_text_color</item>
-    </style>
-
     <style name="MyceliumNumPadButtonFn" parent="android:style/Widget.Button">
         <item name="android:background">@drawable/btn_blue_light_slim</item>
         <item name="android:textColor">@color/button_text_color</item>
 
     </style>
 
-    <style name="MyceliumSlimButtonFn" parent="MyceliumSlimButton">
-        <item name="android:background">@drawable/btn_blue_light_slim</item>
-    </style>
-
     <style name="MyceliumPinpadButtonFn" parent="MyceliumPinpadButton">
-        <item name="android:background">@drawable/btn_blue_light_slim</item>
-        <item name="android:textSize">25sp</item>
-    </style>
-
-    <style name="MyceliumHexPinpadButtonFn" parent="MyceliumHexPinpadButton">
         <item name="android:background">@drawable/btn_blue_light_slim</item>
         <item name="android:textSize">25sp</item>
     </style>
@@ -70,15 +43,6 @@
         <item name="android:layout_marginLeft">1dp</item>
         <item name="android:gravity">center</item>
         <item name="android:textSize">40sp</item>
-        <item name="android:layout_margin">2dp</item>
-    </style>
-
-    <style name="MyceliumHexPinpadButton" parent="MyceliumSlimButton">
-        <item name="android:layout_width">50dp</item>
-        <item name="android:layout_height">50dp</item>
-        <item name="android:layout_marginLeft">1dp</item>
-        <item name="android:gravity">center</item>
-        <item name="android:textSize">35sp</item>
         <item name="android:layout_margin">2dp</item>
     </style>
 
@@ -96,15 +60,6 @@
 
     <style name="ActionButtonStyle" parent="Widget.AppCompat.Light.ActionButton">
         <item name="android:minWidth">1dip</item>
-    </style>
-
-    <style name="RmcActiveProgressBar">
-        <item name="android:indeterminateOnly">false</item>
-        <item name="android:progressDrawable">@drawable/rmc_bg_active_progress_bar_state</item>
-        <item name="android:indeterminateDrawable">@android:drawable/progress_indeterminate_horizontal</item>
-    </style>
-
-    <style name="GenericText">
     </style>
 
 </resources>

@@ -2,5 +2,4 @@
 <resources xmlns:tools="http://schemas.android.com/tools"
     tools:ignore="MissingTranslation">
     <string name="network">testnet</string>
-    <bool name="email_on_errors">true</bool>
 </resources>
