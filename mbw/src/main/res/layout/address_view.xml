@@ -13,7 +13,7 @@
         android:layout_centerHorizontal="true"
         android:layout_marginTop="20dp">
 
-        <com.mycelium.wallet.activity.util.QrImageView
+        <com.mycelium.wallet.widget.QrImageView
             android:id="@+id/ivQR"
             android:layout_width="@dimen/small_qrcode"
             android:layout_height="@dimen/small_qrcode"

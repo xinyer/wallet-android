@@ -8,7 +8,7 @@ import android.widget.TextView;
 
 import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.R;
-import com.mycelium.wallet.activity.util.AbstractAccountScanManager;
+import com.mycelium.wallet.extsig.AbstractAccountScanManager;
 import com.mycelium.wallet.extsig.common.ExternalSignatureDeviceManager;
 import com.mycelium.wallet.extsig.common.activity.InstantExtSigActivity;
 import com.mycelium.wapi.wallet.AccountScanManager;

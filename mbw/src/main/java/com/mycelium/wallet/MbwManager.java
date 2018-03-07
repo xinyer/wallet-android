@@ -20,7 +20,6 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.EvictingQueue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
-import com.mrd.bitlib.crypto.RandomSource;
 import com.mrd.bitlib.model.Address;
 import com.mrd.bitlib.model.NetworkParameters;
 import com.mrd.bitlib.util.CoinUtil;
@@ -29,6 +28,7 @@ import com.mycelium.WapiLogger;
 import com.mycelium.net.ServerEndpointType;
 import com.mycelium.net.TorManager;
 import com.mycelium.net.TorManagerOrbot;
+import com.mycelium.wallet.environment.MbwEnvironment;
 import com.mycelium.wallet.event.EventTranslator;
 import com.mycelium.wallet.event.ExtraAccountsChanged;
 import com.mycelium.wallet.event.ReceivingAddressChanged;
@@ -39,8 +39,6 @@ import com.mycelium.wallet.extsig.trezor.TrezorManager;
 import com.mycelium.wallet.persistence.MetadataStorage;
 import com.mycelium.wallet.wapi.SqliteWalletManagerBackingWrapper;
 import com.mycelium.wapi.api.WapiClient;
-import com.mycelium.wapi.wallet.AesKeyCipher;
-import com.mycelium.wapi.wallet.KeyCipher;
 import com.mycelium.wapi.wallet.SecureKeyValueStore;
 import com.mycelium.wapi.wallet.WalletAccount;
 import com.mycelium.wapi.wallet.WalletManager;
@@ -49,11 +47,8 @@ import com.mycelium.wapi.wallet.bip44.ExternalSignatureProviderProxy;
 import com.squareup.otto.Bus;
 import com.squareup.otto.Subscribe;
 
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
@@ -84,7 +79,6 @@ public class MbwManager {
 
     private MinerFee _minerFee;
     private MbwEnvironment _environment;
-    private HttpErrorCollector _httpErrorCollector;
     private String _language;
     private final WalletManager _walletManager;
     private final EventTranslator _eventTranslator;
@@ -107,8 +101,6 @@ public class MbwManager {
         setTorMode(ServerEndpointType.Types.ONLY_HTTPS);
 
         _wapi = initWapi();
-        _httpErrorCollector = HttpErrorCollector.registerInVM(_applicationContext, _wapi);
-
         _minerFee = MinerFee.fromString(preferences.getString(Constants.MINER_FEE_SETTING, MinerFee.NORMAL.toString()));
 
         // Get the display metrics of this device
@@ -304,22 +296,6 @@ public class MbwManager {
      */
     public NetworkParameters getNetwork() {
         return _environment.getNetwork();
-    }
-
-    public void reportIgnoredException(Throwable e) {
-        reportIgnoredException(null, e);
-    }
-
-    public void reportIgnoredException(String message, Throwable e) {
-        if (_httpErrorCollector != null) {
-            if (null != message && message.length() > 0) {
-                message += "\n";
-            } else {
-                message = "";
-            }
-            RuntimeException msg = new RuntimeException("We caught an exception that we chose to ignore.\n" + message, e);
-            _httpErrorCollector.reportErrorToServer(msg);
-        }
     }
 
     public String getLanguage() {

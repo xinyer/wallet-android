@@ -80,7 +80,7 @@
                         android:text="Only copy this key in a secure environment.\nAnyone who has access to it gains control over all current and in the future available bitcoin for this account.\n\nLong-press here to show the \nQR-Code "/>
             </LinearLayout>
 
-            <com.mycelium.wallet.activity.util.QrImageView
+            <com.mycelium.wallet.widget.QrImageView
                     android:id="@+id/ivQrCode"
                     android:layout_width="fill_parent"
                     android:layout_height="fill_parent"

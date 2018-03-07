@@ -59,7 +59,7 @@ import com.mrd.bitlib.util.ByteReader;
 import com.mrd.bitlib.util.ByteWriter;
 import com.mrd.bitlib.util.Sha256Hash;
 import com.mycelium.wallet.R;
-import com.mycelium.wallet.activity.util.AbstractAccountScanManager;
+import com.mycelium.wallet.extsig.AbstractAccountScanManager;
 import com.mycelium.wapi.model.TransactionEx;
 import com.mycelium.wapi.wallet.WalletManager;
 import com.mycelium.wapi.wallet.bip44.Bip44AccountExternalSignature;

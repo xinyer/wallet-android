@@ -480,7 +480,6 @@ public class Utils {
             ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
             clipboard.setText(string);
         } catch (NullPointerException ex) {
-            MbwManager.getInstance(context).reportIgnoredException(new RuntimeException(ex.getMessage()));
             Toast.makeText(context, context.getString(R.string.unable_to_set_clipboard), Toast.LENGTH_LONG).show();
         }
     }
@@ -501,7 +500,6 @@ public class Utils {
             Toast.makeText(context, context.getString(R.string.unable_to_get_clipboard), Toast.LENGTH_LONG).show();
             return "";
         } catch (NullPointerException ex) {
-            MbwManager.getInstance(context).reportIgnoredException(new RuntimeException(ex.getMessage()));
             Toast.makeText(context, context.getString(R.string.unable_to_get_clipboard), Toast.LENGTH_LONG).show();
             return "";
         }
@@ -513,7 +511,6 @@ public class Utils {
             ClipboardManager clipboard = (ClipboardManager) activity.getSystemService(Context.CLIPBOARD_SERVICE);
             clipboard.setText("");
         } catch (NullPointerException ex) {
-            MbwManager.getInstance(activity).reportIgnoredException(new RuntimeException(ex.getMessage()));
             Toast.makeText(activity, activity.getString(R.string.unable_to_clear_clipboard), Toast.LENGTH_LONG).show();
         }
     }

@@ -7,11 +7,12 @@ import android.view.*;
 import android.widget.*;
 import com.google.common.base.Strings;
 import com.mycelium.wallet.*;
-import com.mycelium.wallet.activity.HdAccountSelectorActivity;
-import com.mycelium.wallet.activity.util.Pin;
+import com.mycelium.wallet.widget.Pin;
 import com.mycelium.wallet.extsig.common.ExternalSignatureDeviceManager;
+import com.mycelium.wallet.widget.PinDialog;
+import com.mycelium.wallet.widget.TrezorPinDialog;
 import com.mycelium.wapi.wallet.AccountScanManager;
-import com.mycelium.wallet.activity.util.MasterSeedPasswordSetter;
+import com.mycelium.wallet.extsig.MasterSeedPasswordSetter;
 import com.squareup.otto.Subscribe;
 
 public abstract class ExtSigAccountSelectorActivity extends HdAccountSelectorActivity implements MasterSeedPasswordSetter {

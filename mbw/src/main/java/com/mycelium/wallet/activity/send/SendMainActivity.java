@@ -41,7 +41,6 @@ import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.MinerFee;
 import com.mycelium.wallet.R;
 import com.mycelium.wallet.Utils;
-import com.mycelium.wallet.activity.GetAmountActivity;
 import com.mycelium.wallet.activity.send.adapter.FeeLvlViewAdapter;
 import com.mycelium.wallet.activity.send.adapter.FeeViewAdapter;
 import com.mycelium.wallet.activity.send.view.SelectListener;
@@ -49,7 +48,7 @@ import com.mycelium.wallet.activity.send.helper.FeeItemsBuilder;
 import com.mycelium.wallet.activity.send.model.FeeItem;
 import com.mycelium.wallet.activity.send.model.FeeLvlItem;
 import com.mycelium.wallet.activity.send.view.SelectableRecyclerView;
-import com.mycelium.wallet.activity.util.AnimationUtils;
+import com.mycelium.wallet.util.AnimationUtils;
 import com.mycelium.wallet.event.SelectedCurrencyChanged;
 import com.mycelium.wallet.event.SyncFailed;
 import com.mycelium.wallet.event.SyncStopped;
@@ -508,7 +507,6 @@ public class SendMainActivity extends Activity {
             }
             // under certain conditions the max-miner-fee check fails - report it back to the server, so we can better
             // debug it
-            _mbwManager.reportIgnoredException("MinerFeeException", e);
             return TransactionStatus.MissingArguments;
         }
     }

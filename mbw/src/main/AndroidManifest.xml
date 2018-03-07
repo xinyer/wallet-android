@@ -78,12 +78,12 @@
         </activity>
 
         <activity
-            android:name=".activity.modern.ModernMain"
+            android:name=".activity.ModernMain"
             android:theme="@style/MyceliumActionBar" />
 
-        <activity android:name=".activity.AddAccountActivity" />
-        <activity android:name=".activity.AddAdvancedAccountActivity" />
-        <activity android:name=".activity.TransactionDetailsActivity" />
+        <activity android:name=".activity.accounts.AddAccountActivity" />
+        <activity android:name=".activity.accounts.AddAdvancedAccountActivity" />
+        <activity android:name=".activity.transactions.TransactionDetailsActivity" />
         <activity android:name=".activity.settings.SettingsActivity" />
         <activity android:name=".activity.send.InstantWalletActivity" />
         <activity android:name=".activity.send.SendInitializationActivity" />
@@ -97,7 +97,7 @@
         <activity android:name=".extsig.trezor.activity.InstantTrezorActivity" />
         <activity android:name=".extsig.trezor.activity.TrezorAccountImportActivity" />
         <activity android:name=".extsig.trezor.activity.TrezorSignTransactionActivity" />
-        <activity android:name=".activity.GetAmountActivity" />
+        <activity android:name=".activity.send.GetAmountActivity" />
     </application>
 
 </manifest>

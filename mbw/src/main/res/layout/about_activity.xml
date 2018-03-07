@@ -181,7 +181,7 @@
                     android:text="@string/playstore_link_label"
                     android:width="@dimen/about_caption_size" />
 
-                <com.mycelium.wallet.activity.util.QrImageView
+                <com.mycelium.wallet.widget.QrImageView
                     android:id="@+id/ivPlaystoreQR"
                     android:layout_width="@dimen/small_qrcode"
                     android:layout_height="@dimen/small_qrcode"
@@ -202,7 +202,7 @@
                     android:text="@string/direct_apk_link_label"
                     android:width="@dimen/about_caption_size" />
 
-                <com.mycelium.wallet.activity.util.QrImageView
+                <com.mycelium.wallet.widget.QrImageView
                     android:id="@+id/ivDirectApkQR"
                     android:layout_width="@dimen/small_qrcode"
                     android:layout_height="@dimen/small_qrcode"

@@ -12,7 +12,7 @@ import com.google.common.base.Preconditions;
 import com.mrd.bitlib.model.Address;
 import com.mycelium.wallet.R;
 import com.mycelium.wallet.Utils;
-import com.mycelium.wallet.activity.util.QrImageView;
+import com.mycelium.wallet.widget.QrImageView;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;

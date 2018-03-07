@@ -3,12 +3,6 @@
     xmlns:yourapp="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:id="@+id/miSetLabel"
-        android:icon="@drawable/holo_dark_ic_action_labels"
-        android:title="@string/set_label"
-        yourapp:showAsAction="ifRoom|withText" />
-
-    <item
         android:id="@+id/miShowDetails"
         android:title="@string/show_details"
         yourapp:showAsAction="ifRoom|withText" />
