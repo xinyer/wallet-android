@@ -40,7 +40,6 @@ import com.mycelium.wallet.Constants;
 import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.MinerFee;
 import com.mycelium.wallet.R;
-import com.mycelium.wallet.ColuAssetUri;
 import com.mycelium.wallet.Utils;
 import com.mycelium.wallet.activity.GetAmountActivity;
 import com.mycelium.wallet.activity.send.adapter.FeeLvlViewAdapter;
@@ -170,7 +169,6 @@ public class SendMainActivity extends Activity {
     private Address _receivingAddress;
     protected String _transactionLabel;
     private BitcoinUri _bitcoinUri;
-    private ColuAssetUri _coluAssetUri;
     protected boolean _isColdStorage;
     private TransactionStatus _transactionStatus;
     protected UnsignedTransaction _unsigned;
@@ -239,8 +237,6 @@ public class SendMainActivity extends Activity {
         //May be null
         _bitcoinUri = (BitcoinUri) getIntent().getSerializableExtra(BITCOIN_URI);
         //May be null
-        _coluAssetUri = (ColuAssetUri) getIntent().getSerializableExtra(RMC_URI);
-
         // did we get a raw payment request
         byte[] _rawPr = getIntent().getByteArrayExtra(RAW_PAYMENT_REQUEST);
 
@@ -258,7 +254,6 @@ public class SendMainActivity extends Activity {
             feeLvl = (MinerFee) savedInstanceState.getSerializable(FEE_LVL);
             feePerKbValue = savedInstanceState.getLong(FEE_PER_KB);
             _bitcoinUri = (BitcoinUri) savedInstanceState.getSerializable(BITCOIN_URI);
-            _coluAssetUri = (ColuAssetUri) savedInstanceState.getSerializable(RMC_URI);
             _paymentFetched = savedInstanceState.getBoolean(PAYMENT_FETCHED);
             _signedTransaction = (Transaction) savedInstanceState.getSerializable(SIGNED_TRANSACTION);
 
@@ -415,7 +410,6 @@ public class SendMainActivity extends Activity {
         savedInstanceState.putLong(FEE_PER_KB, feePerKbValue);
         savedInstanceState.putBoolean(PAYMENT_FETCHED, _paymentFetched);
         savedInstanceState.putSerializable(BITCOIN_URI, _bitcoinUri);
-        savedInstanceState.putSerializable(RMC_URI, _coluAssetUri);
         savedInstanceState.putSerializable(PAYMENT_REQUEST_HANDLER_ID, _paymentRequestHandlerUuid);
         savedInstanceState.putSerializable(SIGNED_TRANSACTION, _signedTransaction);
     }

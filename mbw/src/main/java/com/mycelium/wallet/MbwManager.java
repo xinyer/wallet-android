@@ -135,7 +135,7 @@ public class MbwManager {
         _eventTranslator = new EventTranslator(new Handler(), _eventBus);
         _walletManager.addObserver(_eventTranslator);
 
-        migrateOldKeys();
+//        migrateOldKeys();
     }
 
     @Subscribe()
@@ -208,68 +208,6 @@ public class MbwManager {
 
         _environment.getWapiEndpoints().setTorManager(this._torManager);
         _environment.getLtEndpoints().setTorManager(this._torManager);
-    }
-
-
-    private void migrateOldKeys() {
-        // We only migrate old keys if we don't have any accounts yet - otherwise, migration has already taken place
-        if (!_walletManager.getAccountIds().isEmpty()) {
-            return;
-        }
-
-        //check which address was the last recently selected one
-        SharedPreferences prefs = _applicationContext.getSharedPreferences("selected", Context.MODE_PRIVATE);
-        String lastAddress = prefs.getString("last", null);
-
-        // Migrate all existing records to accounts
-        List<Record> records = loadClassicRecords();
-        for (Record record : records) {
-
-            // Create an account from this record
-            UUID account;
-            if (record.hasPrivateKey()) {
-                try {
-                    account = _walletManager.createSingleAddressAccount(record.key, AesKeyCipher.defaultKeyCipher());
-                } catch (KeyCipher.InvalidKeyCipher invalidKeyCipher) {
-                    throw new RuntimeException(invalidKeyCipher);
-                }
-            } else {
-                account = _walletManager.createSingleAddressAccount(record.address);
-            }
-
-            //check whether this was the selected record
-            if (record.address.toString().equals(lastAddress)) {
-                setSelectedAccount(account);
-            }
-
-            //check whether the record was archived
-            if (record.tag.equals(Record.Tag.ARCHIVE)) {
-                _walletManager.getAccount(account).archiveAccount();
-            }
-
-        }
-    }
-
-    private List<Record> loadClassicRecords() {
-        SharedPreferences prefs = _applicationContext.getSharedPreferences("data", Context.MODE_PRIVATE);
-        List<Record> recordList = new LinkedList<>();
-
-        // Load records
-        String records = prefs.getString("records", "");
-        for (String one : records.split(",")) {
-            one = one.trim();
-            if (one.length() == 0) {
-                continue;
-            }
-            Record record = Record.fromSerializedString(one);
-            if (record != null) {
-                recordList.add(record);
-            }
-        }
-
-        // Sort all records
-        Collections.sort(recordList);
-        return recordList;
     }
 
     /**
