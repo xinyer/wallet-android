@@ -40,8 +40,6 @@ import com.mycelium.net.TorManager;
 import com.mycelium.net.TorManagerOrbot;
 import com.mycelium.wallet.activity.util.BlockExplorer;
 import com.mycelium.wallet.activity.util.BlockExplorerManager;
-import com.mycelium.wallet.api.AndroidAsyncApi;
-import com.mycelium.wallet.bitid.ExternalService;
 import com.mycelium.wallet.event.EventTranslator;
 import com.mycelium.wallet.event.ExtraAccountsChanged;
 import com.mycelium.wallet.event.ReceivingAddressChanged;
@@ -58,7 +56,6 @@ import com.mycelium.wapi.wallet.AesKeyCipher;
 import com.mycelium.wapi.wallet.IdentityAccountKeyManager;
 import com.mycelium.wapi.wallet.KeyCipher;
 import com.mycelium.wapi.wallet.SecureKeyValueStore;
-import com.mycelium.wapi.wallet.SyncMode;
 import com.mycelium.wapi.wallet.WalletAccount;
 import com.mycelium.wapi.wallet.WalletManager;
 import com.mycelium.wapi.wallet.WalletManagerBacking;
@@ -77,13 +74,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.UUID;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
 
@@ -102,7 +93,6 @@ public class MbwManager {
     private static final int BIP32_ROOT_AUTHENTICATION_INDEX = 0x80424944;
 
     private final CurrencySwitcher _currencySwitcher;
-    private Timer _addressWatchTimer;
 
     public static synchronized MbwManager getInstance(Context context) {
         if (_instance == null) {
@@ -744,10 +734,6 @@ public class MbwManager {
         return new InMemoryPrivateKey(sitePrivateKeyBytes, true);
     }
 
-    public boolean isWalletPaired(ExternalService service) {
-        return getMetadataStorage().isPairedService(service.getHost(getNetwork()));
-    }
-
     public MetadataStorage getMetadataStorage() {
         return _storage;
     }
@@ -764,10 +750,6 @@ public class MbwManager {
         return _wapi;
     }
 
-    public EvictingQueue<LogEntry> getWapiLogs() {
-        return _wapiLogs;
-    }
-
     public TorManager getTorManager() {
         return _torManager;
     }
@@ -781,27 +763,6 @@ public class MbwManager {
 
     public Cache<String, Object> getBackgroundObjectsCache() {
         return _semiPersistingBackgroundObjects;
-    }
-
-    private void switchServer() {
-        _environment.getWapiEndpoints().switchToNextEndpoint();
-    }
-
-    public void stopWatchingAddress() {
-        if (_addressWatchTimer != null) {
-            _addressWatchTimer.cancel();
-        }
-    }
-
-    public void watchAddress(final Address address) {
-        stopWatchingAddress();
-        _addressWatchTimer = new Timer();
-        _addressWatchTimer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                getWalletManager().startSynchronization(new SyncMode(address));
-            }
-        }, 1000, 5 * 1000);
     }
 
 }
