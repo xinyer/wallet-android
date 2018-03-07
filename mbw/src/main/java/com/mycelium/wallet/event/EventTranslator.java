@@ -37,7 +37,6 @@ package com.mycelium.wallet.event;
 import android.os.Handler;
 import com.google.common.base.Optional;
 import com.mrd.bitlib.model.Address;
-import com.mycelium.wallet.ExchangeRateManager;
 import com.mycelium.wapi.wallet.WalletManager;
 import com.squareup.otto.Bus;
 
@@ -46,7 +45,7 @@ import java.util.UUID;
 /**
  * This Observer takes WAPI Events and translates into posts to EventBus
  */
-public class EventTranslator implements WalletManager.Observer, ExchangeRateManager.Observer {
+public class EventTranslator implements WalletManager.Observer {
    private Handler handler;
    private Bus bus;
 
@@ -102,13 +101,4 @@ public class EventTranslator implements WalletManager.Observer, ExchangeRateMana
       }
    }
 
-   @Override
-   public void refreshingExchangeRatesSucceeded() {
-      postEvent(new ExchangeRatesRefreshed());
-   }
-
-   @Override
-   public void refreshingExchangeRatesFailed() {
-      postEvent(new RefreshingExchangeRatesFailed());
-   }
 }

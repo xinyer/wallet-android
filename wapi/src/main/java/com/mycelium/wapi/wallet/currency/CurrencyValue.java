@@ -42,176 +42,100 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 
 public abstract class CurrencyValue implements Serializable {
-   public static final String BTC = "BTC";
+    public static final String BTC = "BTC";
 
-   public abstract String getCurrency();
+    public abstract String getCurrency();
 
-   public abstract BigDecimal getValue();
+    public abstract BigDecimal getValue();
 
-   public boolean isZero() {
-      return BigDecimal.ZERO.compareTo(getValue()) == 0;
-   }
+    public boolean isZero() {
+        return BigDecimal.ZERO.compareTo(getValue()) == 0;
+    }
 
-   @Override
-   public String toString() {
-      return getValue() + " " + getCurrency();
-   }
+    @Override
+    public String toString() {
+        return getValue() + " " + getCurrency();
+    }
 
-   static public CurrencyValue fromValue(CurrencyValue currencyValue, String targetCurrency, ExchangeRateProvider exchangeRateManager) {
-      if (currencyValue == null){
-         return null;
-      } else if (currencyValue instanceof ExchangeBasedCurrencyValue) {
-         return fromValue((ExchangeBasedCurrencyValue) currencyValue, targetCurrency, exchangeRateManager);
-      } else if (currencyValue instanceof ExactCurrencyValue) {
-         return fromValue((ExactCurrencyValue) currencyValue, targetCurrency, exchangeRateManager);
-      } else {
-         throw new RuntimeException("Unable to convert from currency value " + currencyValue.getClass().toString());
-      }
-   }
+    public static CurrencyValue fromValue(CurrencyValue currencyValue) {
+        return ExactBitcoinValue.from(currencyValue.getValue());
+    }
 
-   public static CurrencyValue fromValue(ExchangeBasedCurrencyValue value, String targetCurrency, ExchangeRateProvider exchangeRateManager) {
-      if (value.getCurrency().equals(targetCurrency)) {
-         return value;
-      } else {
-         return ExchangeBasedCurrencyValue.fromValue(value, targetCurrency, exchangeRateManager);
-      }
-   }
+    public static boolean isNullOrZero(CurrencyValue value) {
+        return value == null || value.getValue() == null || value.isZero();
+    }
 
-   public static CurrencyValue fromValue(ExactCurrencyValue value, String targetCurrency, ExchangeRateProvider exchangeRateManager) {
-      if (value.getCurrency().equals(targetCurrency)) {
-         return value;
-      } else {
-         return ExchangeBasedCurrencyValue.fromValue(value, targetCurrency, exchangeRateManager);
-      }
-   }
+    public boolean isBtc() {
+        return getCurrency().equals(BTC);
+    }
 
-   public static boolean isNullOrZero(CurrencyValue value) {
-      return value == null || value.getValue() == null || value.isZero();
-   }
+    public boolean isFiat() {
+        return !isBtc();
+    }
 
-   public boolean isBtc() {
-      return getCurrency().equals(BTC);
-   }
+    public BitcoinValue getBitcoinValue() {
+        return ((BitcoinValue) this);
+    }
 
-   public boolean isFiat() {
-      return !isBtc();
-   }
+    // sum up this+other the other currency and use exchangeRateProvider if other is in
+    // another currency as this -> always try to exchange to this
+    public abstract CurrencyValue add(CurrencyValue other);
 
-   public BitcoinValue getBitcoinValue(ExchangeRateProvider exchangeRateManager) {
-      if (this instanceof BitcoinValue) {
-         return ((BitcoinValue) this);
-      } else {
-         if (this instanceof ExactCurrencyValue) {
-            return (BitcoinValue) ExchangeBasedBitcoinValue.fromValue(this, exchangeRateManager);
-         } else if (this instanceof ExchangeBasedCurrencyValue) {
-            return (BitcoinValue) ExchangeBasedBitcoinValue.fromValue(this.getExactValue(), exchangeRateManager);
-         } else {
-            throw new RuntimeException("Unable to convert to Bitcoin");
-         }
-      }
-   }
+    public Bitcoins getAsBitcoin() {
+        return getBitcoinValue().getAsBitcoin();
+    }
 
-   // sum up this+other the other currency and use exchangeRateProvider if other is in
-   // another currency as this -> always try to exchange to this
-   public CurrencyValue add(CurrencyValue other, ExchangeRateProvider exchangeRateProvider) {
-      CurrencyValue v1, v2;
+    public abstract ExactCurrencyValue getExactValue();
 
-      if (other == null || other.getValue() == null) {
-         return ExactCurrencyValue.from(null, this.getCurrency());
-      }
+    public CurrencyValue getExactValueIfPossible() {
+        if (hasExactValue()) {
+            return getExactValue();
+        } else {
+            return this;
+        }
+    }
 
-      // try to find a currency pair, which already has the same type
-      if (other.getExactValueIfPossible().getCurrency().equals(this.getExactValueIfPossible().getCurrency())){
-         v1 = this.getExactValueIfPossible();
-         v2 = other.getExactValueIfPossible();
-      } else if (other.getCurrency().equals(this.getExactValueIfPossible().getCurrency())){
-         v1 = this.getExactValue();
-         v2 = other;
-      } else if (other.getExactValueIfPossible().getCurrency().equals(this.getCurrency())){
-         v1 = this;
-         v2 = other.getExactValueIfPossible();
-      } else {
-         // ... if none found, use the exchangeRateProvider
-         v1 = this.getExactValueIfPossible();
-         v2 = ExchangeBasedCurrencyValue.fromValue(other, this.getExactValueIfPossible().getCurrency(), exchangeRateProvider);
-      }
+    abstract boolean hasExactValue();
 
-      if (v1 == null || v2 == null || v1.getValue() == null || v2.getValue() == null) {
-         return ExactCurrencyValue.from(null, this.getCurrency());
-      }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || !(o instanceof CurrencyValue)) {
+            return false;
+        }
 
-      // v1 and v2 have the same currency string at this point, so we can add them
-      // just check, which CurrencyType we should return
-      if (v1 instanceof ExactCurrencyValue && v2 instanceof ExactCurrencyValue) {
-         // both are exact types, so we can return an exact type
-         return ExactCurrencyValue.from(
-               v1.getValue().add(v2.getValue()),
-               v1.getCurrency()
-         );
-      } else {
-         // at least one of them isn't exact, so the sum is also not exact
-         return ExchangeBasedCurrencyValue.from(
-               v1.getValue().add(v2.getValue()),
-               v1.getCurrency()
-         );
-      }
-   }
+        CurrencyValue that = (CurrencyValue) o;
 
-   public Bitcoins getAsBitcoin(ExchangeRateProvider exchangeRateManager) {
-      return getBitcoinValue(exchangeRateManager).getAsBitcoin();
-   }
+        if (!getCurrency().equals(that.getCurrency())) {
+            return false;
+        }
+        return getValue().compareTo(that.getValue()) == 0;
+    }
 
-   public abstract ExactCurrencyValue getExactValue();
+    @Override
+    public int hashCode() {
+        int result = getCurrency().hashCode();
+        result = 31 * result + getValue().hashCode();
+        return result;
+    }
 
-   public CurrencyValue getExactValueIfPossible() {
-      if (hasExactValue()) {
-         return getExactValue();
-      } else {
-         return this;
-      }
-   }
-
-   abstract boolean hasExactValue();
-
-   @Override
-   public boolean equals(Object o) {
-      if (this == o) {
-         return true;
-      }
-      if (o == null || !(o instanceof CurrencyValue)) {
-         return false;
-      }
-
-      CurrencyValue that = (CurrencyValue) o;
-
-      if (!getCurrency().equals(that.getCurrency())) {
-         return false;
-      }
-      return getValue().compareTo(that.getValue()) == 0;
-   }
-
-   @Override
-   public int hashCode() {
-      int result = getCurrency().hashCode();
-      result = 31 * result + getValue().hashCode();
-      return result;
-   }
-
-   // only return the exact amount, if the input value is already in this currency
-   public static Optional<ExactCurrencyValue> checkCurrencyAmount(CurrencyValue amount, String currency) {
-      boolean isExact = (amount != null)
-            && amount.getExactValueIfPossible() instanceof ExactCurrencyValue
-            && amount.getExactValueIfPossible().getCurrency().equals(currency);
-      if (isExact) {
-         return Optional.of((ExactCurrencyValue) amount.getExactValueIfPossible());
-      }
-      boolean isSelfExact = (amount != null)
-            && amount instanceof ExactCurrencyValue
-            && amount.getCurrency().equals(currency);
-      if (isSelfExact) {
-         return Optional.of((ExactCurrencyValue) amount);
-      } else {
-         return Optional.absent();
-      }
-   }
+    // only return the exact amount, if the input value is already in this currency
+    public static Optional<ExactCurrencyValue> checkCurrencyAmount(CurrencyValue amount, String currency) {
+        boolean isExact = (amount != null)
+                && amount.getExactValueIfPossible() instanceof ExactCurrencyValue
+                && amount.getExactValueIfPossible().getCurrency().equals(currency);
+        if (isExact) {
+            return Optional.of((ExactCurrencyValue) amount.getExactValueIfPossible());
+        }
+        boolean isSelfExact = (amount != null)
+                && amount instanceof ExactCurrencyValue
+                && amount.getCurrency().equals(currency);
+        if (isSelfExact) {
+            return Optional.of((ExactCurrencyValue) amount);
+        } else {
+            return Optional.absent();
+        }
+    }
 }

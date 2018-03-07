@@ -26,7 +26,6 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.mrd.bitlib.model.Address;
-import com.mycelium.wallet.ExchangeRateManager;
 import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.R;
 import com.mycelium.wallet.activity.AddAccountActivity;
@@ -267,16 +266,6 @@ public class AccountsFragment extends Fragment {
                     mbwManager.getEventBus().post(new AccountChanged(accountToDelete.getId()));
                     mbwManager.getEventBus().post(new ExtraAccountsChanged());
                     toaster.toast(R.string.account_deleted, false);
-                }
-            }
-
-            private CurrencyValue getPotentialBalanceColu(WalletAccount account) {
-                if (account.isArchived()) {
-                    return null;
-                } else {
-                    CurrencyBasedBalance balance = account.getCurrencyBasedBalance();
-                    ExchangeRateManager exchanger = mbwManager.getExchangeRateManager();
-                    return balance.confirmed;
                 }
             }
 

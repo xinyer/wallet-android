@@ -196,8 +196,6 @@ public class ModernMain extends ActionBarActivity {
         balanceRefreshTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                mbwManager.getExchangeRateManager().requestRefresh();
-
                 // if the last full sync is too old (or not known), start a full sync for _all_ accounts
                 // otherwise just run a normal sync for the current account
                 final Optional<Long> lastFullSync = mbwManager.getMetadataStorage().getLastFullSync();
@@ -309,7 +307,6 @@ public class ModernMain extends ActionBarActivity {
                 }
                 mbwManager.getWalletManager().startSynchronization(syncMode);
                 // also fetch a new exchange rate, if necessary
-                mbwManager.getExchangeRateManager().requestOptionalRefresh();
                 return true;
             case R.id.miRescanTransactions:
                 mbwManager.getSelectedAccount().dropCachedData();
@@ -340,6 +337,7 @@ public class ModernMain extends ActionBarActivity {
             if (mbwManager.getWalletManager().getState() == WalletManager.State.SYNCHRONIZING) {
                 if (commonSyncState != WalletManager.State.SYNCHRONIZING) {
                     commonSyncState = WalletManager.State.SYNCHRONIZING;
+                    MenuItemCompat.setActionView(refreshItem, R.layout.actionbar_indeterminate_progress);
                 }
             } else {
                 commonSyncState = WalletManager.State.READY;

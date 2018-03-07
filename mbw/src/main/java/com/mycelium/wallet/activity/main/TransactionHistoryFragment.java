@@ -423,7 +423,7 @@ public class TransactionHistoryFragment extends Fragment {
                         long txFee = unsigned.calculateFee();
                         ExactBitcoinValue txFeeBitcoinValue = ExactBitcoinValue.from(txFee);
                         String txFeeString = Utils.getFormattedValueWithUnit(txFeeBitcoinValue, mbwManager.getBitcoinDenomination());
-                        CurrencyValue txFeeCurrencyValue = CurrencyValue.fromValue(txFeeBitcoinValue, mbwManager.getFiatCurrency(), mbwManager.getExchangeRateManager());
+                        CurrencyValue txFeeCurrencyValue = CurrencyValue.fromValue(txFeeBitcoinValue);
                         if (!CurrencyValue.isNullOrZero(txFeeCurrencyValue)) {
                             txFeeString += " (" + Utils.getFormattedValueWithUnit(txFeeCurrencyValue, mbwManager.getBitcoinDenomination()) + ")";
                         }

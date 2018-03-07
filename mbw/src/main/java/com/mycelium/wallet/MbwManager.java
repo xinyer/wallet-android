@@ -1,14 +1,12 @@
 package com.mycelium.wallet;
 
 import android.app.Activity;
-import android.app.ActivityManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.Vibrator;
 import android.support.annotation.Nullable;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -21,19 +19,12 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.EvictingQueue;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
-import com.mrd.bitlib.crypto.Bip39;
-import com.mrd.bitlib.crypto.HdKeyNode;
-import com.mrd.bitlib.crypto.InMemoryPrivateKey;
-import com.mrd.bitlib.crypto.MrdExport;
 import com.mrd.bitlib.crypto.RandomSource;
 import com.mrd.bitlib.model.Address;
 import com.mrd.bitlib.model.NetworkParameters;
-import com.mrd.bitlib.util.BitUtils;
 import com.mrd.bitlib.util.CoinUtil;
 import com.mrd.bitlib.util.CoinUtil.Denomination;
-import com.mrd.bitlib.util.HashUtils;
 import com.mycelium.WapiLogger;
 import com.mycelium.net.ServerEndpointType;
 import com.mycelium.net.TorManager;
@@ -42,29 +33,22 @@ import com.mycelium.wallet.event.EventTranslator;
 import com.mycelium.wallet.event.ExtraAccountsChanged;
 import com.mycelium.wallet.event.ReceivingAddressChanged;
 import com.mycelium.wallet.event.SelectedAccountChanged;
-import com.mycelium.wallet.event.SelectedCurrencyChanged;
 import com.mycelium.wallet.event.TorStateChanged;
 import com.mycelium.wallet.extsig.common.ExternalSignatureDeviceManager;
 import com.mycelium.wallet.extsig.trezor.TrezorManager;
 import com.mycelium.wallet.persistence.MetadataStorage;
 import com.mycelium.wallet.wapi.SqliteWalletManagerBackingWrapper;
 import com.mycelium.wapi.api.WapiClient;
-import com.mycelium.wapi.wallet.AccountProvider;
 import com.mycelium.wapi.wallet.AesKeyCipher;
-import com.mycelium.wapi.wallet.IdentityAccountKeyManager;
 import com.mycelium.wapi.wallet.KeyCipher;
 import com.mycelium.wapi.wallet.SecureKeyValueStore;
 import com.mycelium.wapi.wallet.WalletAccount;
 import com.mycelium.wapi.wallet.WalletManager;
 import com.mycelium.wapi.wallet.WalletManagerBacking;
-import com.mycelium.wapi.wallet.bip44.Bip44Account;
-import com.mycelium.wapi.wallet.bip44.Bip44AccountContext;
 import com.mycelium.wapi.wallet.bip44.ExternalSignatureProviderProxy;
-import com.mycelium.wapi.wallet.single.SingleAddressAccount;
 import com.squareup.otto.Bus;
 import com.squareup.otto.Subscribe;
 
-import java.io.UnsupportedEncodingException;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
@@ -83,15 +67,6 @@ public class MbwManager {
     private static volatile MbwManager _instance = null;
     private static final String TAG = "MbwManager";
 
-    /**
-     * The root index we use for generating authentication keys.
-     * 0x80 makes the number negative == hardened key derivation
-     * 0x424944 = "BID"
-     */
-    private static final int BIP32_ROOT_AUTHENTICATION_INDEX = 0x80424944;
-
-    private final CurrencySwitcher _currencySwitcher;
-
     public static synchronized MbwManager getInstance(Context context) {
         if (_instance == null) {
             _instance = new MbwManager(context);
@@ -108,15 +83,10 @@ public class MbwManager {
     private MetadataStorage _storage;
 
     private MinerFee _minerFee;
-    private boolean _enableContinuousFocus;
-    private MrdExport.V1.EncryptionParameters _cachedEncryptionParameters;
-    private final MrdExport.V1.ScryptParameters _deviceScryptParameters;
     private MbwEnvironment _environment;
     private HttpErrorCollector _httpErrorCollector;
     private String _language;
-    private final ExchangeRateManager _exchangeRateManager;
     private final WalletManager _walletManager;
-    private final RandomSource _randomSource;
     private final EventTranslator _eventTranslator;
     private ServerEndpointType.Types _torMode;
     private TorManager _torManager;
@@ -139,10 +109,7 @@ public class MbwManager {
         _wapi = initWapi();
         _httpErrorCollector = HttpErrorCollector.registerInVM(_applicationContext, _wapi);
 
-        _randomSource = new AndroidRandomSource();
-
         _minerFee = MinerFee.fromString(preferences.getString(Constants.MINER_FEE_SETTING, MinerFee.NORMAL.toString()));
-        _enableContinuousFocus = preferences.getBoolean(Constants.ENABLE_CONTINUOUS_FOCUS_SETTING, false);
 
         // Get the display metrics of this device
         DisplayMetrics dm = new DisplayMetrics();
@@ -163,36 +130,12 @@ public class MbwManager {
             fiatCurrencies.addAll(currencyList);
         }
 
-        _exchangeRateManager = new ExchangeRateManager(_applicationContext, _wapi, getNetwork(), getMetadataStorage());
-        _currencySwitcher = new CurrencySwitcher(
-                _exchangeRateManager,
-                fiatCurrencies,
-                getPreferences().getString(Constants.FIAT_CURRENCY_SETTING, Constants.DEFAULT_CURRENCY),
-                Denomination.fromString(preferences.getString(Constants.BITCOIN_DENOMINATION_SETTING, Denomination.BTC.toString()))
-        );
-
-        // Check the device MemoryClass and set the scrypt-parameters for the PDF backup
-        ActivityManager am = (ActivityManager) _applicationContext.getSystemService(Context.ACTIVITY_SERVICE);
-        int memoryClass = am.getMemoryClass();
-
-        _deviceScryptParameters = memoryClass > 20
-                ? MrdExport.V1.ScryptParameters.DEFAULT_PARAMS
-                : MrdExport.V1.ScryptParameters.LOW_MEM_PARAMS;
-
         _trezorManager = new TrezorManager(_applicationContext, getNetwork(), getEventBus());
         _walletManager = createWalletManager(_applicationContext, _environment);
-
         _eventTranslator = new EventTranslator(new Handler(), _eventBus);
-        _exchangeRateManager.subscribe(_eventTranslator);
-
         _walletManager.addObserver(_eventTranslator);
 
-        // set the currency-list after we added all extra accounts, they may provide
-        // additional needed fiat currencies
-        setCurrencyList(fiatCurrencies);
-
         migrateOldKeys();
-
     }
 
     @Subscribe()
@@ -360,77 +303,12 @@ public class MbwManager {
         return walletManager;
     }
 
-    public String getFiatCurrency() {
-        return _currencySwitcher.getCurrentFiatCurrency();
-    }
-
-    public boolean hasFiatCurrency() {
-        return !getCurrencyList().isEmpty();
-    }
-
     private SharedPreferences getPreferences() {
         return _applicationContext.getSharedPreferences(Constants.SETTINGS_NAME, Activity.MODE_PRIVATE);
     }
 
-    public List<String> getCurrencyList() {
-        return _currencySwitcher.getCurrencyList();
-    }
-
-    public void setCurrencyList(Set<String> currencies) {
-        Set<String> allActiveFiatCurrencies = _walletManager.getAllActiveFiatCurrencies();
-        // let the exchange-rate manager fetch all currencies, that we might need
-        _exchangeRateManager.setCurrencyList(Sets.union(currencies, allActiveFiatCurrencies));
-
-        // but tell the currency-switcher only to switch over the user selected currencies
-        _currencySwitcher.setCurrencyList(currencies);
-
-        SharedPreferences.Editor editor = getEditor();
-        editor.putStringSet(Constants.SELECTED_CURRENCIES, new HashSet<>(currencies));
-        editor.commit();
-    }
-
-    public String getNextCurrency(boolean includeBitcoin) {
-        return _currencySwitcher.getNextCurrency(includeBitcoin);
-    }
-
     private SharedPreferences.Editor getEditor() {
         return getPreferences().edit();
-    }
-
-    public ExchangeRateManager getExchangeRateManager() {
-        return _exchangeRateManager;
-    }
-
-    public CurrencySwitcher getCurrencySwitcher() {
-        return _currencySwitcher;
-    }
-
-    // returns the age of the PIN in blocks (~10min)
-    public Optional<Integer> getRemainingPinLockdownDuration() {
-        Optional<Integer> pinSetHeight = getMetadataStorage().getLastPinSetBlockheight();
-        int blockHeight = getSelectedAccount().getBlockChainHeight();
-
-        if (!pinSetHeight.isPresent() || blockHeight < pinSetHeight.get()) {
-            return Optional.absent();
-        }
-
-        int pinAge = blockHeight - pinSetHeight.get();
-        if (pinAge > Constants.MIN_PIN_BLOCKHEIGHT_AGE_ADDITIONAL_BACKUP) {
-            return Optional.of(0);
-        } else {
-            return Optional.of(Constants.MIN_PIN_BLOCKHEIGHT_AGE_ADDITIONAL_BACKUP - pinAge);
-        }
-    }
-
-    public void vibrate() {
-        vibrate(500);
-    }
-
-    private void vibrate(int milliseconds) {
-        Vibrator v = (Vibrator) _applicationContext.getSystemService(Context.VIBRATOR_SERVICE);
-        if (v != null) {
-            v.vibrate(milliseconds);
-        }
     }
 
     public MinerFee getMinerFee() {
@@ -443,16 +321,18 @@ public class MbwManager {
     }
 
     public CoinUtil.Denomination getBitcoinDenomination() {
-        return _currencySwitcher.getBitcoinDenomination();
+        String coinDenomination = getPreferences().getString(Constants.BITCOIN_DENOMINATION_SETTING, Denomination.BTC.toString());
+        return Denomination.fromString(coinDenomination);
     }
 
     public void setBitcoinDenomination(CoinUtil.Denomination denomination) {
-        _currencySwitcher.setBitcoinDenomination(denomination);
         getEditor().putString(Constants.BITCOIN_DENOMINATION_SETTING, denomination.toString()).commit();
     }
 
     public String getBtcValueString(long satoshis) {
-        return _currencySwitcher.getBtcValueString(satoshis);
+        CoinUtil.Denomination d = getBitcoinDenomination();
+        String valueString = CoinUtil.valueString(satoshis, d, true);
+        return valueString + " " + d.getUnicodeName();
     }
 
     public void setProxy(String proxy) {
@@ -477,18 +357,6 @@ public class MbwManager {
         System.clearProperty(PROXY_PORT);
     }
 
-    public MrdExport.V1.EncryptionParameters getCachedEncryptionParameters() {
-        return _cachedEncryptionParameters;
-    }
-
-    public void setCachedEncryptionParameters(MrdExport.V1.EncryptionParameters cachedEncryptionParameters) {
-        _cachedEncryptionParameters = cachedEncryptionParameters;
-    }
-
-    public void clearCachedEncryptionParameters() {
-        _cachedEncryptionParameters = null;
-    }
-
     public Bus getEventBus() {
         return _eventBus;
     }
@@ -498,18 +366,6 @@ public class MbwManager {
      */
     public NetworkParameters getNetwork() {
         return _environment.getNetwork();
-    }
-
-    public MbwEnvironment getEnvironmentSettings() {
-        return _environment;
-    }
-
-    /**
-     * Get the brand of the wallet. This allows us to behave differently
-     * depending on the brand of the wallet.
-     */
-    public String getBrand() {
-        return _environment.getBrand();
     }
 
     public void reportIgnoredException(Throwable e) {
@@ -567,33 +423,9 @@ public class MbwManager {
         return _walletManager;
     }
 
-    public UUID createOnTheFlyAccount(Address address) {
-        UUID accountId = _walletManager.createSingleAddressAccount(address);
-        _walletManager.getAccount(accountId).setAllowZeroConfSpending(true);
-        _walletManager.setActiveAccount(accountId);  // this also starts a sync
-        return accountId;
-    }
-
-    public UUID createOnTheFlyAccount(InMemoryPrivateKey privateKey) {
-        UUID accountId;
-        try {
-            accountId = _walletManager.createSingleAddressAccount(privateKey, AesKeyCipher.defaultKeyCipher());
-        } catch (KeyCipher.InvalidKeyCipher invalidKeyCipher) {
-            throw new RuntimeException(invalidKeyCipher);
-        }
-        _walletManager.getAccount(accountId).setAllowZeroConfSpending(true);
-        _walletManager.setActiveAccount(accountId); // this also starts a sync
-        return accountId;
-    }
-
-
     public void forgetColdStorageWalletManager() {
         createWalletManager(_applicationContext, _environment);
 
-    }
-
-    public int getBitcoinBlockheight() {
-        return _walletManager.getBlockheight();
     }
 
     public WalletAccount getSelectedAccount() {
@@ -656,63 +488,8 @@ public class MbwManager {
         _walletManager.setActiveAccount(account.getId());
     }
 
-    public InMemoryPrivateKey obtainPrivateKeyForAccount(WalletAccount account, String website, KeyCipher cipher) {
-        if (account instanceof SingleAddressAccount) {
-            // For single address accounts we use the private key directly
-            try {
-                return ((SingleAddressAccount) account).getPrivateKey(cipher);
-            } catch (KeyCipher.InvalidKeyCipher invalidKeyCipher) {
-                throw new RuntimeException();
-            }
-        } else if (account instanceof Bip44Account && ((Bip44Account) account).getAccountType() == Bip44AccountContext.ACCOUNT_TYPE_FROM_MASTERSEED) {
-            // For BIP44 accounts we derive a private key from the BIP32 hierarchy
-            try {
-                Bip39.MasterSeed masterSeed = _walletManager.getMasterSeed(cipher);
-                int accountIndex = ((Bip44Account) account).getAccountIndex();
-                return createBip32WebsitePrivateKey(masterSeed.getBip32Seed(), accountIndex, website);
-            } catch (KeyCipher.InvalidKeyCipher invalidKeyCipher) {
-                throw new RuntimeException(invalidKeyCipher);
-            }
-        } else {
-            throw new RuntimeException("Invalid account type");
-        }
-    }
-
-    public InMemoryPrivateKey getBitIdKeyForWebsite(String website) {
-        try {
-            IdentityAccountKeyManager identity = _walletManager.getIdentityAccountKeyManager(AesKeyCipher.defaultKeyCipher());
-            return identity.getPrivateKeyForWebsite(website, AesKeyCipher.defaultKeyCipher());
-        } catch (KeyCipher.InvalidKeyCipher invalidKeyCipher) {
-            throw new RuntimeException(invalidKeyCipher);
-        }
-    }
-
-    private InMemoryPrivateKey createBip32WebsitePrivateKey(byte[] masterSeed, int accountIndex, String site) {
-        // Create BIP32 root node
-        HdKeyNode rootNode = HdKeyNode.fromSeed(masterSeed);
-        // Create bit id node
-        HdKeyNode bidNode = rootNode.createChildNode(BIP32_ROOT_AUTHENTICATION_INDEX);
-        // Create the private key for the specified account
-        InMemoryPrivateKey accountPriv = bidNode.createChildPrivateKey(accountIndex);
-        // Concatenate the private key bytes with the site name
-        byte[] sitePrivateKeySeed;
-        try {
-            sitePrivateKeySeed = BitUtils.concatenate(accountPriv.getPrivateKeyBytes(), site.getBytes("UTF-8"));
-        } catch (UnsupportedEncodingException e) {
-            // Does not happen
-            throw new RuntimeException(e);
-        }
-        // Hash the seed and create a new private key from that which uses compressed public keys
-        byte[] sitePrivateKeyBytes = HashUtils.doubleSha256(sitePrivateKeySeed).getBytes();
-        return new InMemoryPrivateKey(sitePrivateKeyBytes, true);
-    }
-
     public MetadataStorage getMetadataStorage() {
         return _storage;
-    }
-
-    public RandomSource getRandomSource() {
-        return _randomSource;
     }
 
     public ExternalSignatureDeviceManager getTrezorManager() {
@@ -725,13 +502,6 @@ public class MbwManager {
 
     public TorManager getTorManager() {
         return _torManager;
-    }
-
-    @Subscribe
-    public void onSelectedCurrencyChanged(SelectedCurrencyChanged event) {
-        SharedPreferences.Editor editor = getEditor();
-        editor.putString(Constants.FIAT_CURRENCY_SETTING, _currencySwitcher.getCurrentFiatCurrency());
-        editor.commit();
     }
 
     public Cache<String, Object> getBackgroundObjectsCache() {

@@ -102,10 +102,6 @@ public class TabsAdapter extends FragmentPagerAdapter implements ActionBar.TabLi
    @Override
    public void onPageSelected(int position) {
       mActionBar.setSelectedNavigationItem(position);
-      // This ensures that any cached encryption key is flushed when we swipe to
-      // another tab
-      _mbwManager.clearCachedEncryptionParameters();
-      // redraw menu - not working yet
       ActivityCompat.invalidateOptionsMenu(mContext);
    }
 

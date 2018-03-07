@@ -216,37 +216,6 @@ public class TransactionDetailsActivity extends Activity {
         tv.setText(_mbwManager.getBtcValueString(value));
         tv.setTextColor(_white_color);
         tv.setTag(tag);
-
-        tv.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                Utils.setClipboardString(CoinUtil.valueString(value, _mbwManager.getCurrencySwitcher().getBitcoinDenomination(), false), getApplicationContext());
-                Toast.makeText(getApplicationContext(), R.string.copied_to_clipboard, Toast.LENGTH_SHORT).show();
-                return true;
-            }
-        });
-
-
-        return tv;
-    }
-
-    private View getColuValue(final BigDecimal value, String currency) {
-        TextView tv = new TextView(this);
-        tv.setLayoutParams(FPWC);
-        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
-        tv.setText(value.stripTrailingZeros().toPlainString() + " " + currency);
-        tv.setTextColor(_white_color);
-
-        tv.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                Utils.setClipboardString(CoinUtil.valueString(value, _mbwManager.getCurrencySwitcher().getBitcoinDenomination(), false), getApplicationContext());
-                Toast.makeText(getApplicationContext(), R.string.copied_to_clipboard, Toast.LENGTH_SHORT).show();
-                return true;
-            }
-        });
-
-
         return tv;
     }
 

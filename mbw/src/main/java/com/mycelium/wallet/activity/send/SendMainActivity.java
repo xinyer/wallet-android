@@ -32,6 +32,7 @@ import com.mrd.bitlib.model.Address;
 import com.mrd.bitlib.model.OutputList;
 import com.mrd.bitlib.model.Transaction;
 import com.mrd.bitlib.model.UnspentTransactionOutput;
+import com.mrd.bitlib.util.CoinUtil;
 import com.mycelium.paymentrequest.PaymentRequestException;
 import com.mycelium.paymentrequest.PaymentRequestInformation;
 import com.mycelium.wallet.BitcoinUri;
@@ -62,7 +63,6 @@ import com.mycelium.wapi.wallet.currency.BitcoinValue;
 import com.mycelium.wapi.wallet.currency.CurrencyValue;
 import com.mycelium.wapi.wallet.currency.ExactBitcoinValue;
 import com.mycelium.wapi.wallet.currency.ExactCurrencyValue;
-import com.mycelium.wapi.wallet.currency.ExchangeBasedBitcoinValue;
 import com.squareup.otto.Subscribe;
 
 import org.bitcoin.protocols.payments.PaymentACK;
@@ -353,7 +353,7 @@ public class SendMainActivity extends Activity {
                 feePerKbValue = feeLvl.getFeePerKb(feeEstimation).getLongValue();
                 List<FeeItem> feeItems = feeItemsBuilder.getFeeItemList(feeLvl, estimateTxSize());
                 feeViewAdapter.setDataset(feeItems);
-                feeValueList.setSelectedItem(new FeeItem(feePerKbValue, null, null, FeeViewAdapter.VIEW_TYPE_ITEM));
+                feeValueList.setSelectedItem(new FeeItem(feePerKbValue, null, FeeViewAdapter.VIEW_TYPE_ITEM));
             }
         });
 
@@ -395,7 +395,7 @@ public class SendMainActivity extends Activity {
         } else {
             if (_lastBitcoinAmountToSend == null) {
                 // only convert once and keep that fx rate for further calls - the cache gets invalidated in setAmountToSend
-                _lastBitcoinAmountToSend = (BitcoinValue) ExchangeBasedBitcoinValue.fromValue(_amountToSend, _mbwManager.getExchangeRateManager());
+                _lastBitcoinAmountToSend = (BitcoinValue) ExactBitcoinValue.fromValue(_amountToSend);
             }
             return _lastBitcoinAmountToSend;
         }
@@ -548,7 +548,7 @@ public class SendMainActivity extends Activity {
 
         List<FeeItem> feeItems = feeItemsBuilder.getFeeItemList(feeLvl, estimateTxSize());
         feeViewAdapter.setDataset(feeItems);
-        feeValueList.setSelectedItem(new FeeItem(feePerKbValue, null, null, FeeViewAdapter.VIEW_TYPE_ITEM));
+        feeValueList.setSelectedItem(new FeeItem(feePerKbValue, null, FeeViewAdapter.VIEW_TYPE_ITEM));
     }
 
     private void updateRecipient() {
@@ -649,26 +649,7 @@ public class SendMainActivity extends Activity {
                     if (!CurrencyValue.isNullOrZero(_amountToSend)) {
                         // show the user entered value as primary amount
                         CurrencyValue primaryAmount = _amountToSend;
-                        CurrencyValue alternativeAmount;
-                        if (primaryAmount.getCurrency().equals(_account.getAccountDefaultCurrency())) {
-                            if (primaryAmount.isBtc()) {
-                                // if the accounts default currency is BTC and the user entered BTC, use the current
-                                // selected fiat as alternative currency
-                                alternativeAmount = CurrencyValue.fromValue(
-                                        primaryAmount, _mbwManager.getFiatCurrency(), _mbwManager.getExchangeRateManager()
-                                );
-                            } else {
-                                // if the accounts default currency isn't BTC, use BTC as alternative
-                                alternativeAmount = ExchangeBasedBitcoinValue.fromValue(
-                                        primaryAmount, _mbwManager.getExchangeRateManager()
-                                );
-                            }
-                        } else {
-                            // use the accounts default currency as alternative
-                            alternativeAmount = CurrencyValue.fromValue(
-                                    primaryAmount, _account.getAccountDefaultCurrency(), _mbwManager.getExchangeRateManager()
-                            );
-                        }
+                        CurrencyValue alternativeAmount = ExactBitcoinValue.fromValue(primaryAmount);
                         String sendAmount = Utils.getFormattedValueWithUnit(primaryAmount, _mbwManager.getBitcoinDenomination());
                         if (!primaryAmount.isBtc()) {
                             // if the amount is not in BTC, show a ~ to inform the user, its only approximate and depends
@@ -757,12 +738,7 @@ public class SendMainActivity extends Activity {
             long fee = _unsigned.calculateFee();
             if (fee != size * feePerKbValue / 1000) {
                 CurrencyValue value = ExactBitcoinValue.from(fee);
-                CurrencyValue fiatValue = CurrencyValue.fromValue(value, _mbwManager.getFiatCurrency(), _mbwManager.getExchangeRateManager());
-                String fiat = Utils.getFormattedValueWithUnit(fiatValue, _mbwManager.getBitcoinDenomination());
-                fiat = fiat.isEmpty() ? "" : "(" + fiat + ")";
-                feeWarning = getString(R.string.fee_change_warning
-                        , Utils.getFormattedValueWithUnit(value, _mbwManager.getBitcoinDenomination())
-                        , fiat);
+                feeWarning = getString(R.string.fee_change_warning, Utils.getFormattedValueWithUnit(value, _mbwManager.getBitcoinDenomination()));
                 tvFeeWarning.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
@@ -781,14 +757,7 @@ public class SendMainActivity extends Activity {
     @Override
     protected void onResume() {
         _mbwManager.getEventBus().register(this);
-
-        // If we don't have a fresh exchange rate, now is a good time to request one, as we will need it in a minute
-        if (!_mbwManager.getCurrencySwitcher().isFiatExchangeRateAvailable()) {
-            _mbwManager.getExchangeRateManager().requestRefresh();
-        }
-
         pbSend.setVisibility(GONE);
-
         updateUi();
         super.onResume();
     }
@@ -886,9 +855,10 @@ public class SendMainActivity extends Activity {
         }
     }
 
+    // TODO: 2018/3/7 xinyer
     private String getFiatValue() {
-        long value = _amountToSend.getAsBitcoin(_mbwManager.getExchangeRateManager()).getLongValue() + _unsigned.calculateFee();
-        return _mbwManager.getCurrencySwitcher().getFormattedFiatValue(ExactBitcoinValue.from(value), true);
+        long value = _amountToSend.getAsBitcoin().getLongValue() + _unsigned.calculateFee();
+        return Utils.getFormattedValueWithUnit(ExactBitcoinValue.from(value), CoinUtil.Denomination.BTC);
     }
 
     private void setReceivingAddressFromKeynode(HdKeyNode hdKeyNode) {
