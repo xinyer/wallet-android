@@ -26,14 +26,12 @@ import com.google.common.base.Preconditions;
 import com.mrd.bitlib.model.Address;
 import com.mycelium.net.ServerEndpointType;
 import com.mycelium.wallet.*;
-import com.mycelium.wallet.activity.ScanActivity;
 import com.mycelium.wallet.activity.main.BalanceMasterFragment;
 import com.mycelium.wallet.activity.main.TransactionHistoryFragment;
 import com.mycelium.wallet.activity.modern.adapter.TabsAdapter;
 import com.mycelium.wallet.activity.send.InstantWalletActivity;
 import com.mycelium.wallet.activity.settings.SettingsActivity;
 import com.mycelium.wallet.event.*;
-import com.mycelium.wapi.api.response.Feature;
 import com.mycelium.wapi.wallet.*;
 import com.squareup.otto.Subscribe;
 
@@ -330,12 +328,6 @@ public class ModernMain extends ActionBarActivity {
             Intent running = getIntent();
             finish();
             startActivity(running);
-        } else if (requestCode == GENERIC_SCAN_REQUEST) {
-            if (resultCode != RESULT_OK) {
-                //report to user in case of error
-                //if no scan handlers match successfully, this is the last resort to display an error msg
-                ScanActivity.toastScanError(resultCode, data, this);
-            }
         } else {
             super.onActivityResult(requestCode, resultCode, data);
         }
@@ -348,19 +340,6 @@ public class ModernMain extends ActionBarActivity {
             if (mbwManager.getWalletManager().getState() == WalletManager.State.SYNCHRONIZING) {
                 if (commonSyncState != WalletManager.State.SYNCHRONIZING) {
                     commonSyncState = WalletManager.State.SYNCHRONIZING;
-                    MenuItem menuItem = MenuItemCompat.setActionView(refreshItem, R.layout.actionbar_indeterminate_progress);
-                    ImageView ivTorIcon = (ImageView) menuItem.getActionView().findViewById(R.id.ivTorIcon);
-
-                    if (mbwManager.getTorMode() == ServerEndpointType.Types.ONLY_TOR && mbwManager.getTorManager() != null) {
-                        ivTorIcon.setVisibility(View.VISIBLE);
-                        if (mbwManager.getTorManager().getInitState() == 100) {
-                            ivTorIcon.setImageResource(R.drawable.tor);
-                        } else {
-                            ivTorIcon.setImageResource(R.drawable.tor_gray);
-                        }
-                    } else {
-                        ivTorIcon.setVisibility(View.GONE);
-                    }
                 }
             } else {
                 commonSyncState = WalletManager.State.READY;

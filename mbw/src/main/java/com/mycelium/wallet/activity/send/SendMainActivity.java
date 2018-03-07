@@ -37,17 +37,13 @@ import com.mrd.bitlib.model.UnspentTransactionOutput;
 import com.mycelium.paymentrequest.PaymentRequestException;
 import com.mycelium.paymentrequest.PaymentRequestInformation;
 import com.mycelium.wallet.BitcoinUri;
-import com.mycelium.wallet.BitcoinUriWithAddress;
 import com.mycelium.wallet.Constants;
 import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.MinerFee;
 import com.mycelium.wallet.R;
 import com.mycelium.wallet.ColuAssetUri;
-import com.mycelium.wallet.StringHandleConfig;
 import com.mycelium.wallet.Utils;
 import com.mycelium.wallet.activity.GetAmountActivity;
-import com.mycelium.wallet.activity.ScanActivity;
-import com.mycelium.wallet.activity.StringHandlerActivity;
 import com.mycelium.wallet.activity.send.adapter.FeeLvlViewAdapter;
 import com.mycelium.wallet.activity.send.adapter.FeeViewAdapter;
 import com.mycelium.wallet.activity.send.event.SelectListener;
@@ -470,12 +466,6 @@ public class SendMainActivity extends Activity {
         savedInstanceState.putSerializable(SIGNED_TRANSACTION, _signedTransaction);
     }
 
-    @OnClick(R.id.btScan)
-    void onClickScan() {
-        StringHandleConfig config = StringHandleConfig.returnKeyOrAddressOrUriOrKeynode();
-        ScanActivity.callMe(this, SCAN_RESULT_CODE, config);
-    }
-
     @OnClick(R.id.btManualEntry)
     void onClickManualEntry() {
         Intent intent = new Intent(this, ManualAddressEntry.class);
@@ -877,60 +867,7 @@ public class SendMainActivity extends Activity {
 
     public void onActivityResult(final int requestCode, final int resultCode, final Intent intent) {
         Log.d(TAG, "onActivityResult: requestCode=" + requestCode + " and resultCode=" + resultCode);
-        if (requestCode == SCAN_RESULT_CODE) {
-            if (resultCode != RESULT_OK) {
-                if (intent != null) {
-                    String error = intent.getStringExtra(StringHandlerActivity.RESULT_ERROR);
-                    if (error != null) {
-                        makeText(this, error, LENGTH_LONG).show();
-                    }
-                }
-            } else {
-                StringHandlerActivity.ResultType type = (StringHandlerActivity.ResultType) intent.getSerializableExtra(StringHandlerActivity.RESULT_TYPE_KEY);
-                if (type == StringHandlerActivity.ResultType.PRIVATE_KEY) {
-                    InMemoryPrivateKey key = StringHandlerActivity.getPrivateKey(intent);
-                    _receivingAddress = key.getPublicKey().toAddress(_mbwManager.getNetwork());
-                } else if (type == StringHandlerActivity.ResultType.ADDRESS) {
-                    _receivingAddress = StringHandlerActivity.getAddress(intent);
-                } else if (type == StringHandlerActivity.ResultType.URI_WITH_ADDRESS) {
-                    BitcoinUriWithAddress uri = StringHandlerActivity.getUriWithAddress(intent);
-                    if (uri.callbackURL != null) {
-                        //we contact the merchant server instead of using the params
-                        _bitcoinUri = uri;
-                        _paymentFetched = false;
-                        verifyPaymentRequest(_bitcoinUri);
-                        return;
-                    }
-                    _receivingAddress = uri.address;
-                    _transactionLabel = uri.label;
-                    if (uri.amount != null && uri.amount > 0) {
-                        //we set the amount to the one contained in the qr code, even if another one was entered previously
-                        if (!CurrencyValue.isNullOrZero(_amountToSend)) {
-                            makeText(this, R.string.amount_changed, LENGTH_LONG).show();
-                        }
-                        setAmountToSend(ExactBitcoinValue.from(uri.amount));
-                    }
-                } else if (type == StringHandlerActivity.ResultType.URI) {
-                    //todo: maybe merge with BitcoinUriWithAddress ?
-                    BitcoinUri uri = StringHandlerActivity.getUri(intent);
-                    if (uri.callbackURL != null) {
-                        //we contact the merchant server instead of using the params
-                        _bitcoinUri = uri;
-                        _paymentFetched = false;
-                        verifyPaymentRequest(_bitcoinUri);
-                        return;
-                    }
-                } else if (type == StringHandlerActivity.ResultType.HD_NODE) {
-                    setReceivingAddressFromKeynode(StringHandlerActivity.getHdKeyNode(intent));
-                } else {
-                    throw new IllegalStateException("Unexpected result type from scan: " + type.toString());
-                }
-
-            }
-
-            _transactionStatus = tryCreateUnsignedTransaction();
-            updateUi();
-        } else if (requestCode == MANUAL_ENTRY_RESULT_CODE && resultCode == RESULT_OK) {
+       if (requestCode == MANUAL_ENTRY_RESULT_CODE && resultCode == RESULT_OK) {
             _receivingAddress = Preconditions.checkNotNull((Address) intent
                     .getSerializableExtra(ManualAddressEntry.ADDRESS_RESULT_NAME));
 

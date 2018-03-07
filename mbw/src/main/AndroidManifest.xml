@@ -151,7 +151,6 @@
             android:theme="@style/MyceliumActionBar" />
         <activity android:name=".activity.AddAccountActivity" />
         <activity android:name=".activity.AddAdvancedAccountActivity" />
-        <activity android:name=".activity.ScanActivity" />
         <activity android:name=".activity.TransactionDetailsActivity" />
         <activity android:name=".activity.settings.SettingsActivity" />
         <activity android:name=".activity.export.MrdDecryptDataActivity" />
@@ -166,12 +165,6 @@
         <activity android:name=".activity.send.SignTransactionActivity" />
         <activity android:name=".activity.send.BroadcastTransactionActivity" />
         <activity android:name=".activity.receive.ReceiveCoinsActivity" />
-        <activity
-            android:name="com.google.zxing.client.android.CaptureActivity"
-            android:configChanges="orientation|keyboardHidden"
-            android:screenOrientation="landscape"
-            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
-            android:windowSoftInputMode="stateAlwaysHidden" />
         <activity android:name=".activity.ImportSeedActivity" />
         <activity android:name=".activity.EnterWordListActivity" />
         <activity android:name=".activity.VerifyWordListActivity" />
@@ -183,13 +176,10 @@
         <activity android:name=".extsig.trezor.activity.TrezorSignTransactionActivity" />
         <activity android:name=".activity.InstantMasterseedActivity" />
         <activity android:name=".activity.GetAmountActivity" />
-        <activity android:name=".activity.StringHandlerActivity" />
         <activity android:name=".activity.send.VerifyPaymentRequestActivity" />
         <activity
             android:name=".bitid.BitIDAuthenticationActivity"
             android:label="@string/title_activity_bit_idauthentication" />
-        <activity android:name=".activity.pop.PopActivity" />
-        <activity android:name=".activity.pop.PopSelectTransactionActivity" />
     </application>
 
 </manifest>

@@ -14,10 +14,7 @@ import com.google.common.base.Preconditions;
 import com.mrd.bitlib.model.Address;
 import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.R;
-import com.mycelium.wallet.StringHandleConfig;
 import com.mycelium.wallet.Utils;
-import com.mycelium.wallet.activity.ScanActivity;
-import com.mycelium.wallet.activity.modern.ModernMain;
 import com.mycelium.wallet.activity.receive.ReceiveCoinsActivity;
 import com.mycelium.wallet.activity.send.SendInitializationActivity;
 import com.mycelium.wallet.event.AccountChanged;
@@ -82,13 +79,6 @@ public class BalanceFragment extends Fragment {
         if (receivingAddress.isPresent()) {
             ReceiveCoinsActivity.callMe(getActivity(), receivingAddress.get());
         }
-    }
-
-    @OnClick(R.id.btScan)
-    void onClickScan() {
-        //perform a generic scan, act based upon what we find in the QR code
-        StringHandleConfig config = StringHandleConfig.genericScanRequest();
-        ScanActivity.callMe(BalanceFragment.this.getActivity(), ModernMain.GENERIC_SCAN_REQUEST, config);
     }
 
     @Override

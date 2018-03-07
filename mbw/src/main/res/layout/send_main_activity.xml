@@ -43,18 +43,6 @@
                     android:orientation="vertical"
                     android:paddingTop="6dp">
 
-
-                    <!-- Scan button -->
-                    <Button
-                        android:id="@+id/btScan"
-                        android:layout_width="220dp"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:layout_marginBottom="6dp"
-                        android:layout_marginTop="6dp"
-                        android:text="@string/scan_qr_code"
-                        android:textSize="20sp" />
-
                     <!-- Manual Entry -->
 
                     <Button
@@ -164,8 +152,7 @@
                     android:textColor="@color/white"
                     android:textSize="15sp"
                     android:visibility="visible"
-                    android:typeface="monospace"
-                tools:text="ahahahah"/>
+                    android:typeface="monospace"/>
 
             <View
                     android:layout_width="1dp"
