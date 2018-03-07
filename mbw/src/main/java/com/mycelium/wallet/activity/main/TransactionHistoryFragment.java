@@ -36,7 +36,6 @@ import com.mycelium.wallet.activity.send.BroadcastTransactionActivity;
 import com.mycelium.wallet.activity.send.SignTransactionActivity;
 import com.mycelium.wallet.activity.util.EnterAddressLabelUtil;
 import com.mycelium.wallet.event.AddressBookChanged;
-import com.mycelium.wallet.event.ExchangeRatesRefreshed;
 import com.mycelium.wallet.event.SelectedCurrencyChanged;
 import com.mycelium.wallet.event.SyncStopped;
 import com.mycelium.wallet.persistence.MetadataStorage;
@@ -125,11 +124,6 @@ public class TransactionHistoryFragment extends Fragment {
     @Subscribe
     public void syncStopped(SyncStopped event) {
         updateTransactionHistory();
-    }
-
-    @Subscribe
-    public void exchangeRateChanged(ExchangeRatesRefreshed event) {
-        refreshList();
     }
 
     private void refreshList() {

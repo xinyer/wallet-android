@@ -51,7 +51,6 @@ import com.mycelium.wallet.activity.send.model.FeeItem;
 import com.mycelium.wallet.activity.send.model.FeeLvlItem;
 import com.mycelium.wallet.activity.send.view.SelectableRecyclerView;
 import com.mycelium.wallet.activity.util.AnimationUtils;
-import com.mycelium.wallet.event.ExchangeRatesRefreshed;
 import com.mycelium.wallet.event.SelectedCurrencyChanged;
 import com.mycelium.wallet.event.SyncFailed;
 import com.mycelium.wallet.event.SyncStopped;
@@ -882,11 +881,6 @@ public class SendMainActivity extends Activity {
             BroadcastTransactionActivity.callMe(this, _account.getId(), _isColdStorage, _signedTransaction
                     , _transactionLabel, getFiatValue(), BROADCAST_REQUEST_CODE);
         }
-    }
-
-    @Subscribe
-    public void exchangeRatesRefreshed(ExchangeRatesRefreshed event) {
-        updateUi();
     }
 
     @Subscribe
