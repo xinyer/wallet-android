@@ -26,18 +26,9 @@ public class SettingsActivity extends PreferenceActivity {
 
     public static final CharMatcher AMOUNT = CharMatcher.JAVA_DIGIT.or(CharMatcher.anyOf(".,"));
 
-    private final OnPreferenceClickListener showBip44PathClickListener = new OnPreferenceClickListener() {
-        public boolean onPreferenceClick(Preference preference) {
-            CheckBoxPreference p = (CheckBoxPreference) preference;
-            _mbwManager.getMetadataStorage().setShowBip44Path(p.isChecked());
-            return true;
-        }
-    };
-
-    private ListPreference _bitcoinDenomination;
-    private MbwManager _mbwManager;
-    private ListPreference _minerFee;
-    private ListPreference _blockExplorer;
+    private MbwManager mbwManager;
+    private ListPreference bitcoinDenomination;
+    private ListPreference minerFee;
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     @VisibleForTesting
@@ -67,31 +58,31 @@ public class SettingsActivity extends PreferenceActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.preferences);
-        _mbwManager = MbwManager.getInstance(SettingsActivity.this.getApplication());
+        mbwManager = MbwManager.getInstance(SettingsActivity.this.getApplication());
         // Bitcoin Denomination
-        _bitcoinDenomination = (ListPreference) findPreference("bitcoin_denomination");
-        _bitcoinDenomination.setTitle(bitcoinDenominationTitle());
-        _bitcoinDenomination.setDefaultValue(_mbwManager.getBitcoinDenomination().toString());
-        _bitcoinDenomination.setValue(_mbwManager.getBitcoinDenomination().toString());
+        bitcoinDenomination = (ListPreference) findPreference("bitcoin_denomination");
+        bitcoinDenomination.setTitle(bitcoinDenominationTitle());
+        bitcoinDenomination.setDefaultValue(mbwManager.getBitcoinDenomination().toString());
+        bitcoinDenomination.setValue(mbwManager.getBitcoinDenomination().toString());
         CharSequence[] denominations = new CharSequence[]{Denomination.BTC.toString(), Denomination.mBTC.toString(),
                 Denomination.uBTC.toString(), Denomination.BITS.toString()};
-        _bitcoinDenomination.setEntries(denominations);
-        _bitcoinDenomination.setEntryValues(denominations);
-        _bitcoinDenomination.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+        bitcoinDenomination.setEntries(denominations);
+        bitcoinDenomination.setEntryValues(denominations);
+        bitcoinDenomination.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
 
             @Override
             public boolean onPreferenceChange(Preference preference, Object newValue) {
-                _mbwManager.setBitcoinDenomination(Denomination.fromString(newValue.toString()));
-                _bitcoinDenomination.setTitle(bitcoinDenominationTitle());
+                mbwManager.setBitcoinDenomination(Denomination.fromString(newValue.toString()));
+                bitcoinDenomination.setTitle(bitcoinDenominationTitle());
                 return true;
             }
         });
 
         // Miner Fee
-        _minerFee = (ListPreference) findPreference("miner_fee");
-        _minerFee.setTitle(getMinerFeeTitle());
-        _minerFee.setSummary(getMinerFeeSummary());
-        _minerFee.setValue(_mbwManager.getMinerFee().toString());
+        minerFee = (ListPreference) findPreference("miner_fee");
+        minerFee.setTitle(getMinerFeeTitle());
+        minerFee.setSummary(getMinerFeeSummary());
+        minerFee.setValue(mbwManager.getMinerFee().toString());
         CharSequence[] minerFees = new CharSequence[]{
                 MinerFee.LOWPRIO.toString(),
                 MinerFee.ECONOMIC.toString(),
@@ -102,16 +93,16 @@ public class SettingsActivity extends PreferenceActivity {
                 getString(R.string.miner_fee_economic_name),
                 getString(R.string.miner_fee_normal_name),
                 getString(R.string.miner_fee_priority_name)};
-        _minerFee.setEntries(minerFeeNames);
-        _minerFee.setEntryValues(minerFees);
-        _minerFee.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+        minerFee.setEntries(minerFeeNames);
+        minerFee.setEntryValues(minerFees);
+        minerFee.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
 
             @Override
             public boolean onPreferenceChange(Preference preference, Object newValue) {
-                _mbwManager.setMinerFee(MinerFee.fromString(newValue.toString()));
-                _minerFee.setTitle(getMinerFeeTitle());
-                _minerFee.setSummary(getMinerFeeSummary());
-                String description = _mbwManager.getMinerFee().getMinerFeeDescription(SettingsActivity.this);
+                mbwManager.setMinerFee(MinerFee.fromString(newValue.toString()));
+                minerFee.setTitle(getMinerFeeTitle());
+                minerFee.setSummary(getMinerFeeSummary());
+                String description = mbwManager.getMinerFee().getMinerFeeDescription(SettingsActivity.this);
                 Utils.showSimpleMessageDialog(SettingsActivity.this, description);
                 return true;
             }
@@ -120,11 +111,11 @@ public class SettingsActivity extends PreferenceActivity {
         ListPreference language = (ListPreference) findPreference(Constants.LANGUAGE_SETTING);
         language.setTitle(getLanguageSettingTitle());
         language.setDefaultValue(Locale.getDefault().getLanguage());
-        language.setSummary(_mbwManager.getLanguage());
-        language.setValue(_mbwManager.getLanguage());
+        language.setSummary(mbwManager.getLanguage());
+        language.setValue(mbwManager.getLanguage());
 
         ImmutableMap<String, String> languageLookup = loadLanguageLookups();
-        language.setSummary(languageLookup.get(_mbwManager.getLanguage()));
+        language.setSummary(languageLookup.get(mbwManager.getLanguage()));
 
         language.setEntries(R.array.languages_desc);
         language.setEntryValues(R.array.languages);
@@ -132,26 +123,24 @@ public class SettingsActivity extends PreferenceActivity {
             @Override
             public boolean onPreferenceChange(Preference preference, Object newValue) {
                 String lang = newValue.toString();
-                _mbwManager.setLanguage(lang);
+                mbwManager.setLanguage(lang);
                 WalletApplication app = (WalletApplication) getApplication();
                 app.applyLanguageChange(lang);
-
                 restart();
-
                 return true;
             }
         });
 
         // show bip44 path
         CheckBoxPreference showBip44Path = (CheckBoxPreference) findPreference("showBip44Path");
-        showBip44Path.setChecked(_mbwManager.getMetadataStorage().getShowBip44Path());
-        showBip44Path.setOnPreferenceClickListener(showBip44PathClickListener);
-    }
-
-    private String getLanguageSettingTitle() {
-        String displayed = getResources().getString(R.string.pref_change_language);
-        String english = Utils.loadEnglish(R.string.pref_change_language);
-        return english.equals(displayed) ? displayed : displayed + " / " + english;
+        showBip44Path.setChecked(mbwManager.getMetadataStorage().getShowBip44Path());
+        showBip44Path.setOnPreferenceClickListener(new OnPreferenceClickListener() {
+            public boolean onPreferenceClick(Preference preference) {
+                CheckBoxPreference p = (CheckBoxPreference) preference;
+                mbwManager.getMetadataStorage().setShowBip44Path(p.isChecked());
+                return true;
+            }
+        });
     }
 
     private ImmutableMap<String, String> loadLanguageLookups() {
@@ -173,24 +162,25 @@ public class SettingsActivity extends PreferenceActivity {
         startActivity(running);
     }
 
+    private String getLanguageSettingTitle() {
+        String displayed = getResources().getString(R.string.pref_change_language);
+        String english = Utils.loadEnglish(R.string.pref_change_language);
+        return english.equals(displayed) ? displayed : displayed + " / " + english;
+    }
+
     private String bitcoinDenominationTitle() {
         return getResources().getString(R.string.pref_bitcoin_denomination_with_denomination,
-                _mbwManager.getBitcoinDenomination().getAsciiName());
+                mbwManager.getBitcoinDenomination().getAsciiName());
     }
 
     private String getMinerFeeTitle() {
         return getResources().getString(R.string.pref_miner_fee_title,
-                _mbwManager.getMinerFee().getMinerFeeName(this));
+                mbwManager.getMinerFee().getMinerFeeName(this));
     }
 
     private String getMinerFeeSummary() {
         return getResources().getString(R.string.pref_miner_fee_block_summary,
-                Integer.toString(_mbwManager.getMinerFee().getNBlocks()));
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
+                Integer.toString(mbwManager.getMinerFee().getNBlocks()));
     }
 
 }

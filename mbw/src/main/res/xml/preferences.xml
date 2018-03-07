@@ -12,14 +12,10 @@
             android:layout="@layout/preference_layout"
             android:summary="@string/pref_bitcoin_denomination_summary"
             android:title="@string/pref_bitcoin_denomination"/>
+
     <ListPreference
             android:key="miner_fee"
             android:layout="@layout/preference_layout"/>
-    <ListPreference
-            android:key="block_explorer"
-            android:layout="@layout/preference_layout"/>
-
-    <!-- Advanced Settings -->
 
     <PreferenceCategory
             android:key="advancedSettings"
@@ -30,6 +26,7 @@
                 android:layout="@layout/preference_layout"
                 android:summary="Show the BIP44 address path for the current address on the homescreen"
                 android:title="Show address path"/>
+
     </PreferenceCategory>
 
 </PreferenceScreen>
