@@ -28,7 +28,7 @@ dependencies {
         exclude module: 'jcip-annotations'
     }
     compile project(includePrefix + ':btchip')
-    compile project(includePrefix + ':LVL')
+//    compile project(includePrefix + ':LVL')
 
     compile guavaArtifact
     compile 'com.squareup.retrofit2:retrofit:2.3.0'
