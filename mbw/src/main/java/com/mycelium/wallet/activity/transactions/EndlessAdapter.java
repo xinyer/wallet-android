@@ -13,7 +13,7 @@
   limitations under the License.
  */
 
-package com.commonsware.cwac.endless;
+package com.mycelium.wallet.activity.transactions;
 
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -25,7 +25,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListAdapter;
 import java.util.concurrent.atomic.AtomicBoolean;
-import com.commonsware.cwac.adapter.AdapterWrapper;
 
 /**
  * Adapter that assists another adapter in appearing

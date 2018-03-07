@@ -13,7 +13,7 @@
   limitations under the License.
 */    
 
-package com.commonsware.cwac.adapter;
+package com.mycelium.wallet.activity.transactions;
 
 import android.database.DataSetObserver;
 import android.view.View;
