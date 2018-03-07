@@ -46,7 +46,7 @@ import com.mrd.bitlib.util.CoinUtil;
 import com.mycelium.wallet.*;
 import com.mycelium.wallet.activity.MasterseedPasswordDialog;
 import com.mycelium.wallet.activity.send.SignTransactionActivity;
-import com.mycelium.wallet.activity.util.MasterseedPasswordSetter;
+import com.mycelium.wallet.activity.util.MasterSeedPasswordSetter;
 import com.mycelium.wallet.activity.util.Pin;
 import com.mycelium.wallet.extsig.common.ExternalSignatureDeviceManager;
 import com.mycelium.wapi.wallet.AccountScanManager;
@@ -57,7 +57,7 @@ import java.util.ArrayList;
 
 public abstract class ExtSigSignTransactionActivity
       extends SignTransactionActivity
-      implements MasterseedPasswordSetter {
+      implements MasterSeedPasswordSetter {
 
    private static final String PASSPHRASE_FRAGMENT_TAG = "pass";
 

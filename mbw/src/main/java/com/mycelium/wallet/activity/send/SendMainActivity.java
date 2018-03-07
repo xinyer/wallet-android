@@ -23,13 +23,11 @@ import android.widget.TextView;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import com.mrd.bitlib.StandardTransactionBuilder.InsufficientFundsException;
 import com.mrd.bitlib.StandardTransactionBuilder.OutputTooSmallException;
 import com.mrd.bitlib.StandardTransactionBuilder.UnableToBuildTransactionException;
 import com.mrd.bitlib.StandardTransactionBuilder.UnsignedTransaction;
 import com.mrd.bitlib.crypto.HdKeyNode;
-import com.mrd.bitlib.crypto.InMemoryPrivateKey;
 import com.mrd.bitlib.model.Address;
 import com.mrd.bitlib.model.OutputList;
 import com.mrd.bitlib.model.Transaction;
@@ -46,7 +44,7 @@ import com.mycelium.wallet.Utils;
 import com.mycelium.wallet.activity.GetAmountActivity;
 import com.mycelium.wallet.activity.send.adapter.FeeLvlViewAdapter;
 import com.mycelium.wallet.activity.send.adapter.FeeViewAdapter;
-import com.mycelium.wallet.activity.send.event.SelectListener;
+import com.mycelium.wallet.activity.send.view.SelectListener;
 import com.mycelium.wallet.activity.send.helper.FeeItemsBuilder;
 import com.mycelium.wallet.activity.send.model.FeeItem;
 import com.mycelium.wallet.activity.send.model.FeeLvlItem;
@@ -59,7 +57,6 @@ import com.mycelium.wallet.event.SyncStopped;
 import com.mycelium.wallet.paymentrequest.PaymentRequestHandler;
 import com.mycelium.wapi.api.lib.FeeEstimation;
 import com.mycelium.wapi.wallet.WalletAccount;
-import com.mycelium.wapi.wallet.WalletManager;
 import com.mycelium.wapi.wallet.bip44.Bip44AccountExternalSignature;
 import com.mycelium.wapi.wallet.currency.BitcoinValue;
 import com.mycelium.wapi.wallet.currency.CurrencyValue;
@@ -148,8 +145,6 @@ public class SendMainActivity extends Activity {
     Button btSend;
     @BindView(R.id.btManualEntry)
     Button btManualEntry;
-    @BindView(R.id.btScan)
-    Button btScan;
     @BindView(R.id.pbSend)
     ProgressBar pbSend;
     @BindView(R.id.llFee)
@@ -285,38 +280,8 @@ public class SendMainActivity extends Activity {
             }
         }
 
-        // check whether the account can spend, if not, ask user to select one
         if (_account.canSpend()) {
-            // See if we can create the transaction with what we have
             _transactionStatus = tryCreateUnsignedTransaction();
-        } else {
-            //we need the user to pick a spending account - the activity will then init sendmain correctly
-            BitcoinUri uri;
-            if (_bitcoinUri == null) {
-                uri = BitcoinUri.from(_receivingAddress, getBitcoinValueToSend() == null ? null : getBitcoinValueToSend().getLongValue(), _transactionLabel, null);
-            } else {
-                uri = _bitcoinUri;
-            }
-
-            if (_rawPr != null) {
-                GetSpendingRecordActivity.callMeWithResult(this, _rawPr, REQUEST_PICK_ACCOUNT);
-            } else {
-                GetSpendingRecordActivity.callMeWithResult(this, uri, REQUEST_PICK_ACCOUNT);
-            }
-
-            //no matter whether the user did successfully send or tapped back - we do not want to stay here with a wrong account selected
-            finish();
-            return;
-        }
-
-        // lets see if we got a raw Payment request (probably by downloading a file with MIME application/bitcoin-paymentrequest)
-        if (_rawPr != null && _paymentRequestHandler == null) {
-            verifyPaymentRequest(_rawPr);
-        }
-
-        // lets check whether we got a payment request uri and need to fetch payment data
-        if (_bitcoinUri != null && !Strings.isNullOrEmpty(_bitcoinUri.callbackURL) && _paymentRequestHandler == null) {
-            verifyPaymentRequest(_bitcoinUri);
         }
 
         checkHaveSpendAccount();
@@ -439,16 +404,6 @@ public class SendMainActivity extends Activity {
     private void setAmountToSend(CurrencyValue toSend) {
         _amountToSend = toSend;
         _lastBitcoinAmountToSend = null;
-    }
-
-    private void verifyPaymentRequest(BitcoinUri uri) {
-        Intent intent = VerifyPaymentRequestActivity.getIntent(this, uri);
-        startActivityForResult(intent, REQUEST_PAYMENT_HANDLER);
-    }
-
-    private void verifyPaymentRequest(byte[] rawPr) {
-        Intent intent = VerifyPaymentRequestActivity.getIntent(this, rawPr);
-        startActivityForResult(intent, REQUEST_PAYMENT_HANDLER);
     }
 
     @Override
@@ -861,7 +816,6 @@ public class SendMainActivity extends Activity {
         pbSend.setVisibility(VISIBLE);
         btSend.setEnabled(false);
         btManualEntry.setEnabled(false);
-        btScan.setEnabled(false);
         btEnterAmount.setEnabled(false);
     }
 

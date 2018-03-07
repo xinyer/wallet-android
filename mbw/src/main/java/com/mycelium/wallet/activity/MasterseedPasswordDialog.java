@@ -45,7 +45,7 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import com.mycelium.wallet.R;
-import com.mycelium.wallet.activity.util.MasterseedPasswordSetter;
+import com.mycelium.wallet.activity.util.MasterSeedPasswordSetter;
 
 public class MasterseedPasswordDialog extends DialogFragment {
 
@@ -88,7 +88,7 @@ public class MasterseedPasswordDialog extends DialogFragment {
          @Override
          public void onClick(View view) {
             String text = ((EditText) v.findViewById(R.id.etPassphrase)).getText().toString();
-            ((MasterseedPasswordSetter)getActivity()).setPassphrase(text);
+            ((MasterSeedPasswordSetter)getActivity()).setPassphrase(text);
          }
       });
 
@@ -96,7 +96,7 @@ public class MasterseedPasswordDialog extends DialogFragment {
       v.findViewById(R.id.btnCancel).setOnClickListener(new View.OnClickListener() {
          @Override
          public void onClick(View view) {
-            ((MasterseedPasswordSetter)getActivity()).setPassphrase(null);
+            ((MasterSeedPasswordSetter)getActivity()).setPassphrase(null);
          }
       });
 

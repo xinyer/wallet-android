@@ -17,7 +17,7 @@ import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.R;
 import com.mycelium.wallet.Utils;
 import com.mycelium.wapi.wallet.AccountScanManager;
-import com.mycelium.wallet.activity.util.MasterseedPasswordSetter;
+import com.mycelium.wallet.activity.util.MasterSeedPasswordSetter;
 import com.mycelium.wallet.activity.util.AbstractAccountScanManager;
 import com.mycelium.wapi.model.Balance;
 import com.mycelium.wapi.wallet.SyncMode;
@@ -31,7 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public abstract class HdAccountSelectorActivity extends Activity implements MasterseedPasswordSetter {
+public abstract class HdAccountSelectorActivity extends Activity implements MasterSeedPasswordSetter {
     protected final static int REQUEST_SEND = 1;
     public static final String PASSPHRASE_FRAGMENT_TAG = "passphrase";
     protected ArrayList<HdAccountWrapper> accounts = new ArrayList<>();

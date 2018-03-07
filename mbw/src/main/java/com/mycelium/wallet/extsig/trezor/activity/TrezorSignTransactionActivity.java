@@ -37,7 +37,7 @@ package com.mycelium.wallet.extsig.trezor.activity;
 import android.widget.ImageView;
 import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.R;
-import com.mycelium.wallet.activity.util.MasterseedPasswordSetter;
+import com.mycelium.wallet.activity.util.MasterSeedPasswordSetter;
 import com.mycelium.wallet.extsig.common.ExternalSignatureDeviceManager;
 import com.mycelium.wallet.extsig.common.activity.ExtSigSignTransactionActivity;
 import com.mycelium.wapi.wallet.AccountScanManager;
@@ -45,7 +45,7 @@ import com.squareup.otto.Subscribe;
 
 public class TrezorSignTransactionActivity
       extends ExtSigSignTransactionActivity
-      implements MasterseedPasswordSetter {
+      implements MasterSeedPasswordSetter {
 
 
    @Override

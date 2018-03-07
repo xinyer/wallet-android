@@ -8,7 +8,6 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.mycelium.wallet.R;
-import com.mycelium.wallet.activity.send.event.SelectListener;
 
 
 public class SelectableRecyclerView extends RecyclerView {
@@ -42,7 +41,7 @@ public class SelectableRecyclerView extends RecyclerView {
     }
 
     public void setSelectedItem(int selectedItem) {
-        if(getAdapter() == null) {
+        if (getAdapter() == null) {
             return;
         }
         ((Adapter) getAdapter()).setSelectedItem(selectedItem);
@@ -93,7 +92,7 @@ public class SelectableRecyclerView extends RecyclerView {
         if (changed && oldWidth != getWidth()) {
             itemWidth = getResources().getDimensionPixelSize(R.dimen.item_dob_width);
             padding = (getWidth() - itemWidth) / 2;
-            if(getAdapter() != null) {
+            if (getAdapter() != null) {
                 getAdapter().notifyDataSetChanged();
                 scrollListToPosition(getSelectedItem());
             }

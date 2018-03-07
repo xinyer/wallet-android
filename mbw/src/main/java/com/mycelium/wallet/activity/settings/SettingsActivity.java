@@ -117,26 +117,6 @@ public class SettingsActivity extends PreferenceActivity {
             }
         });
 
-
-        //Block Explorer
-        _blockExplorer = (ListPreference) findPreference("block_explorer");
-        _blockExplorer.setTitle(getBlockExplorerTitle());
-        _blockExplorer.setSummary(getBlockExplorerSummary());
-        _blockExplorer.setValue(_mbwManager._blockExplorerManager.getBlockExplorer().getIdentifier());
-        CharSequence[] blockExplorerNames = _mbwManager._blockExplorerManager.getBlockExplorerNames(_mbwManager._blockExplorerManager.getAllBlockExplorer());
-        CharSequence[] blockExplorerValues = _mbwManager._blockExplorerManager.getBlockExplorerIds();
-        _blockExplorer.setEntries(blockExplorerNames);
-        _blockExplorer.setEntryValues(blockExplorerValues);
-        _blockExplorer.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
-
-            public boolean onPreferenceChange(Preference preference, Object newValue) {
-                _mbwManager.setBlockExplorer(_mbwManager._blockExplorerManager.getBlockExplorerById(newValue.toString()));
-                _blockExplorer.setTitle(getBlockExplorerTitle());
-                _blockExplorer.setSummary(getBlockExplorerSummary());
-                return true;
-            }
-        });
-
         ListPreference language = (ListPreference) findPreference(Constants.LANGUAGE_SETTING);
         language.setTitle(getLanguageSettingTitle());
         language.setDefaultValue(Locale.getDefault().getLanguage());
@@ -206,16 +186,6 @@ public class SettingsActivity extends PreferenceActivity {
     private String getMinerFeeSummary() {
         return getResources().getString(R.string.pref_miner_fee_block_summary,
                 Integer.toString(_mbwManager.getMinerFee().getNBlocks()));
-    }
-
-    private String getBlockExplorerTitle() {
-        return getResources().getString(R.string.block_explorer_title,
-                _mbwManager._blockExplorerManager.getBlockExplorer().getTitle());
-    }
-
-    private String getBlockExplorerSummary() {
-        return getResources().getString(R.string.block_explorer_summary,
-                _mbwManager._blockExplorerManager.getBlockExplorer().getTitle());
     }
 
     @Override

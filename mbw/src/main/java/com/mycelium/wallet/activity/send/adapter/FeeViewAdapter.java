@@ -20,9 +20,6 @@ import java.util.List;
 
 import static com.mrd.bitlib.util.CoinUtil.Denomination.mBTC;
 
-/**
- * Created by elvis on 31.08.17.
- */
 
 public class FeeViewAdapter extends SelectableRecyclerView.Adapter<FeeViewAdapter.ViewHolder> {
 

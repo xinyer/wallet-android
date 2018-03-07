@@ -38,8 +38,6 @@ import com.mycelium.WapiLogger;
 import com.mycelium.net.ServerEndpointType;
 import com.mycelium.net.TorManager;
 import com.mycelium.net.TorManagerOrbot;
-import com.mycelium.wallet.activity.util.BlockExplorer;
-import com.mycelium.wallet.activity.util.BlockExplorerManager;
 import com.mycelium.wallet.event.EventTranslator;
 import com.mycelium.wallet.event.ExtraAccountsChanged;
 import com.mycelium.wallet.event.ReceivingAddressChanged;
@@ -122,7 +120,6 @@ public class MbwManager {
     private final EventTranslator _eventTranslator;
     private ServerEndpointType.Types _torMode;
     private TorManager _torManager;
-    public final BlockExplorerManager _blockExplorerManager;
 
     private EvictingQueue<LogEntry> _wapiLogs = EvictingQueue.create(100);
     private Cache<String, Object> _semiPersistingBackgroundObjects = CacheBuilder.newBuilder().maximumSize(10).build();
@@ -196,14 +193,6 @@ public class MbwManager {
 
         migrateOldKeys();
 
-        _blockExplorerManager = new BlockExplorerManager(this,
-                _environment.getBlockExplorerList(),
-                getPreferences().getString(Constants.BLOCK_EXPLORER,
-                        _environment.getBlockExplorerList().get(0).getIdentifier()));
-    }
-
-    public void addExtraAccounts(AccountProvider accounts) {
-        _walletManager.addExtraAccounts(accounts);
     }
 
     @Subscribe()
@@ -453,12 +442,6 @@ public class MbwManager {
         getEditor().putString(Constants.MINER_FEE_SETTING, _minerFee.toString()).commit();
     }
 
-    public void setBlockExplorer(BlockExplorer blockExplorer) {
-        _blockExplorerManager.setBlockExplorer(blockExplorer);
-        getEditor().putString(Constants.BLOCK_EXPLORER, blockExplorer.getIdentifier()).commit();
-    }
-
-
     public CoinUtil.Denomination getBitcoinDenomination() {
         return _currencySwitcher.getBitcoinDenomination();
     }
@@ -471,16 +454,6 @@ public class MbwManager {
     public String getBtcValueString(long satoshis) {
         return _currencySwitcher.getBtcValueString(satoshis);
     }
-
-    public boolean getContinuousFocus() {
-        return _enableContinuousFocus;
-    }
-
-    public void setContinuousFocus(boolean enableContinuousFocus) {
-        _enableContinuousFocus = enableContinuousFocus;
-        getEditor().putBoolean(Constants.ENABLE_CONTINUOUS_FOCUS_SETTING, _enableContinuousFocus).commit();
-    }
-
 
     public void setProxy(String proxy) {
         getEditor().putString(Constants.PROXY_SETTING, proxy).commit();
