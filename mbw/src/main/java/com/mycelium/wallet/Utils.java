@@ -649,17 +649,6 @@ public class Utils {
 
     }
 
-    public static void pinProtectedWordlistBackup(final Activity activity) {
-//        MbwManager manager = MbwManager.getInstance(activity);
-//        manager.runPinProtectedFunction(activity, new Runnable() {
-//
-//            @Override
-//            public void run() {
-//                Utils.wordlistBackup(activity);
-//            }
-//        });
-    }
-
     private static void wordlistBackup(final Activity parent) {
 //        MbwManager _mbwManager = MbwManager.getInstance(parent);
 //        if (_mbwManager.getMetadataStorage().firstMasterseedBackupFinished()) {

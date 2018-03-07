@@ -50,7 +50,6 @@ import com.mycelium.wallet.activity.BipSsImportActivity;
 import com.mycelium.wallet.activity.HandleUrlActivity;
 import com.mycelium.wallet.activity.InstantMasterseedActivity;
 import com.mycelium.wallet.activity.StringHandlerActivity;
-import com.mycelium.wallet.activity.pop.PopActivity;
 import com.mycelium.wallet.activity.send.SendInitializationActivity;
 import com.mycelium.wallet.activity.send.SendMainActivity;
 import com.mycelium.wallet.bitid.BitIDAuthenticationActivity;
@@ -77,7 +76,6 @@ public class StringHandleConfig implements Serializable {
         request.bitcoinUriWithAddressAction = BitcoinUriWithAddressAction.RETURN;
         request.bitcoinUriAction = BitcoinUriAction.RETURN;
         request.hdNodeAction = HdNodeAction.RETURN;
-        request.popAction = PopAction.SEND;
         return request;
     }
 
@@ -130,7 +128,6 @@ public class StringHandleConfig implements Serializable {
         request.sssShareAction = SssShareAction.START_COMBINING;
         request.wordListAction = WordListAction.COLD_SPENDING;
         request.hdNodeAction = HdNodeAction.SEND_PUB_SPEND_PRIV;
-        request.popAction = PopAction.SEND;
 
         //at the moment, we just support wordlist backups
         //request.masterSeedAction = MasterSeedAction.IMPORT;
@@ -832,40 +829,6 @@ public class StringHandleConfig implements Serializable {
             public boolean canHandle(NetworkParameters network, String content) {
                 String[] words = content.split(" ");
                 return Bip39.isValidWordList(words);
-            }
-        }
-    }
-
-    public enum PopAction implements Action {
-        SEND {
-            @Override
-            public boolean handle(StringHandlerActivity handlerActivity, String content) {
-                if (!isBtcpopURI(content)) {
-                    return false;
-                }
-                PopRequest popRequest;
-                try {
-                    popRequest = new PopRequest(content);
-                } catch (IllegalArgumentException e) {
-                    handlerActivity.finishError(R.string.pop_invalid_pop_uri);
-                    return false;
-                }
-
-                Intent intent = new Intent(handlerActivity, PopActivity.class);
-                intent.putExtra("popRequest", popRequest);
-                intent.addFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT);
-                handlerActivity.startActivity(intent);
-                handlerActivity.finishOk();
-                return true;
-            }
-
-            @Override
-            public boolean canHandle(NetworkParameters network, String content) {
-                return isBtcpopURI(content);
-            }
-
-            private boolean isBtcpopURI(String content) {
-                return content.startsWith("btcpop:");
             }
         }
     }

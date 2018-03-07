@@ -3,18 +3,11 @@ package com.mycelium.wallet.activity.modern;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
-import android.content.pm.ProviderInfo;
-import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.v4.app.ShareCompat;
-import android.support.v4.content.FileProvider;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
@@ -26,7 +19,6 @@ import android.util.Log;
 import android.view.*;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
@@ -34,8 +26,6 @@ import com.google.common.base.Preconditions;
 import com.mrd.bitlib.model.Address;
 import com.mycelium.net.ServerEndpointType;
 import com.mycelium.wallet.*;
-import com.mycelium.wallet.activity.AboutActivity;
-import com.mycelium.wallet.activity.MessageVerifyActivity;
 import com.mycelium.wallet.activity.ScanActivity;
 import com.mycelium.wallet.activity.main.BalanceMasterFragment;
 import com.mycelium.wallet.activity.main.TransactionHistoryFragment;
@@ -43,12 +33,10 @@ import com.mycelium.wallet.activity.modern.adapter.TabsAdapter;
 import com.mycelium.wallet.activity.send.InstantWalletActivity;
 import com.mycelium.wallet.activity.settings.SettingsActivity;
 import com.mycelium.wallet.event.*;
-import com.mycelium.wallet.persistence.MetadataStorage;
 import com.mycelium.wapi.api.response.Feature;
 import com.mycelium.wapi.wallet.*;
 import com.squareup.otto.Subscribe;
 
-import java.io.*;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
@@ -130,7 +118,6 @@ public class ModernMain extends ActionBarActivity {
         }
 
         if (isAppStart) {
-            mbwManager.getVersionManager().showFeatureWarningIfNeeded(this, Feature.APP_START);
             checkGapBug();
             isAppStart = false;
         }
@@ -206,18 +193,6 @@ public class ModernMain extends ActionBarActivity {
     @Override
     protected void onResume() {
         mbwManager.getEventBus().register(this);
-
-        long curTime = new Date().getTime();
-        if (lastSync == 0 || curTime - lastSync > MIN_AUTOSYNC_INTERVAL) {
-            Handler h = new Handler();
-            h.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    mbwManager.getVersionManager().checkForUpdate();
-                }
-            }, 50);
-        }
-
         stopBalanceRefreshTimer();
         balanceRefreshTimer = new Timer();
         balanceRefreshTimer.scheduleAtFixedRate(new TimerTask() {
@@ -248,7 +223,6 @@ public class ModernMain extends ActionBarActivity {
     protected void onPause() {
         stopBalanceRefreshTimer();
         mbwManager.getEventBus().unregister(this);
-        mbwManager.getVersionManager().closeDialog();
         super.onPause();
     }
 
@@ -277,9 +251,7 @@ public class ModernMain extends ActionBarActivity {
         inflater.inflate(R.menu.main_activity_options_menu, menu);
         addEnglishSetting(menu.findItem(R.id.miSettings));
         inflater.inflate(R.menu.refresh, menu);
-        inflater.inflate(R.menu.export_history, menu);
         inflater.inflate(R.menu.record_options_menu_global, menu);
-        inflater.inflate(R.menu.verify_message, menu);
         return true;
     }
 
@@ -299,16 +271,9 @@ public class ModernMain extends ActionBarActivity {
     public boolean onPrepareOptionsMenu(Menu menu) {
         final int tabIdx = mViewPager.getCurrentItem();
 
-        // at the moment, we allow to make backups multiple times
-        Preconditions.checkNotNull(menu.findItem(R.id.miBackup)).setVisible(true);
-
         // Add Record menu
         final boolean isAccountTab = tabIdx == TAB_ID_ACCOUNTS;
         Preconditions.checkNotNull(menu.findItem(R.id.miAddRecord)).setVisible(isAccountTab);
-
-        // Lock menu
-//      final boolean hasPin = mbwManager.isPinProtected();
-//      Preconditions.checkNotNull(menu.findItem(R.id.miLockKeys)).setVisible(isAccountTab && hasPin);
 
         // Refresh menu
         final boolean isBalanceTab = tabIdx == TAB_ID_BALANCE;
@@ -317,26 +282,9 @@ public class ModernMain extends ActionBarActivity {
         refreshItem.setVisible(isBalanceTab || isHistoryTab || isAccountTab);
         setRefreshAnimation();
 
-        //export tx history
-        Preconditions.checkNotNull(menu.findItem(R.id.miExportHistory)).setVisible(isHistoryTab);
-
         Preconditions.checkNotNull(menu.findItem(R.id.miRescanTransactions)).setVisible(isHistoryTab);
 
-//      final boolean isAddressBook = tabIdx == addressBookTabIndex;
-//      Preconditions.checkNotNull(menu.findItem(R.id.miAddAddress)).setVisible(isAddressBook);
-
         return super.onPrepareOptionsMenu(menu);
-    }
-
-    @SuppressWarnings("unused")
-    private boolean canObtainLocation() {
-        final boolean hasFeature = getPackageManager().hasSystemFeature("android.hardware.location.network");
-        if (!hasFeature) {
-            return false;
-        }
-        String permission = "android.permission.ACCESS_COARSE_LOCATION";
-        int res = checkCallingOrSelfPermission(permission);
-        return (res == PackageManager.PERMISSION_GRANTED);
     }
 
     @Override
@@ -351,13 +299,6 @@ public class ModernMain extends ActionBarActivity {
                 startActivityForResult(intent, REQUEST_SETTING_CHANGED);
                 return true;
             }
-            case R.id.miBackup:
-                Utils.pinProtectedWordlistBackup(this);
-                return true;
-            //with wordlists, we just need to backup and verify in one step
-            //} else if (itemId == R.id.miVerifyBackup) {
-            //   VerifyBackupActivity.callMe(this);
-            //   return true;
             case R.id.miRefresh:
                 // default only sync the current account
                 SyncMode syncMode = SyncMode.NORMAL_FORCED;
@@ -372,59 +313,12 @@ public class ModernMain extends ActionBarActivity {
                 // also fetch a new exchange rate, if necessary
                 mbwManager.getExchangeRateManager().requestOptionalRefresh();
                 return true;
-            case R.id.miHelp:
-                openMyceliumHelp();
-                break;
-            case R.id.miAbout: {
-                Intent intent = new Intent(this, AboutActivity.class);
-                startActivity(intent);
-                break;
-            }
             case R.id.miRescanTransactions:
                 mbwManager.getSelectedAccount().dropCachedData();
                 mbwManager.getWalletManager().startSynchronization(SyncMode.FULL_SYNC_CURRENT_ACCOUNT_FORCED);
                 break;
-            case R.id.miExportHistory:
-                shareTransactionHistory();
-                break;
-            case R.id.miVerifyMessage:
-                startActivity(new Intent(this, MessageVerifyActivity.class));
-                break;
         }
         return super.onOptionsItemSelected(item);
-    }
-
-    private void shareTransactionHistory() {
-        WalletAccount account = mbwManager.getSelectedAccount();
-        MetadataStorage metaData = mbwManager.getMetadataStorage();
-        try {
-            String fileName = "MyceliumExport_" + System.currentTimeMillis() + ".csv";
-            File historyData = DataExport.getTxHistoryCsv(account, metaData, getFileStreamPath(fileName));
-            PackageManager packageManager = Preconditions.checkNotNull(getPackageManager());
-            PackageInfo packageInfo = packageManager.getPackageInfo(getPackageName(), PackageManager.GET_PROVIDERS);
-            for (ProviderInfo info : packageInfo.providers) {
-                if (info.name.equals("android.support.v4.content.FileProvider")) {
-                    String authority = info.authority;
-                    Uri uri = FileProvider.getUriForFile(this, authority, historyData);
-                    Intent intent = ShareCompat.IntentBuilder.from(this)
-                            .setStream(uri)  // uri from FileProvider
-                            .setType("text/plain")
-                            .setSubject(getResources().getString(R.string.transaction_history_title))
-                            .setText(getResources().getString(R.string.transaction_history_title))
-                            .getIntent()
-                            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    List<ResolveInfo> resInfoList = packageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
-                    for (ResolveInfo resolveInfo : resInfoList) {
-                        String packageName = resolveInfo.activityInfo.packageName;
-                        grantUriPermission(packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    }
-                    startActivity(Intent.createChooser(intent, getResources().getString(R.string.share_transaction_history)));
-                }
-            }
-        } catch (IOException | PackageManager.NameNotFoundException e) {
-            toaster.toast("Export failed. Check your logs", false);
-            e.printStackTrace();
-        }
     }
 
     @Override
@@ -445,13 +339,6 @@ public class ModernMain extends ActionBarActivity {
         } else {
             super.onActivityResult(requestCode, resultCode, data);
         }
-    }
-
-    private void openMyceliumHelp() {
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.setData(Uri.parse(Constants.MYCELIUM_WALLET_HELP_URL));
-        startActivity(intent);
-        Toast.makeText(this, R.string.going_to_mycelium_com_help, Toast.LENGTH_LONG).show();
     }
 
     private WalletManager.State commonSyncState;
@@ -507,13 +394,4 @@ public class ModernMain extends ActionBarActivity {
         toaster.toast(R.string.transaction_sent, false);
     }
 
-    @Subscribe
-    public void onNewFeatureWarnings(final FeatureWarningsAvailable event) {
-        mbwManager.getVersionManager().showFeatureWarningIfNeeded(this, Feature.MAIN_SCREEN);
-    }
-
-    @Subscribe
-    public void onNewVersion(final NewWalletVersionAvailable event) {
-        mbwManager.getVersionManager().showIfRelevant(event.versionInfo, this);
-    }
 }

@@ -132,7 +132,6 @@ public class AddAccountActivity extends Activity {
     public void onPause() {
         _progress.dismiss();
         _mbwManager.getEventBus().unregister(this);
-        _mbwManager.getVersionManager().closeDialog();
         super.onPause();
     }
 }

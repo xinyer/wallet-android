@@ -67,9 +67,8 @@ public class HttpErrorCollector implements Thread.UncaughtExceptionHandler {
       if (orig instanceof HttpErrorCollector) {
          return (HttpErrorCollector) orig;
       }
-      String version = VersionManager.determineVersion(applicationContext) + " / " + VersionManager.determineVersionCode(applicationContext);
       Log.i(Constants.TAG, "registering exception handler from thread " + Thread.currentThread().getName());
-      HttpErrorCollector ret = new HttpErrorCollector(orig, wapi, version, buildMetaData(applicationContext));
+      HttpErrorCollector ret = new HttpErrorCollector(orig, wapi, BuildConfig.VERSION_NAME, buildMetaData(applicationContext));
       Thread.setDefaultUncaughtExceptionHandler(ret);
       return ret;
    }
@@ -77,9 +76,6 @@ public class HttpErrorCollector implements Thread.UncaughtExceptionHandler {
    private static ErrorMetaData buildMetaData(Context applicationContext) {
       ActivityManager am = (ActivityManager) applicationContext.getSystemService(Context.ACTIVITY_SERVICE);
       int memoryClass = am.getMemoryClass();
-/*
-         long maxMemory = Runtime.getRuntime().maxMemory();
-*/
       return new ErrorMetaData(memoryClass, Build.VERSION.SDK_INT, Build.MODEL, Build.BRAND, Build.VERSION.RELEASE, Build.DEVICE);
    }
 

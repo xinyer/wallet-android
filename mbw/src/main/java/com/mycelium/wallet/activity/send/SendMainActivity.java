@@ -851,7 +851,6 @@ public class SendMainActivity extends Activity {
     @Override
     protected void onPause() {
         _mbwManager.getEventBus().unregister(this);
-        _mbwManager.getVersionManager().closeDialog();
         super.onPause();
     }
 

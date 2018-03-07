@@ -74,26 +74,7 @@ public class StringHandlerActivity extends Activity {
       return intent;
    }
 
-   public static ParseAbility canHandle(StringHandleConfig stringHandleConfig, String contentString, NetworkParameters network) {
-      if (isMrdEncryptedPrivateKey(contentString)) {
-         return ParseAbility.MAYBE;
-      }
-      if (isMrdEncryptedMasterSeed(contentString)) {
-         return ParseAbility.MAYBE;
-      }
-      if (Bip38.isBip38PrivateKey(contentString)) {
-         return ParseAbility.MAYBE;
-      }
-      for (StringHandleConfig.Action action : stringHandleConfig.getAllActions()) {
-         if (action.canHandle(network, contentString)) {
-            return ParseAbility.YES;
-         }
-      }
-      return ParseAbility.NO;
-   }
-
    public enum ResultType {ADDRESS, PRIVATE_KEY, HD_NODE, ACCOUNT, NONE, URI_WITH_ADDRESS, URI, SHARE}
-   public enum ParseAbility {YES, MAYBE, NO}
 
    public static final int IMPORT_ENCRYPTED_PRIVATE_KEY_CODE = 1;
    public static final int IMPORT_ENCRYPTED_MASTER_SEED_CODE = 2;

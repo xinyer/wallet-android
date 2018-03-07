@@ -126,7 +126,6 @@ public class MbwManager {
     private MbwEnvironment _environment;
     private HttpErrorCollector _httpErrorCollector;
     private String _language;
-    private final VersionManager _versionManager;
     private final ExchangeRateManager _exchangeRateManager;
     private final WalletManager _walletManager;
     private final RandomSource _randomSource;
@@ -141,7 +140,6 @@ public class MbwManager {
     private MbwManager(Context evilContext) {
         _applicationContext = Preconditions.checkNotNull(evilContext.getApplicationContext());
         _environment = MbwEnvironment.verifyEnvironment(_applicationContext);
-        String version = VersionManager.determineVersion(_applicationContext);
 
         // Preferences
         SharedPreferences preferences = getPreferences();
@@ -166,7 +164,6 @@ public class MbwManager {
 
         _storage = new MetadataStorage(_applicationContext);
         _language = preferences.getString(Constants.LANGUAGE_SETTING, Locale.getDefault().getLanguage());
-        _versionManager = new VersionManager(_applicationContext, _language, new AndroidAsyncApi(_wapi, _eventBus), version, _eventBus);
 
         Set<String> currencyList = getPreferences().getStringSet(Constants.SELECTED_CURRENCIES, null);
         //TODO: get it through coluManager instead ?
@@ -209,7 +206,6 @@ public class MbwManager {
 
         migrateOldKeys();
 
-        _versionManager.initBackgroundVersionChecker();
         _blockExplorerManager = new BlockExplorerManager(this,
                 _environment.getBlockExplorerList(),
                 getPreferences().getString(Constants.BLOCK_EXPLORER,
@@ -602,14 +598,6 @@ public class MbwManager {
 
     public ServerEndpointType.Types getTorMode() {
         return _torMode;
-    }
-
-    public VersionManager getVersionManager() {
-        return _versionManager;
-    }
-
-    public MrdExport.V1.ScryptParameters getDeviceScryptParameters() {
-        return _deviceScryptParameters;
     }
 
     public WalletManager getWalletManager() {
