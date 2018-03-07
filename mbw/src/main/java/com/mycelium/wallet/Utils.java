@@ -79,6 +79,7 @@ import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 import com.mrd.bitlib.model.Address;
 import com.mrd.bitlib.model.NetworkParameters;
 import com.mrd.bitlib.util.CoinUtil;
+import com.mycelium.wallet.common.BitcoinUriWithAddress;
 import com.mycelium.wallet.persistence.MetadataStorage;
 import com.mycelium.wapi.wallet.WalletAccount;
 import com.mycelium.wapi.wallet.bip44.Bip44Account;
@@ -121,13 +122,6 @@ public class Utils {
         symbols.setGroupingSeparator(',');
         FIAT_FORMAT.setDecimalFormatSymbols(symbols);
     }
-
-    public static final Function<AddressBookManager.Entry, Comparable> ENTRY_NAME = new Function<AddressBookManager.Entry, Comparable>() {
-        @Override
-        public Comparable apply(AddressBookManager.Entry input) {
-            return input.getName();
-        }
-    };
 
     @SuppressLint(Constants.IGNORE_NEW_API)
     public static void setAlpha(View view, float alpha) {
@@ -644,89 +638,6 @@ public class Utils {
         }
         return !((foundDot || foundComma) && digitsAfter == 0);
 
-    }
-
-    private static void wordlistBackup(final Activity parent) {
-//        MbwManager _mbwManager = MbwManager.getInstance(parent);
-//        if (_mbwManager.getMetadataStorage().firstMasterseedBackupFinished()) {
-//            // second+ backup
-//            AdditionalBackupWarningActivity.callMe(parent);
-//        } else {
-//            // first backup
-//            AlertDialog.Builder builder = new AlertDialog.Builder(parent);
-//            builder.setMessage(R.string.backup_all_warning).setCancelable(true)
-//                    .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
-//                        public void onClick(DialogInterface dialog, int id) {
-//                            dialog.dismiss();
-//                            BackupWordListActivity.callMe(parent);
-//                        }
-//                    }).setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
-//                public void onClick(DialogInterface dialog, int id) {
-//                }
-//            });
-//            AlertDialog alertDialog = builder.create();
-//            alertDialog.show();
-//        }
-
-    }
-
-    /**
-     * Prevent the OS from taking screenshots for the specified activity
-     */
-    public static void preventScreenshots(Activity activity) {
-        activity.getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
-    }
-
-    public static boolean checkIsLinked(WalletAccount account, final Collection<WalletAccount> accounts) {
-        return false;
-    }
-
-    public static List<WalletAccount> sortAccounts(final List<WalletAccount> accounts, final MetadataStorage storage) {
-        Ordering<WalletAccount> type = Ordering.natural().onResultOf(new Function<WalletAccount, Integer>() {
-            @Override
-            public Integer apply(WalletAccount input) {
-                if (input instanceof Bip44Account) {
-                    return 0;
-                }
-                if (input instanceof SingleAddressAccount) {
-                    return checkIsLinked(input, accounts) ? 3 : 1;
-                }
-                return 2;
-            }
-        });
-        Ordering<WalletAccount> index = Ordering.natural().onResultOf(new Function<WalletAccount, Integer>() {
-            @Override
-            public Integer apply(WalletAccount input) {
-                if (input instanceof Bip44Account) {
-                    Bip44Account bip44Account = (Bip44Account) input;
-                    return bip44Account.getAccountIndex();
-                }
-                return Integer.MAX_VALUE;
-            }
-        });
-
-        Comparator<WalletAccount> linked = new Comparator<WalletAccount>() {
-            @Override
-            public int compare(WalletAccount w1, WalletAccount w2) {
-                return 0;
-            }
-        };
-
-        Ordering<WalletAccount> name = Ordering.natural().onResultOf(new Function<WalletAccount, String>() {
-            @Override
-            public String apply(WalletAccount input) {
-                return storage.getLabelByAccount(input.getId());
-            }
-        });
-        return type.compound(index).compound(linked).compound(name).sortedCopy(accounts);
-    }
-
-    public static List<Address> sortAddresses(List<Address> addresses) {
-        return Ordering.usingToString().sortedCopy(addresses);
-    }
-
-    public static List<AddressBookManager.Entry> sortAddressbookEntries(List<AddressBookManager.Entry> entries) {
-        return Ordering.natural().onResultOf(ENTRY_NAME).sortedCopy(entries);
     }
 
     public static Drawable getDrawableForAccount(WalletAccount walletAccount, boolean isSelectedAccount, Resources resources) {

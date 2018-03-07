@@ -55,7 +55,6 @@ public class WalletManager {
    private AccountEventManager _accountEventManager;
    private NetworkParameters _network;
    private Wapi _wapi;
-   private WapiLogger _logger;
    private final ExternalSignatureProviderProxy _signatureProviders;
    private IdentityAccountKeyManager _identityAccountKeyManager;
    private volatile UUID _activeAccountId;
@@ -75,7 +74,6 @@ public class WalletManager {
       _network = network;
       _wapi = wapi;
       _signatureProviders = signatureProviders;
-      _logger = _wapi.getLogger();
       _walletAccounts = Maps.newHashMap();
       _bip44Accounts = new ArrayList<>();
       _state = State.READY;
@@ -556,7 +554,6 @@ public class WalletManager {
    }
 
    private void loadBip44Accounts() {
-      _logger.logInfo("Loading BIP44 accounts");
       List<Bip44AccountContext> contexts = _backing.loadBip44AccountContexts();
       for (Bip44AccountContext context : contexts) {
          Bip44AccountKeyManager keyManager;
@@ -604,7 +601,6 @@ public class WalletManager {
    }
 
    private void loadSingleAddressAccounts() {
-      _logger.logInfo("Loading single address accounts");
       List<SingleAddressAccountContext> contexts = _backing.loadSingleAddressAccountContexts();
       for (SingleAddressAccountContext context : contexts) {
          PublicPrivateKeyStore store = new PublicPrivateKeyStore(_secureKeyValueStore);
@@ -618,7 +614,6 @@ public class WalletManager {
       synchronized (_walletAccounts) {
          account.setEventHandler(_accountEventManager);
          _walletAccounts.put(account.getId(), account);
-         _logger.logInfo("Account Added: " + account.getId());
       }
    }
 

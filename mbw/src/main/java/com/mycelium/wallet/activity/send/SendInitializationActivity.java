@@ -9,6 +9,7 @@ import android.view.Window;
 
 import com.google.common.base.Preconditions;
 import com.mycelium.wallet.*;
+import com.mycelium.wallet.common.BitcoinUri;
 import com.mycelium.wallet.event.SyncFailed;
 import com.mycelium.wallet.event.SyncStopped;
 import com.mycelium.wapi.wallet.WalletAccount;

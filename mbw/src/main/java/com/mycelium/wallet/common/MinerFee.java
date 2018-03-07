@@ -1,8 +1,9 @@
-package com.mycelium.wallet;
+package com.mycelium.wallet.common;
 
 import android.content.Context;
 
 import com.megiontechnologies.Bitcoins;
+import com.mycelium.wallet.R;
 import com.mycelium.wapi.api.lib.FeeEstimation;
 
 public enum MinerFee {

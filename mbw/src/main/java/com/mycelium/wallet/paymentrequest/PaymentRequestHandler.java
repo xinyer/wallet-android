@@ -8,7 +8,7 @@ import com.mrd.bitlib.model.Address;
 import com.mrd.bitlib.model.*;
 import com.mycelium.paymentrequest.PaymentRequestException;
 import com.mycelium.paymentrequest.PaymentRequestInformation;
-import com.mycelium.wallet.BitcoinUri;
+import com.mycelium.wallet.common.BitcoinUri;
 import com.squareup.okhttp.*;
 import com.squareup.otto.Bus;
 import com.squareup.wire.Wire;

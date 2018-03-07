@@ -1,6 +1,6 @@
 package com.mycelium.wallet.activity.send.model;
 
-import com.mycelium.wallet.MinerFee;
+import com.mycelium.wallet.common.MinerFee;
 
 /**
  * Created by elvis on 31.08.17.

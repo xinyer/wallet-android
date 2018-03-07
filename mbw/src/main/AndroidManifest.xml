@@ -93,7 +93,6 @@
         <activity android:name=".activity.send.SignTransactionActivity" />
         <activity android:name=".activity.send.BroadcastTransactionActivity" />
         <activity android:name=".activity.receive.ReceiveCoinsActivity" />
-        <activity android:name=".activity.HandleUrlActivity" />
         <activity android:name=".extsig.trezor.activity.InstantTrezorActivity" />
         <activity android:name=".extsig.trezor.activity.TrezorAccountImportActivity" />
         <activity android:name=".extsig.trezor.activity.TrezorSignTransactionActivity" />

@@ -3,6 +3,7 @@ package com.mycelium.wallet;
 import com.google.common.base.Optional;
 import com.mrd.bitlib.model.Address;
 import com.mrd.bitlib.model.NetworkParameters;
+import com.mycelium.wallet.common.BitcoinUri;
 
 import org.junit.Test;
 

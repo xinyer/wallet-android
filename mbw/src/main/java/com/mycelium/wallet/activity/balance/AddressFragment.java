@@ -11,7 +11,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.mrd.bitlib.model.Address;
 import com.mrd.bitlib.model.HdDerivedAddress;
-import com.mycelium.wallet.BitcoinUriWithAddress;
+import com.mycelium.wallet.common.BitcoinUriWithAddress;
 import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.R;
 import com.mycelium.wallet.widget.QrImageView;

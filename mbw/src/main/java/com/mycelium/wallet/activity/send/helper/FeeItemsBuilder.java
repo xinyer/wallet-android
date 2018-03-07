@@ -3,7 +3,7 @@ package com.mycelium.wallet.activity.send.helper;
 import android.support.annotation.NonNull;
 
 import com.mycelium.wallet.MbwManager;
-import com.mycelium.wallet.MinerFee;
+import com.mycelium.wallet.common.MinerFee;
 import com.mycelium.wallet.activity.send.adapter.FeeViewAdapter;
 import com.mycelium.wallet.activity.send.model.FeeItem;
 import com.mycelium.wapi.api.lib.FeeEstimation;

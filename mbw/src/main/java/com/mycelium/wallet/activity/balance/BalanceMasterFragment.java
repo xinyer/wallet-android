@@ -12,15 +12,12 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.google.common.base.Preconditions;
-import com.mycelium.net.ServerEndpointType;
 import com.mycelium.wallet.MbwManager;
 import com.mycelium.wallet.R;
 import com.mycelium.wallet.event.SelectedAccountChanged;
-import com.mycelium.wallet.event.TorStateChanged;
 import com.squareup.otto.Subscribe;
 
 public class BalanceMasterFragment extends Fragment {
-    private TextView tvTor;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -36,15 +33,6 @@ public class BalanceMasterFragment extends Fragment {
     @Override
     public void onResume() {
         updateBuildText();
-        Activity activity = getActivity();
-        MbwManager mbwManager = MbwManager.getInstance(activity);
-        tvTor = activity.findViewById(R.id.tvTorState);
-        if (mbwManager.getTorMode() == ServerEndpointType.Types.ONLY_TOR && mbwManager.getTorManager() != null) {
-            tvTor.setVisibility(View.VISIBLE);
-            showTorState(mbwManager.getTorManager().getInitState());
-        } else {
-            tvTor.setVisibility(View.GONE);
-        }
         updateAddressView();
         MbwManager.getInstance(this.getActivity()).getEventBus().register(this);
         super.onResume();
@@ -54,11 +42,6 @@ public class BalanceMasterFragment extends Fragment {
     public void onPause() {
         MbwManager.getInstance(this.getActivity()).getEventBus().unregister(this);
         super.onPause();
-    }
-
-    @Subscribe
-    public void onTorState(TorStateChanged torState) {
-        showTorState(torState.percentage);
     }
 
     @Subscribe
@@ -82,16 +65,6 @@ public class BalanceMasterFragment extends Fragment {
         FragmentTransaction fragmentTransaction = getFragmentManager().beginTransaction();
         fragmentTransaction.replace(R.id.phFragmentAddress, new AddressFragment());
         fragmentTransaction.commitAllowingStateLoss();
-    }
-
-    private void showTorState(int percentage) {
-        if (percentage == 0) {
-            tvTor.setText("");
-        } else if (percentage == 100) {
-            tvTor.setText("");
-        } else {
-            tvTor.setText(getString(R.string.tor_state_init));
-        }
     }
 
 }

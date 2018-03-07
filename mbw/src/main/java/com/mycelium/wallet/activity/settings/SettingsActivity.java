@@ -15,7 +15,7 @@ import com.google.common.collect.ImmutableMap;
 import com.mrd.bitlib.util.CoinUtil.Denomination;
 import com.mycelium.wallet.Constants;
 import com.mycelium.wallet.MbwManager;
-import com.mycelium.wallet.MinerFee;
+import com.mycelium.wallet.common.MinerFee;
 import com.mycelium.wallet.R;
 import com.mycelium.wallet.Utils;
 import com.mycelium.wallet.WalletApplication;

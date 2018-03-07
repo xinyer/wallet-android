@@ -3,6 +3,8 @@ package com.mycelium.wallet;
 import android.support.test.runner.AndroidJUnit4;
 import android.test.suitebuilder.annotation.SmallTest;
 
+import com.mycelium.wallet.common.AndroidRandomSource;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 

@@ -289,11 +289,6 @@ public class ModernMain extends ActionBarActivity {
     }
 
     @Subscribe
-    public void torState(TorStateChanged event) {
-        setRefreshAnimation();
-    }
-
-    @Subscribe
     public void synchronizationFailed(SyncFailed event) {
         toaster.toastConnectionError();
     }
