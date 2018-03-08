@@ -1,1 +1,0 @@
-External libraries that needed adaptation.

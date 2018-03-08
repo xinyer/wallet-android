@@ -141,7 +141,7 @@ public abstract class ExternalSignatureDeviceManager extends AbstractAccountScan
          AlertDialog.Builder downloadDialog = new AlertDialog.Builder(context);
          downloadDialog.setTitle(R.string.ext_sig_configuration_dialog_title);
          downloadDialog.setMessage(msg);
-         downloadDialog.setPositiveButton(R.string.button_ok, new DialogInterface.OnClickListener() {
+         downloadDialog.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialogInterface, int i) {
                Intent intent = context.getPackageManager().getLaunchIntentForPackage(packageName);
                if (intent == null) {
@@ -153,7 +153,7 @@ public abstract class ExternalSignatureDeviceManager extends AbstractAccountScan
                }
             }
          });
-         downloadDialog.setNegativeButton(R.string.button_cancel, new DialogInterface.OnClickListener() {
+         downloadDialog.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialogInterface, int i) {
                if (onClose!=null) {
                   onClose.run();

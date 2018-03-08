@@ -735,7 +735,7 @@ public class SendMainActivity extends Activity {
                     public void onClick(View view) {
                         new AlertDialog.Builder(SendMainActivity.this)
                                 .setMessage(R.string.fee_change_description)
-                                .setPositiveButton(R.string.button_ok, null).create()
+                                .setPositiveButton(R.string.ok, null).create()
                                 .show();
                     }
                 });
